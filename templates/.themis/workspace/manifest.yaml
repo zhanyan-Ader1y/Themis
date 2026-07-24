@@ -1,0 +1,25 @@
+workspace_schema: themis-workspace/v1
+artifact_schema: themis-artifact/v1
+project:
+  name: ""
+  root: "."
+commands:
+  lint: null
+  build: null
+  test: null
+context:
+  entry_points: []
+  external_sources: []
+gates: []
+adapters: {}
+policy_overrides: {}
+paths:
+  policies: workspace/policies
+  context: workspace/context
+  specs: workspace/specs
+  state: workspace/state
+  runs: workspace/runs
+  evidence: workspace/evidence
+  outcomes: workspace/outcomes
+  knowledge: workspace/knowledge
+  cache: workspace/cache
