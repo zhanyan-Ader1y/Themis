@@ -89,7 +89,7 @@ An imported rule is guidance, not proof that an executor or policy has been inst
 
 ## Domain Boundaries
 
-The imported domain rules define stable responsibilities and Workspace boundaries. They intentionally do not claim that later questioning, behavior-map, Agent, Command, Skill, or Shell capabilities are already installed.
+The imported domain rules define stable responsibilities and Workspace boundaries. They intentionally do not claim that later behavior-map, Agent, Command, Skill, or Shell capabilities are already installed.
 
 @import ../specification/rules.md
 @import ../planning/rules.md

@@ -1,5 +1,5 @@
 core_schema: themis-core/v1
-core_version: 0.1.0
+core_version: 0.2.0
 compatibility:
   workspace:
     supported: [themis-workspace/v1]

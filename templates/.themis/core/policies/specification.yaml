@@ -1,0 +1,104 @@
+# Themis 需求追问策略配置
+# 该策略声明 Draft 阶段的结构化门禁；语义判断与用户确认由 Prompt 驱动。
+
+specification:
+  schema: themis-specification-policy/v1
+
+  questioning:
+    complexity:
+      precedence: [low, medium, high]
+      low:
+        max_files_touched: 1
+        max_new_apis: 0
+        allows_state_change: false
+        requires_unambiguous_scope: true
+      medium:
+        max_files_touched: 8
+        max_new_apis: 3
+        allows_state_change: true
+      high:
+        fallback: true
+        forced_triggers:
+          - multi_subsystem
+          - architecture_change
+          - security_sensitive
+          - performance_sensitive
+      require_user_confirmation: true
+
+    flow:
+      low:
+        step_0: minimal
+        step_1: full
+        step_2: skip
+        step_3: minimal
+        step_4: quick
+      medium:
+        step_0: full
+        step_1: full
+        step_2: full
+        step_3: full
+        step_4: focused
+      high:
+        step_0: full
+        step_1: full
+        step_2: full
+        step_3: full
+        step_4: comprehensive
+
+    ac_segmentation:
+      max_acs_per_segment: 3
+      require_explicit_approval: true
+
+    option_zero:
+      enabled: true
+      skip_conditions: []
+
+  adversarial_validation:
+    enabled: true
+    dimensions:
+      - boundary_conditions
+      - concurrency_and_race
+      - state_transitions
+      - security_and_permissions
+      - dependency_failures
+      - data_integrity
+    quick_checklist:
+      - empty_input
+      - failure_state
+      - concurrency
+      - backward_compatibility
+      - rollback
+    max_iterations:
+      quick: 3
+      focused: 5
+      comprehensive: 10
+    dispositions: [cover, accept, defer]
+    unresolved_finding_action: remain_draft
+    deferral:
+      enabled: true
+      max_per_spec: 5
+      blocked_dimensions_when_critical:
+        - security_and_permissions
+        - data_integrity
+
+  red_flags:
+    - too_simple
+    - skip_spec
+    - code_first
+    - already_clear
+    - try_one_line
+    - obviously_best
+
+  self_check:
+    structural:
+      - no_placeholders
+      - no_contradictions
+      - no_ambiguous_terms
+      - scope_explicit
+    adversarial:
+      - assumptions_traceable
+      - failure_scenarios_covered
+      - evidence_anchored
+      - attack_residue_recorded
+      - root_cause_aligned
+      - rollback_feasible

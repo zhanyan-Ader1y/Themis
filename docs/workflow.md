@@ -2,7 +2,7 @@
 
 本文描述 Themis 从安装、需求进入、上下文加载、需求追问、规范与计划、任务实施、验证评审、交付结果、归因分析，到人机混合知识治理与后续升级的完整工作流程。
 
-> 图中“已落地”表示当前仓库已有契约、模板、指引或脚本支持；“规划中”表示已进入 P5、P6、P8 设计，但尚未形成可执行运行时。缺少规划中能力时，Themis 必须停留在当前阶段并明确报告，不得虚构状态、证据或执行结果。
+> 图中“已落地”表示当前仓库已有契约、模板、指引或脚本支持；“规划中”表示已进入后续设计但尚未形成可执行运行时。P5 已提供 Prompt、策略、Draft Spec 契约与人工批准证据；P8 尚未提供确定性状态迁移执行器。缺少规划中能力时，Themis 必须停留在当前阶段并明确报告，不得虚构状态、证据或执行结果。
 
 ## 状态与所有权图例
 
@@ -40,17 +40,19 @@ flowchart TD
         R5[报告冲突并请求补充或人工裁决]
     end
 
-    subgraph SPEC[Draft → Specified]
+    subgraph SPEC[Draft → Specified 证据契约]
         S0[创建或继续 Draft Spec]
-        S1[范围评估 · P5 规划中]
-        S2[一次一问收集目标、约束、成功标准]
-        S3{Option Zero：无需改代码即可解决?}
-        S4[提出方案、取舍与推荐]
-        S5[分段确认 Acceptance Criteria]
-        S6[写入 workspace/specs/spec-id/spec.md]
-        S7[Specification 校验完整性、无歧义与可验证性]
-        S8{用户是否批准 Spec?}
-        S9[[记录 Specified 状态迁移]]
+        S1[Step 0：意图发现与根因确认 · P5]
+        S2[Step 1：范围、Pre-mortem 与复杂度确认 · P5]
+        S3[Step 2：上下文、约束、证据与 Option Zero · medium/high · P5]
+        S4[Step 3：方案取舍与分段 Acceptance Criteria · P5]
+        S5[Step 4：对抗验证 · P5]
+        S6[写入或更新 workspace/specs/spec-id/spec.md Draft]
+        S7[Spec 自检：结构、假设、证据与攻击处置]
+        S8{用户是否明确批准 Draft Spec?}
+        S9[记录批准证据；Spec 仍保持 Draft]
+        S10[[P8 规划中：校验 Gate 并记录 Specified 状态]]
+        S11([P8 未实施：停止于 Draft，不得进入 Planning])
     end
 
     subgraph PLAN[Specified → Planned]
@@ -145,17 +147,17 @@ flowchart TD
     S0 --> S1
     S1 --> S2
     S2 --> S3
-    S3 -- 是 --> R1
-    S3 -- 否 --> S4
+    S3 --> S4
     S4 --> S5
     S5 --> S6
     S6 --> S7
-    S7 -- 不通过 --> S2
+    S7 -- 不通过 --> S4
     S7 -- 通过 --> S8
-    S8 -- 否，修订 --> S2
+    S8 -- 否，修订 --> S4
     S8 -- 是，人工门禁 --> S9
-
-    S9 --> P0
+    S9 --> S10
+    S10 -. 未实施 .-> S11
+    S10 -- 已实施且 Gate 通过 --> P0
     P0 --> P1
     P1 --> P2
     P2 --> P3
@@ -232,10 +234,10 @@ flowchart TD
     classDef human fill:#f8e8ef,stroke:#9d3f68,color:#4f2035;
     classDef data fill:#e8effa,stroke:#315f9b,color:#173453;
 
-    class I0,I1,I2,I3,I4,I5,I6,IF,R0,R1,R2,R3,R4,R5,S0,S6,S7,S8,S9,P0,P2,P3,P4,P5,P6,T0,T1,T2,T3,T4,T5,T6,T7,V0,V1,V2,V3,V4,V5,V6,V7,W0,W1,W2,W3,W4,O0,O1,O2,O3,K0,K1,K2,K3,K4,K5,K6,K7,K8,K9,K10,A0,A1,NEXT current;
-    class S1,S2,S3,S4,S5,P1 planned;
+    class I0,I1,I2,I3,I4,I5,I6,IF,R0,R1,R2,R3,R4,R5,S0,S1,S2,S3,S4,S5,S6,S7,S8,S9,P0,P2,P3,P4,P5,P6,T0,T1,T2,T3,T4,T5,T6,T7,V0,V1,V2,V3,V4,V5,V6,V7,W0,W1,W2,W3,W4,O0,O1,O2,O3,K0,K1,K2,K3,K4,K5,K6,K7,K8,K9,K10,A0,A1,NEXT current;
+    class S10,S11,P1 planned;
     class S8,K3,K9 human;
-    class S6,P4,T3,V2,W2,O1,K1,K7,K10 data;
+    class S6,S9,P4,T3,V2,W2,O1,K1,K7,K10 data;
 ```
 
 ## 生命周期与工件
@@ -248,8 +250,8 @@ Draft → Specified → Planned → Implemented → Verified → Reviewed → Ar
 
 | 阶段 | 控制模块 | 主要门禁 | Workspace 持久工件 |
 |---|---|---|---|
-| Draft | Orchestrator、Specification、Context | 需求进入 SDD；上下文足以追问 | `specs/<spec-id>/spec.md` 草稿、`state/sessions/` |
-| Specified | Specification | AC 明确、可验证，且用户明确批准 | 已批准 `spec.md`、`state/transitions/` |
+| Draft | Orchestrator、Specification、Context | P5 追问、对抗验证与批准证据完整；P8 前不记录状态迁移 | `specs/<spec-id>/spec.md` Draft、批准/攻击证据 |
+| Specified | P8 状态执行器（规划中） | 确定性验证 P5 声明式门禁并记录迁移 | 已批准 `spec.md`、`state/transitions/`（P8） |
 | Planned | Planning | AC 全覆盖、Task DAG 合法、证据要求明确 | `plan.md`、`state/tasks/` |
 | Implemented | Orchestrator、实施者 | 全部 Task 满足完成标准并有证据 | 项目源码、Task evidence、会话状态 |
 | Verified | Verification | 所有阻塞 Gate 通过且证据充分 | `runs/<run-id>/`、`evidence/`、`verify.md` |
@@ -526,7 +528,7 @@ Init 只用于尚未安装 Themis 的项目；Upgrade 不加载 Init 环境校�
 | P2 顶层 Guidance 与生命周期路由规则 | 已落地 |
 | P3 Init 安装与失败回滚 | 已落地 |
 | P4 非 Workspace 受管内容升级、备份与回滚 | 已落地 |
-| P5 自适应需求追问与 Spec 批准硬门禁 | 规划中，尚未实施 |
+| P5 自适应需求追问、Draft Spec 与批准证据契约 | 已落地；确定性 `Specified` 状态执行器留待 P8 |
 | P6 Behavior Map、事实提取与变更定位 | 规划中，仅目录占位已存在 |
 | P7 跨模块集成审计 | 分析已完成，不是运行时执行层 |
 | P8 专用 Agent、Command、Skill 与确定性 SDD 脚本 | 规划中，尚未实施 |

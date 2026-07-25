@@ -2,142 +2,91 @@
 
 **优先级**：P5
 **依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P2 Top-level Guidance](../20-top-level-guidance/README.md)
-**状态**：待用户主动发起
+**状态**：已完成；P8 确定性状态执行器待实施
 
 ## 背景
 
-AI 编码 Agent 倾向于直接写代码而非先理解需求。Themis 当前的 Specification 模块只定义了 Spec 的结构校验，缺少**需求澄清对话流程**——即从用户的模糊意图到一份可执行 Spec 之前的追问与收敛机制。
-
-## 参考来源
-
-- obra/superpowers 的 brainstorming skill（`skills/brainstorming/SKILL.md`）定义了完整的追问工作流，其核心模式经过超过 26 万 GitHub star 的社区验证。
-- [grill-me](https://www.aihero.dev/skills-grill-me)（aihero.dev）— 对抗式需求验证，"魔鬼代言人"立场
-- 苏格拉底式提问 — 六类追问（澄清、假设、证据、观点、后果、元问题）
-- Five Whys（五问法）— 丰田生产系统根因分析
-- Pre-mortem（事前验尸）— 假设失败倒推风险
-
-> 详细方法论对比与优化策略见 [analysis.md](analysis.md)。
+AI 编码 Agent 容易从模糊请求直接进入实现。P5 在 Specification 阶段提供结构化需求收敛：先理解真实意图，再确认范围、约束、可验证的验收标准和风险，最后由用户明确批准 Draft Spec。
 
 ## 目标
 
-将 superpowers 的追问策略、grill-me 的对抗验证、苏格拉底式提问与 Five Whys 根因分析融合为 Themis 的**两阶段追问流程**（协作收敛 + 对抗验证），作为 Specification 模块的**前置对话流程**，嵌入 SDD 生命周期的 `Draft → Specified` 阶段。
+将 Five Whys、苏格拉底式提问、Pre-mortem、superpowers 的协作收敛，以及 grill-me 式对抗验证整合为 **五阶段（Step 0–4）** Requirement Questioning 流程：
 
-> 优化后的完整策略见 [analysis.md](analysis.md)。核心变化：新增 Step 0（意图发现 + Five Whys）和 Step 4（对抗验证），并将"简单需求可跳过"改为"简单需求使用快速对抗检查表"。
-
-## Themis 追问策略设计
-
-### 核心原则
-
-| 原则 | superpowers 来源 | Themis 适配 |
-|---|---|---|
-| 一次只问一个问题 | 避免认知过载，每个回答影响后续问题 | 保留，由 Orchestrator 驱动单轮对话 |
-| 优先选择题 | 降低用户认知负担 | 保留，允许开放式追问 |
-| 先评估范围再深入 | 多子系统项目先分解再细化 | 保留，与 Planning 的分解能力对齐 |
-| 硬门禁：无 Spec 批准不写代码 | HARD-GATE 标记 | 映射为 Orchestrator 的 `Draft → Specified` 迁移条件 |
-| 设计分段验证 | 每段设计后询问"这样对吗" | 保留，AC 分段确认 |
-
-### 三步追问流程
-
-```
-Step 1 — Scope Assessment（范围评估）
-  ├── 识别是否多子系统
-  ├── 若是：帮助分解为子项目，先追问第一个
-  └── 若否：进入详细追问
-
-Step 2 — Context Gathering（上下文收集）
-  ├── 目标：解决什么问题？给谁用？
-  ├── 约束：技术栈、时间、依赖、兼容性
-  ├── 成功标准：怎样算"做完"？
-  └── "Option Zero"：能否不改代码解决？
-
-Step 3 — Design Convergence（设计收敛）
-  ├── 提出 2-3 种方案 + 取舍 + 推荐
-  ├── AC 分段确认（每段 1-3 个 AC）
-  ├── 写入 workspace/specs/<spec-id>/spec.md
-  ├── Spec 自检（占位符、矛盾、歧义、范围）
-  └── 用户批准后触发 Draft → Specified 迁移
-```
-
-### 防绕过机制（Red Flags）
-
-Themis 需要内置类似的"Agent 自我合理化"检查表，拦截常见的跳过追问行为：
-
-| Agent 的想法 | Themis 的约束 |
-|---|---|
-| "这个需求很简单，直接写就行" | 没有 Spec 的代码变更不进入 Implemented 阶段 |
-| "我先看看代码再理解需求" | 先读 Context，再追问，再看代码 |
-| "这个不需要正式 Spec" | 所有需求变更都必须有 Spec，简单需求 Spec 可以短 |
-| "我先改一行试试" | 迁移到 Implemented 之前必须 Specified |
-
-### 与 SDD 生命周期的整合
-
-```
+```text
 Draft
-  │
-  ├── P5 追问流程执行（Specification 模块驱动）
-  │     ├── Scope Assessment
-  │     ├── Context Gathering
-  │     └── Design Convergence
-  │
-  ▼
-Specified（硬门禁：用户批准 Spec 后才迁移）
-  │
-  ▼
-Planned（Planning 模块接管）
+  → Step 0 Intent Discovery
+  → Step 1 Scope Assessment
+  → Step 2 Context Gathering（low 可跳过详细收集）
+  → Step 3 Design Convergence
+  → Step 4 Adversarial Validation
+  → 用户明确批准证据
+  → P8 将来记录 Specified 状态迁移
 ```
 
-### 实现位置
+P5 创建并完善 `workspace/specs/<spec-id>/spec.md` Draft，记录可复核的意图、范围、AC、假设、证据、攻击处置、限制、回滚与批准信息。它不写入机器生命周期状态，也不声称已执行 `draft → specified`；该确定性职责属于未来 P8。
 
-- **规则引擎**：`core/kernel/specification/rules.md` — 追问流程的定义规则
-- **策略配置**：`core/policies/specification.yaml` — 追问深度、范围阈值、AC 分段策略
-- **模板**：`core/templates/spec-questioning.md` — 追问提示词模板
-- **Orchestrator 集成**：`core/policies/transitions.yaml` — `Draft → Specified` 增加硬门禁条件
+## 三层执行模型
 
-## 范围
+| 层 | P5 职责 |
+|---|---|
+| YAML Policy | 复杂度阈值、各阶段模式、AC 分段、攻击维度、迭代与延期限制、声明式门禁条件。 |
+| Prompt | 一次一问、Five Whys、方案取舍、Pre-mortem、对抗场景、用户确认和语义判断。 |
+| Script | 仅检查文件存在、YAML 结构、稳定 ID、必需标题和行数预算；不判断需求质量或批准语义。 |
 
-- 适配 superpowers 的一次一问、选择题优先、范围评估、分段验证、硬门禁机制
-- 对 Themis 的 SDD 生命周期增加 `Draft → Specified` 的前置追问流程
-- 定义防绕过的 Red Flags 检查表
-- 与 Orchestrator 的 Transitions 子模块集成
+## 核心流程
+
+### Step 0 — Intent Discovery
+
+通过比例适当的 Why 追问识别根因，区分用户提出的方案与真正需要的结果。若两者不一致，给出替代路径并记录核心意图与根因。
+
+### Step 1 — Scope Assessment
+
+识别多子系统需求并先拆解为一个可收敛子问题；执行 Pre-mortem，记录风险和关键假设。按政策确定 low、medium 或 high 复杂度，并要求用户确认。
+
+### Step 2 — Context Gathering
+
+仅对 medium/high 完整执行：收集目标、约束、量化成功标准、Option Zero、证据和假设验证方式。low 仍需在 Draft 中记录影响 AC 的关键约束。
+
+### Step 3 — Design Convergence
+
+提出方案与取舍，分段确认每组不超过三个 AC，创建或更新 Draft Spec，并进行结构性和对抗性自检。
+
+### Step 4 — Adversarial Validation
+
+Agent 明确切换到攻击者视角。low 使用五项快速检查；medium 聚焦核心 AC；high 覆盖全部 AC 和六个攻击维度。每个有效发现都以 `cover`、`accept` 或 `defer` 处置；critical 安全、权限或数据完整性风险不能只靠 `defer` 放行。
+
+达到迭代上限仍有未决发现时，Spec 必须保持 Draft。
+
+## 防绕过规则
+
+- 所有行为变更均需要 Spec；简单变更使用最小 Spec 和快速检查，而不是跳过。
+- 先读取 Context、澄清意图，再仅为验证明确假设进行最小只读代码检查。
+- 未经用户明确批准，Draft 不得被描述为已批准。
+- P5 只能记录批准证据；没有 P8 确定性执行器时，不得声明生命周期迁移已记录。
+
+## 实现位置
+
+- `core/policies/specification.yaml`：复杂度、对抗验证、Red Flags 与自检配置
+- `core/policies/transitions.yaml`：唯一的 `draft_to_specified` 声明式证据契约
+- `core/templates/spec.md`：持久 Draft Spec 模板
+- `core/templates/spec-questioning.md`：五阶段 Prompt
+- `core/templates/spec-adversarial-checklist.md`：快速检查和六维攻击场景库
+- `core/kernel/specification/rules.md`：简洁路由与边界
+- `bin/themis-template-check.sh`：确定性模板结构校验
 
 ## 非范围
 
-- 不实现 superpowers 的 Visual Companion 功能
-- 不实现 superpowers 的 Subagent-Driven-Development 分发模式
-- 不改变 Specification 模块已有的结构校验能力
-- 不实现多轮对话的状态持久化（由 Orchestrator 的 sessions 子模块负责）
-
-## 目标文件
-
-- `core/kernel/specification/rules.md`
-- `core/policies/specification.yaml`（新增）
-- `core/templates/spec-questioning.md`（新增）
-- `core/policies/transitions.yaml`（更新：增加硬门禁条件）
-- `docs/core/kernel/specification.md`（更新：增加追问流程说明）
-
-## 执行前置步骤
-
-当用户主动发起本计划时，**第一步**必须在本计划目录创建或更新 `impl.md`（`docs/plan/50-requirement-questioning/impl.md`），至少记录：
-
-1. 追问流程的精确规则定义（何时分步、何时跳步）
-2. Red Flags 检查表的完整条目
-3. Specification 策略文件的精确字段和默认值
-4. 追问模板的精确提示词结构
-5. Transitions 硬门禁的实现方式
-6. 与现有 Spec-Validation 的关系（追问在 Validate 之前还是并行）
-
-`impl.md` 经用户确认前，不得修改目标文件。
+- 不实现多轮会话持久化。
+- 不实现命令、Skill、领域 Agent 或需求质量判断脚本。
+- 不实现确定性状态转换、Spec lint 或 `workspace/state/transitions/` 写入（P8）。
+- 不迁移或改写已有项目 Spec，也不改变 Workspace/Artifact Schema。
 
 ## 验收条件
 
-- `Draft` 状态的 Spec 在追问流程完成前不能迁移到 `Specified`
-- 简单需求（单功能、单文件、无歧义）的追问不强制走过全部三步
-- 多子系统需求在范围评估阶段被识别并建议分解
-- Spec 自检能发现占位符、矛盾、歧义、范围问题
-- Agent 不能以"需求简单"为由跳过 Spec 创建
+- Step 0–4 均由 Prompt 明确定义，low 仍执行五项快速对抗检查。
+- 新建 Draft Spec 具有稳定的 `themis-spec/v1` 契约及完整的审批、攻击和限制记录位置。
+- `draft_to_specified` 声明七项稳定证据条件，且 policy 与 Prompt 不暗示 P5 已执行机器状态迁移。
+- 模板检查器拒绝缺失、损坏或不完整的 P5 策略、模板及门禁结构。
+- Specification 常驻 rules 保持在 50 行以内；详细行为位于按需 Prompt 模板。
 
-## 风险与回滚
-
-- **风险**：过度追问降低体验，用户觉得繁琐
-- **缓解**：复杂度自适应——简单需求可跳过详细追问；提供 `--quick` 模式
-- **回滚**：移除 transitions 中的硬门禁条件即恢复原有行为；策略文件和规则文件可整体移除
+详细实现设计见 [impl.md](impl.md) 和各子模块段落。

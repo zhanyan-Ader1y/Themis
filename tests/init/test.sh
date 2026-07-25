@@ -98,13 +98,15 @@ case "$("${YQ_EXECUTABLE}" --version 2>&1)" in
     ;;
 esac
 
-printf '1..22\n'
+printf '1..24\n'
 
 FRESH_PROJECT="${TEST_TMP}/fresh"
 mkdir -p "${FRESH_PROJECT}"
 run_init "${FRESH_PROJECT}" --yes --project-name demo --lint 'npm run lint' --build 'npm run build' --test 'npm test'
 assert_status 0 'fresh non-interactive installation succeeds'
 assert_file_exists "${FRESH_PROJECT}/.themis/CLAUDE.themis.md" 'contained guidance is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/policies/specification.yaml" 'P5 Specification policy is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/templates/spec-questioning.md" 'P5 questioning Prompt is installed'
 assert_file_absent "${FRESH_PROJECT}/CLAUDE.themis.md" 'root-level guidance is not installed'
 if [ "$(cat "${FRESH_PROJECT}/CLAUDE.md")" = "${EXPECTED_BLOCK}" ]; then
   pass 'new CLAUDE.md contains the exact direct-import block'

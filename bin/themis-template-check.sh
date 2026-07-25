@@ -7,7 +7,7 @@
 # 兼容性：保持 Bash 3.2 兼容；使用 mikefarah/yq v4，且不加载仅供 Init 的 P0。
 #
 
-# è¾åºç¨³å®ãå¯æä½çæ¨¡æ¿å¥çº¦è¯æ­ã
+# 输出稳定、可操作的模板契约诊断。
 themis_template_error() {
   printf '%s\n' \
     "Themis template contract failed: ${1-unknown}" \
@@ -73,7 +73,7 @@ case "${THEMIS_TEMPLATE_YQ_VERSION}" in
     ;;
 esac
 
-# éªè¯æ°å®è£å¥çº¦è¦æ±çè·¯å¾å­å¨ã
+# 验证新安装契约要求的路径存在。
 themis_template_require_path() {
   if [ ! -e "${1}" ]; then
     themis_template_error \
@@ -86,7 +86,7 @@ themis_template_require_path() {
   return 0
 }
 
-# éªè¯ Markdown åå«ç²¾ç¡®çç¨³å®å¥çº¦è¡ã
+# 验证 Markdown 包含精确的稳定契约行。
 themis_template_require_markdown_line() {
   local themis_template_markdown_path=$1
   local themis_template_markdown_expected=$2
@@ -103,7 +103,7 @@ themis_template_require_markdown_line() {
   return 0
 }
 
-# éå¶å¸¸é©»æå¼ç¯å¹ï¼é²æ­¢æéæµç¨è¿å¥åºç¡ import å¾ã
+# 限制常驻指引篇幅，防止按需流程进入基础 import 图。
 themis_template_require_markdown_line_limit() {
   local themis_template_markdown_path=$1
   local themis_template_markdown_limit=$2
@@ -123,7 +123,7 @@ themis_template_require_markdown_line_limit() {
   return 0
 }
 
-# åªç»è®¡å¯æ§è¡ç  è¡ï¼ä¸ææ®éææ¬æç¤ºä¾è®¡å¥ã
+# 只统计可执行的 @import 行，不把普通文本或示例计入。
 themis_template_count_imports() {
   local themis_template_import_count_file=$1
   local themis_template_import_count=0
@@ -137,7 +137,7 @@ themis_template_count_imports() {
   printf '%s\n' "${themis_template_import_count}"
 }
 
-# éªè¯å¥å£ import æ°éï¼ä¿æ P2 æµå±ãæ éå¤çå è½½å¾ã
+# 验证入口 import 数量，保持 P2 浅层、无重复的加载图。
 themis_template_require_import_count() {
   local themis_template_import_file=$1
   local themis_template_import_expected=$2
@@ -156,7 +156,7 @@ themis_template_require_import_count() {
   return 0
 }
 
-# ç»ç± yq è¯»å YAMLï¼å¹¶å°è§£æå¤±è´¥è½¬æ¢ä¸ºç¨³å®è¯æ­ã
+# 经由 yq 读取 YAML，并将解析失败转换为稳定诊断。
 themis_template_yq_read() {
   local themis_template_yq_file=$1
   local themis_template_yq_expression=$2
@@ -173,7 +173,7 @@ themis_template_yq_read() {
   printf '%s\n' "${themis_template_yq_value}"
 }
 
-# æ ¡éªå¿å¡«æ éä¸ç²¾ç¡®å¥çº¦å¼ä¸è´ã
+# 校验必填标量与精确契约值一致。
 themis_template_require_value() {
   local themis_template_value=$1
   local themis_template_expected=$2
@@ -190,7 +190,7 @@ themis_template_require_value() {
   return 0
 }
 
-# æ ¡éªéç©ºãå¸¦å½åç©ºé´ç Schema æ è¯ç¬¦ã
+# 校验非空、带命名空间的 Schema 标识符。
 themis_template_require_schema_identifier() {
   local themis_template_schema_identifier=$1
   local themis_template_schema_prefix=$2
@@ -209,7 +209,7 @@ themis_template_require_schema_identifier() {
   esac
 }
 
-# éªè¯ YAML éåææ å°ç±»åï¼åºåç©ºå¼åç¼ºå¤±å­æ®µã
+# 验证 YAML 集合或映射类型，区分空值和缺失字段。
 themis_template_require_type() {
   local themis_template_type_file=$1
   local themis_template_type_expression=$2
@@ -229,7 +229,50 @@ themis_template_require_type() {
   return 0
 }
 
-# å¤æ­ Core allow-list æ¯å¦æç¡®æ¯ææå® Schemaã
+# 校验 YAML 集合的固定数量，避免将声明式 Gate 悄然降级为不完整配置。
+themis_template_require_count() {
+  local themis_template_count=$1
+  local themis_template_expected=$2
+  local themis_template_subject=$3
+
+  if [ "${themis_template_count}" != "${themis_template_expected}" ]; then
+    themis_template_error \
+      "${themis_template_subject}" \
+      "${themis_template_expected} entries" \
+      "${themis_template_count:-empty}" \
+      'Restore every declared P5 policy entry.'
+    return 1
+  fi
+  return 0
+}
+
+# 校验 YAML 集合包含指定稳定标识，防止结构正确但协议标识被替换。
+themis_template_require_sequence_item() {
+  local themis_template_sequence_file=$1
+  local themis_template_sequence_expression=$2
+  local themis_template_sequence_expected=$3
+  local themis_template_sequence_subject=$4
+  local themis_template_sequence_items
+  local themis_template_sequence_item
+
+  themis_template_sequence_items=$(themis_template_yq_read "${themis_template_sequence_file}" "${themis_template_sequence_expression}") || return 1
+  while IFS= read -r themis_template_sequence_item; do
+    if [ "${themis_template_sequence_item}" = "${themis_template_sequence_expected}" ]; then
+      return 0
+    fi
+  done <<EOF
+${themis_template_sequence_items}
+EOF
+
+  themis_template_error \
+    "${themis_template_sequence_subject}" \
+    "the stable value ${themis_template_sequence_expected}" \
+    'required value not found' \
+    'Restore the declared P5 policy identifier.'
+  return 1
+}
+
+# 判断 Core allow-list 是否明确支持指定 Schema。
 themis_template_schema_is_supported() {
   local themis_template_schema_file=$1
   local themis_template_schema_dimension=$2
@@ -246,7 +289,7 @@ EOF
   return 1
 }
 
-# æ ¡éªæªæ¥è¿ç§»æè¿°ç¬¦ï¼æ£æ¥å¨åªè¯å«è¿ç§»ï¼ç»ä¸æ§è¡è¿ç§»ã
+# 校验显式迁移描述符；检查器只识别迁移，绝不执行迁移。
 themis_template_schema_has_migration() {
   local themis_template_migration_file=$1
   local themis_template_migration_dimension=$2
@@ -324,7 +367,7 @@ themis_template_schema_has_migration() {
   return 1
 }
 
-# æ ¹æ®ç¬ç«ç Core å¼å®¹æ§åè¡¨å½ç±» manifest Schemaã
+# 根据独立的 Core 兼容性列表归类 manifest Schema。
 themis_template_check_schema_compatibility() {
   local themis_template_compatibility_dimension=$1
   local themis_template_compatibility_schema=$2
@@ -359,7 +402,7 @@ themis_template_check_schema_compatibility() {
   return 1
 }
 
-# è§£æå¹¶éªè¯ Core Markdown importï¼ç¡®ä¿å¶è§èååä»åéäº Coreã
+# 解析并验证 Core Markdown import，确保其规范化后仍受限于 Core。
 themis_template_check_import() {
   local themis_template_import_source=$1
   local themis_template_import_path=$2
@@ -435,6 +478,11 @@ themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_WORKSPACE_ROOT}" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/manifest.yaml" || exit 1
+themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" || exit 1
+themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" || exit 1
+themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" || exit 1
+themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec-questioning.md" || exit 1
+themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec-adversarial-checklist.md" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/migrations/workspace/.gitkeep" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/migrations/artifacts/.gitkeep" || exit 1
 
@@ -511,6 +559,50 @@ done
 themis_template_check_schema_compatibility workspace "${THEMIS_TEMPLATE_WORKSPACE_SCHEMA}" Workspace migrations/workspace || exit 1
 themis_template_check_schema_compatibility artifact "${THEMIS_TEMPLATE_ARTIFACT_SCHEMA}" Artifact migrations/artifacts || exit 1
 
+# 验证 P5 的策略、Prompt 和 Spec 模板具有可由未来执行器读取的稳定结构。
+themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification' '!!map' 'Specification policy root invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.schema // ""')" 'themis-specification-policy/v1' 'Specification policy schema invalid' || exit 1
+themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.questioning.complexity' '!!map' 'Specification complexity policy invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.questioning.complexity.precedence | length')" 3 'Specification complexity precedence invalid' || exit 1
+for themis_template_complexity_level in low medium high; do
+  themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.questioning.complexity.precedence[]?' "${themis_template_complexity_level}" 'Specification complexity level missing' || exit 1
+  themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" ".specification.questioning.flow.${themis_template_complexity_level}" '!!map' "Specification ${themis_template_complexity_level} flow invalid" || exit 1
+done
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.adversarial_validation.dimensions | length')" 6 'Specification adversarial dimensions invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.adversarial_validation.quick_checklist | length')" 5 'Specification quick checklist invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.adversarial_validation.dispositions | length')" 3 'Specification adversarial dispositions invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.self_check.structural | length')" 4 'Specification structural self-check invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.self_check.adversarial | length')" 6 'Specification adversarial self-check invalid' || exit 1
+for themis_template_dimension in boundary_conditions concurrency_and_race state_transitions security_and_permissions dependency_failures data_integrity; do
+  themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.adversarial_validation.dimensions[]?' "${themis_template_dimension}" 'Specification adversarial dimension missing' || exit 1
+done
+for themis_template_quick_check in empty_input failure_state concurrency backward_compatibility rollback; do
+  themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.adversarial_validation.quick_checklist[]?' "${themis_template_quick_check}" 'Specification quick-check item missing' || exit 1
+done
+
+themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions' '!!map' 'Transition policy root invalid' || exit 1
+themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified' '!!map' 'Draft-to-specified transition missing' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.from // ""')" draft 'Draft transition source invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.to // ""')" specified 'Specified transition target invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.conditions | length')" 7 'Draft-to-specified condition count invalid' || exit 1
+for themis_template_transition_condition in intent_documented scope_and_complexity_confirmed context_documented design_and_ac_documented adversarial_validation_resolved spec_self_check_completed user_approval_recorded; do
+  themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.conditions[].id' "${themis_template_transition_condition}" 'Draft-to-specified condition missing' || exit 1
+done
+
+themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" 'spec_schema: themis-spec/v1' 'Spec template schema missing' || exit 1
+themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" 'status: draft' 'Spec template Draft status missing' || exit 1
+themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" 'template_version: 1' 'Spec template version missing' || exit 1
+for themis_template_spec_heading in '## Intent and Root Cause' '## Scope' '## Context, Constraints, and Evidence' '## Options and Decision' '## Requirements' '## Acceptance Criteria' '## Assumptions' '## Adversarial Validation' '## Limitations and Deferred Work' '## Rollback' '## Approval'; do
+  themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" "${themis_template_spec_heading}" 'Spec template heading missing' || exit 1
+done
+for themis_template_step_heading in '## Step 0 — Intent Discovery（意图发现）' '## Step 1 — Scope Assessment（范围评估）' '## Step 2 — Context Gathering（上下文收集）' '## Step 3 — Design Convergence（设计收敛）' '## Step 4 — Adversarial Validation（对抗验证）'; do
+  themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec-questioning.md" "${themis_template_step_heading}" 'Specification questioning step missing' || exit 1
+done
+themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec-adversarial-checklist.md" '## 快速检查表（5 项）' 'Specification quick checklist heading missing' || exit 1
+for themis_template_attack_heading in '## 维度 1：边界条件' '## 维度 2：并发与竞态' '## 维度 3：状态转换' '## 维度 4：权限与安全' '## 维度 5：依赖失败' '## 维度 6：数据完整性'; do
+  themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec-adversarial-checklist.md" "${themis_template_attack_heading}" 'Specification attack dimension heading missing' || exit 1
+done
+
 themis_template_require_path "${THEMIS_TEMPLATE_ROOT}/CLAUDE.themis.md" || exit 1
 if [ "${THEMIS_TEMPLATE_INSTALLED}" -eq 0 ] && [ -e "${THEMIS_TEMPLATE_PARENT}/CLAUDE.themis.md" ]; then
   themis_template_error \
@@ -535,6 +627,7 @@ themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/orche
 themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/orchestrator/rules.md" '## Artifact-First Routing' 'artifact-first routing missing' || exit 1
 themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/orchestrator/rules.md" '## Safe Degradation' 'safe-degradation routing missing' || exit 1
 themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/orchestrator/rules.md" '## Non-Bypass Rules' 'non-bypass guidance missing' || exit 1
+themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/specification/rules.md" '## Requirement Questioning' 'Specification questioning routing missing' || exit 1
 
 for themis_template_domain_rule in specification planning context verification review attribution knowledge; do
   themis_template_require_markdown_line_limit "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/${themis_template_domain_rule}/rules.md" 50 "${themis_template_domain_rule} guidance too large" || exit 1

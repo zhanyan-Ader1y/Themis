@@ -1,0 +1,40 @@
+# Themis 生命周期迁移声明
+# P5 仅定义 Draft → Specified 的证据契约。P8 将来负责确定性评估和状态记录。
+
+transitions:
+  draft_to_specified:
+    from: draft
+    to: specified
+    hard_gate: true
+    description: 需求追问、对抗验证和用户批准已形成可复核证据。
+    conditions:
+      - id: intent_documented
+        description: Step 0 的核心意图和根因已记录。
+        evidence: sections.Intent and Root Cause
+      - id: scope_and_complexity_confirmed
+        description: Step 1 的范围、复杂度及用户确认已记录。
+        evidence: sections.Scope
+      - id: context_documented
+        description: Step 2 的约束、证据和假设已记录。
+        required_for: [medium, high]
+        evidence: sections.Context, Constraints, and Evidence
+      - id: design_and_ac_documented
+        description: 选定方案和可验证 Acceptance Criteria 已记录。
+        evidence: sections.Options and Decision,Requirements,Acceptance Criteria
+      - id: adversarial_validation_resolved
+        description: 每个有效攻击均有 cover、accept 或 defer 终态。
+        evidence: sections.Adversarial Validation,Limitations and Deferred Work
+      - id: spec_self_check_completed
+        description: 策略定义的结构与对抗自检已完成。
+        evidence: questioning and adversarial_validation front matter
+      - id: user_approval_recorded
+        description: 用户已明确批准 Draft Spec。
+        evidence: approval front matter,sections.Approval
+
+adversarial_validation:
+  unresolved_attack_block: true
+  allow_deferred_attacks: true
+  max_deferred_per_spec: 5
+  critical_defer_blocked_dimensions:
+    - security_and_permissions
+    - data_integrity

@@ -1,5 +1,12 @@
 # Changes
 
+## 0.2.0
+
+### 2026-07-25
+
+- 完成 P5 Requirement Questioning：新增 Step 0–4 的自适应追问 Prompt、Five Whys、Pre-mortem、Option Zero、AC 分段确认和对抗验证场景库
+- 新增 `themis-spec/v1` Draft Spec 模板，持久记录复杂度、假设、证据、攻击处置、限制、回滚与用户批准；P5 不伪造机器生命周期迁移，确定性执行器留待 P8
+- 新增 Specification 与 `draft_to_specified` 声明式策略，扩展模板契约和隔离 TAP 回归，验证 P5 Core 资产、稳定门禁 ID、模板标题及常驻规则篇幅边界
 
 ## 0.1.0
 

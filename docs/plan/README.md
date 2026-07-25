@@ -14,7 +14,7 @@
 | P3 | [Init](30-init/) | 交互式安装流程 | P0、P1、P2 | 已完成 |
 | P4 | [Upgrade](40-upgrade/) | 无损升级 | P1、P3 | 已完成 |
 | P4.5 | [Explicit Migration](45-explicit-migration/) | 显式 Workspace/Artifact Schema 迁移执行器 | P1、P4 | 待发起 |
-| P5 | [Requirement Questioning](50-requirement-questioning/) | Spec 创建前的追问与需求澄清 | P1、P2 | 待发起 |
+| P5 | [Requirement Questioning](50-requirement-questioning/) | Spec 创建前的追问与需求澄清 | P1、P2 | 已完成（P8 状态执行器待实施） |
 | P5.5 | [Knowledge Governance](55-knowledge-governance/) | 人机混合知识治理（候选→审核→提升→废弃） | P1、P2、P5 | 待发起 |
 | P5.8 | [Planning Enhancement](58-planning-enhancement/) | 计划增强（Task 模型、依赖 DAG、Traceability、Plan 校验） | P1、P5 | 待发起 |
 | P6 | [Behavior Map & Change Localization](60-behavior-map/) | 代码行为地图与变更定位子系统 | P1、P5 | 待发起 |

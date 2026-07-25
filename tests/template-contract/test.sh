@@ -106,7 +106,7 @@ case "$("${YQ_EXECUTABLE}" --version 2>&1)" in
     ;;
 esac
 
-printf '1..34\n'
+printf '1..58\n'
 
 CLEAN_FIXTURE=$(make_fixture clean)
 run_checker "${CLEAN_FIXTURE}"
@@ -217,6 +217,83 @@ mv "${MISSING_DOMAIN_BOUNDARY_FIXTURE}/core/kernel/planning/rules.md.tmp" "${MIS
 run_checker "${MISSING_DOMAIN_BOUNDARY_FIXTURE}"
 assert_status 1 'missing domain boundary section fails validation'
 assert_output_contains 'planning boundaries missing' 'missing domain boundary reports module diagnostic'
+
+MISSING_P5_POLICY_FIXTURE=$(make_fixture missing-p5-policy)
+rm "${MISSING_P5_POLICY_FIXTURE}/core/policies/specification.yaml"
+run_checker "${MISSING_P5_POLICY_FIXTURE}"
+assert_status 1 'missing Specification policy fails validation'
+assert_output_contains 'required path missing' 'missing Specification policy reports path diagnostic'
+
+MALFORMED_P5_POLICY_FIXTURE=$(make_fixture malformed-p5-policy)
+printf '%s\n' 'specification: [broken' >"${MALFORMED_P5_POLICY_FIXTURE}/core/policies/specification.yaml"
+run_checker "${MALFORMED_P5_POLICY_FIXTURE}"
+assert_status 1 'malformed Specification policy fails validation'
+assert_output_contains 'YAML unreadable' 'malformed Specification policy reports YAML diagnostic'
+
+MISSING_QUESTIONING_TEMPLATE_FIXTURE=$(make_fixture missing-questioning-template)
+rm "${MISSING_QUESTIONING_TEMPLATE_FIXTURE}/core/templates/spec-questioning.md"
+run_checker "${MISSING_QUESTIONING_TEMPLATE_FIXTURE}"
+assert_status 1 'missing Specification questioning template fails validation'
+assert_output_contains 'required path missing' 'missing Specification questioning template reports path diagnostic'
+
+MISSING_TRANSITION_FIXTURE=$(make_fixture missing-transition)
+set_yaml 'del(.transitions.draft_to_specified)' "${MISSING_TRANSITION_FIXTURE}/core/policies/transitions.yaml"
+run_checker "${MISSING_TRANSITION_FIXTURE}"
+assert_status 1 'missing draft-to-specified transition fails validation'
+assert_output_contains 'Draft-to-specified transition missing' 'missing transition reports structure diagnostic'
+
+WRONG_CONDITION_COUNT_FIXTURE=$(make_fixture wrong-condition-count)
+set_yaml 'del(.transitions.draft_to_specified.conditions[6])' "${WRONG_CONDITION_COUNT_FIXTURE}/core/policies/transitions.yaml"
+run_checker "${WRONG_CONDITION_COUNT_FIXTURE}"
+assert_status 1 'wrong transition condition count fails validation'
+assert_output_contains 'Draft-to-specified condition count invalid' 'wrong transition condition count reports diagnostic'
+
+UNKNOWN_CONDITION_ID_FIXTURE=$(make_fixture unknown-condition-id)
+set_yaml '.transitions.draft_to_specified.conditions[0].id = "unknown_condition"' "${UNKNOWN_CONDITION_ID_FIXTURE}/core/policies/transitions.yaml"
+run_checker "${UNKNOWN_CONDITION_ID_FIXTURE}"
+assert_status 1 'unknown transition condition identifier fails validation'
+assert_output_contains 'Draft-to-specified condition missing' 'unknown transition condition identifier reports diagnostic'
+
+MISSING_QUICK_CHECK_FIXTURE=$(make_fixture missing-quick-check)
+set_yaml 'del(.specification.adversarial_validation.quick_checklist[4])' "${MISSING_QUICK_CHECK_FIXTURE}/core/policies/specification.yaml"
+run_checker "${MISSING_QUICK_CHECK_FIXTURE}"
+assert_status 1 'missing quick-check item fails validation'
+assert_output_contains 'Specification quick checklist invalid' 'missing quick-check item reports diagnostic'
+
+MISSING_DIMENSION_FIXTURE=$(make_fixture missing-dimension)
+set_yaml 'del(.specification.adversarial_validation.dimensions[5])' "${MISSING_DIMENSION_FIXTURE}/core/policies/specification.yaml"
+run_checker "${MISSING_DIMENSION_FIXTURE}"
+assert_status 1 'missing adversarial dimension fails validation'
+assert_output_contains 'Specification adversarial dimensions invalid' 'missing adversarial dimension reports diagnostic'
+
+BROKEN_SPEC_TEMPLATE_FIXTURE=$(make_fixture broken-spec-template)
+awk '$0 != "## Approval"' "${BROKEN_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md" >"${BROKEN_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md.tmp"
+mv "${BROKEN_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md.tmp" "${BROKEN_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md"
+run_checker "${BROKEN_SPEC_TEMPLATE_FIXTURE}"
+assert_status 1 'missing Spec template heading fails validation'
+assert_output_contains 'Spec template heading missing' 'missing Spec template heading reports diagnostic'
+
+MISSING_STEP_FOUR_FIXTURE=$(make_fixture missing-step-four)
+awk '$0 != "## Step 4 — Adversarial Validation（对抗验证）"' "${MISSING_STEP_FOUR_FIXTURE}/core/templates/spec-questioning.md" >"${MISSING_STEP_FOUR_FIXTURE}/core/templates/spec-questioning.md.tmp"
+mv "${MISSING_STEP_FOUR_FIXTURE}/core/templates/spec-questioning.md.tmp" "${MISSING_STEP_FOUR_FIXTURE}/core/templates/spec-questioning.md"
+run_checker "${MISSING_STEP_FOUR_FIXTURE}"
+assert_status 1 'missing questioning Step 4 fails validation'
+assert_output_contains 'Specification questioning step missing' 'missing questioning Step 4 reports diagnostic'
+
+MISSING_ATTACK_HEADING_FIXTURE=$(make_fixture missing-attack-heading)
+awk '$0 != "## 维度 6：数据完整性"' "${MISSING_ATTACK_HEADING_FIXTURE}/core/templates/spec-adversarial-checklist.md" >"${MISSING_ATTACK_HEADING_FIXTURE}/core/templates/spec-adversarial-checklist.md.tmp"
+mv "${MISSING_ATTACK_HEADING_FIXTURE}/core/templates/spec-adversarial-checklist.md.tmp" "${MISSING_ATTACK_HEADING_FIXTURE}/core/templates/spec-adversarial-checklist.md"
+run_checker "${MISSING_ATTACK_HEADING_FIXTURE}"
+assert_status 1 'missing attack dimension heading fails validation'
+assert_output_contains 'Specification attack dimension heading missing' 'missing attack dimension heading reports diagnostic'
+
+OVERSIZED_SPECIFICATION_RULES_FIXTURE=$(make_fixture oversized-specification-rules)
+while [ "$(wc -l < "${OVERSIZED_SPECIFICATION_RULES_FIXTURE}/core/kernel/specification/rules.md")" -le 50 ]; do
+  printf '%s\n' 'padding for line-limit fixture' >>"${OVERSIZED_SPECIFICATION_RULES_FIXTURE}/core/kernel/specification/rules.md"
+done
+run_checker "${OVERSIZED_SPECIFICATION_RULES_FIXTURE}"
+assert_status 1 'oversized Specification rules fail validation'
+assert_output_contains 'specification guidance too large' 'oversized Specification rules report budget diagnostic'
 
 if [ "${TEST_FAILURES}" -ne 0 ]; then
   printf '%s of %s tests failed\n' "${TEST_FAILURES}" "${TEST_COUNT}" >&2

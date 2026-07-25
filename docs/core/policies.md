@@ -47,26 +47,24 @@ lifecycle:
 
 ### transitions.yaml — 状态迁移策略
 
-定义合法的状态迁移：
+定义可由确定性执行器读取的状态迁移证据契约。每个迁移使用稳定的 ASCII map key，并显式声明来源和目标状态：
 
 ```yaml
 transitions:
-  - from: draft
-    to: [specified]
-  - from: specified
-    to: [planned, draft]      # 可回退到 draft
-  - from: planned
-    to: [implemented, specified]
-  - from: implemented
-    to: [verified, planned]
-  - from: verified
-    to: [reviewed, implemented]
-  - from: reviewed
-    to: [archived, implemented]
-  forbidden:                  # 禁止的迁移
-    - from: draft
-      to: verified            # 不能跳过中间阶段
+  draft_to_specified:
+    from: draft
+    to: specified
+    hard_gate: true
+    conditions:
+      - id: intent_documented
+        evidence: sections.Intent and Root Cause
+      - id: scope_and_complexity_confirmed
+        evidence: sections.Scope
+      - id: user_approval_recorded
+        evidence: approval front matter,sections.Approval
 ```
+
+P5 目前只声明 `draft_to_specified` 的七项证据条件，并由 Prompt 将证据写入 Draft Spec。未来 P8 的确定性执行器负责加载有效策略、判定条件、写入状态记录并拒绝非法跳转。Core policy 不能由项目覆盖来弱化 `hard_gate` 或改变失败语义。
 
 ### artifact-rules.yaml — 工件规则
 
