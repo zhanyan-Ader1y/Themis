@@ -20,6 +20,7 @@ Workspace 可以演进，Core 通过协议解释
 | 文档 | 说明 |
 |---|---|
 | [实施计划索引](plan/README.md) | P0–P8 模块计划、依赖图与执行协议 |
+| [完整工作流程](workflow.md) | 从安装、需求追问、Spec、规划、实施、验证评审到混合知识治理的端到端流程图 |
 | [Init Environment](runtime-environment.md) | Init 阶段的 Bash、Git 与 mikefarah/yq 前置要求 |
 
 ### Core — 控制能力

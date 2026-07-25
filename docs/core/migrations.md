@@ -12,6 +12,7 @@ Migrations 负责 Core 升级时的兼容性处理。迁移必须是显式行为
 2. **不静默覆盖**：迁移前备份当前 Workspace 状态
 3. **可回滚**：每次迁移应可回滚到迁移前状态
 4. **版本检查**：迁移前检查 Core Version、Workspace Schema Version、Artifact Schema Version 的兼容性
+5. **脚本/Prompt 拆分**：备份、迁移调用、验证、回滚为确定性脚本；用户确认和报告解读为 Prompt 引导
 
 ## 迁移类型
 
@@ -54,21 +55,36 @@ artifact-schema v1 → v2:
 ```
 1. 检查兼容性
    ├── 兼容 → 正常加载，无需迁移
-   ├── 可迁移 → 提示用户执行迁移
+   ├── 可迁移 → 提示用户执行迁移（themis-migrate.sh）
    └── 不兼容 → 拒绝运行，给出诊断
 
 2. 执行迁移（用户确认后）
-   ├── 备份当前 Workspace
-   ├── 执行 Workspace Schema 迁移
-   ├── 执行 Artifact 格式迁移
-   ├── 更新 manifest.yaml 版本号
-   └── 生成迁移报告
+   ├── themis-migrate.sh --check 查询可用迁移描述符
+   ├── 用户确认（人工门禁）
+   ├── themis-migrate.sh --backup 创建 Workspace 完整备份
+   ├── themis-migrate.sh --run 执行迁移脚本
+   ├── themis-migrate.sh --verify 验证迁移后完整性
+   └── 失败回滚：themis-migrate.sh --rollback
 
-3. 验证迁移
-   ├── 检查目录结构完整性
-   ├── 检查工件格式正确性
-   └── 检查索引一致性
+3. 完成迁移
+   ├── 更新 manifest.yaml 版本号
+   ├── 记录迁移日志到 workspace/state/migration_log/
+   └── 保留备份直到用户确认迁移成功
 ```
+
+### 脚本/Prompt 拆分
+
+| 步骤 | 实现方式 | 入口 |
+|---|---|---|
+| 兼容性检查（migration descriptor 查询） | 脚本 | `themis-migrate.sh --check` |
+| Workspace 备份 | 脚本 | `themis-migrate.sh --backup` |
+| 执行迁移脚本（v1-to-v2.sh 等） | 脚本 | `themis-migrate.sh --run` |
+| 迁移后验证 | 脚本 | `themis-migrate.sh --verify` |
+| Workspace 恢复（回滚） | 脚本 | `themis-migrate.sh --rollback` |
+| 用户确认门禁 | Prompt | `migration-execution.md` |
+| 迁移报告解读 | Prompt | `migration-execution.md` |
+
+详见 [P4.5 实施设计](../plan/45-explicit-migration/README.md)。
 
 ## 兼容性矩阵
 

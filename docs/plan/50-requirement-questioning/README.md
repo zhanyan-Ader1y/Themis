@@ -10,11 +10,19 @@ AI 编码 Agent 倾向于直接写代码而非先理解需求。Themis 当前的
 
 ## 参考来源
 
-obra/superpowers 的 brainstorming skill（`skills/brainstorming/SKILL.md`）定义了完整的追问工作流，其核心模式经过超过 26 万 GitHub star 的社区验证。
+- obra/superpowers 的 brainstorming skill（`skills/brainstorming/SKILL.md`）定义了完整的追问工作流，其核心模式经过超过 26 万 GitHub star 的社区验证。
+- [grill-me](https://www.aihero.dev/skills-grill-me)（aihero.dev）— 对抗式需求验证，"魔鬼代言人"立场
+- 苏格拉底式提问 — 六类追问（澄清、假设、证据、观点、后果、元问题）
+- Five Whys（五问法）— 丰田生产系统根因分析
+- Pre-mortem（事前验尸）— 假设失败倒推风险
+
+> 详细方法论对比与优化策略见 [analysis.md](analysis.md)。
 
 ## 目标
 
-将 superpowers 的追问策略适配到 Themis，作为 Specification 模块的**前置对话流程**，嵌入 SDD 生命周期的 `Draft → Specified` 阶段。
+将 superpowers 的追问策略、grill-me 的对抗验证、苏格拉底式提问与 Five Whys 根因分析融合为 Themis 的**两阶段追问流程**（协作收敛 + 对抗验证），作为 Specification 模块的**前置对话流程**，嵌入 SDD 生命周期的 `Draft → Specified` 阶段。
+
+> 优化后的完整策略见 [analysis.md](analysis.md)。核心变化：新增 Step 0（意图发现 + Five Whys）和 Step 4（对抗验证），并将"简单需求可跳过"改为"简单需求使用快速对抗检查表"。
 
 ## Themis 追问策略设计
 

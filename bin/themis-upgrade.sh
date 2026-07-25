@@ -345,12 +345,12 @@ case "${THEMIS_UPGRADE_ARTIFACT_SCHEMA}" in themis-artifact/v[0-9]*) ;; *) themi
 
 if ! themis_upgrade_schema_supported "${THEMIS_UPGRADE_TEMPLATE_SOURCE}/core/core.yaml" workspace "${THEMIS_UPGRADE_WORKSPACE_SCHEMA}"; then
   THEMIS_UPGRADE_WORKSPACE_SUPPORTED=$(themis_upgrade_support_list "${THEMIS_UPGRADE_TEMPLATE_SOURCE}/core/core.yaml" workspace) || exit 1
-  themis_upgrade_error 'incompatible Workspace schema' "Installed ${THEMIS_UPGRADE_WORKSPACE_SCHEMA}; candidate ${THEMIS_UPGRADE_CANDIDATE_CORE_VERSION} supports ${THEMIS_UPGRADE_WORKSPACE_SUPPORTED}. P4 does not run migrations."
+  themis_upgrade_error 'incompatible Workspace schema' "Installed ${THEMIS_UPGRADE_WORKSPACE_SCHEMA}; candidate ${THEMIS_UPGRADE_CANDIDATE_CORE_VERSION} supports ${THEMIS_UPGRADE_WORKSPACE_SUPPORTED}. P4 does not run migrations. If a migration descriptor exists for this schema, run 'themis-migrate.sh <target> --check' to see available migration paths."
   exit 1
 fi
 if ! themis_upgrade_schema_supported "${THEMIS_UPGRADE_TEMPLATE_SOURCE}/core/core.yaml" artifact "${THEMIS_UPGRADE_ARTIFACT_SCHEMA}"; then
   THEMIS_UPGRADE_ARTIFACT_SUPPORTED=$(themis_upgrade_support_list "${THEMIS_UPGRADE_TEMPLATE_SOURCE}/core/core.yaml" artifact) || exit 1
-  themis_upgrade_error 'incompatible Artifact schema' "Installed ${THEMIS_UPGRADE_ARTIFACT_SCHEMA}; candidate ${THEMIS_UPGRADE_CANDIDATE_CORE_VERSION} supports ${THEMIS_UPGRADE_ARTIFACT_SUPPORTED}. P4 does not run migrations."
+  themis_upgrade_error 'incompatible Artifact schema' "Installed ${THEMIS_UPGRADE_ARTIFACT_SCHEMA}; candidate ${THEMIS_UPGRADE_CANDIDATE_CORE_VERSION} supports ${THEMIS_UPGRADE_ARTIFACT_SUPPORTED}. P4 does not run migrations. If a migration descriptor exists for this schema, run 'themis-migrate.sh <target> --check' to see available migration paths."
   exit 1
 fi
 
