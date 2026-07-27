@@ -34,7 +34,7 @@
 | Step 3 | 一项方案、1–2 个 AC | 完整 | 完整 |
 | Step 4 | 五项快速检查 | 聚焦核心 AC | 覆盖所有 AC，可多轮 |
 
-先判断是否满足 low 的全部条件；否则若仍在 medium 上限内且不存在强制 high 信号，则为 medium；其他情况均为 high。多子系统、架构变更、安全敏感或性能敏感会强制使用 high。用户可以覆盖该结论，但必须把覆盖原因写入 Draft Spec。
+复杂度分类规则参见 `core/policies/specification.yaml` 中 `questioning.complexity` 段的注释。用户可覆盖该结论，但必须把覆盖原因写入 Draft Spec。
 
 ## Step 0 — Intent Discovery（意图发现）
 
@@ -83,7 +83,9 @@ low 请求跳过详细 Step 2 时，仍必须在 Step 3 记录影响 AC 的关�
 
 ## Step 4 — Adversarial Validation（对抗验证）
 
-**角色切换：攻击者。** 明确告知用户：“接下来我会从不同角度挑战此 Spec，在编码前暴露未覆盖的风险。”
+**角色切换：攻击者。** 明确告知用户：”接下来我会从不同角度挑战此 Spec，在编码前暴露未覆盖的风险。”
+
+开始 Step 4 前，你必须 Read `core/templates/spec-adversarial-checklist.md`。不要凭记忆或通用知识即兴攻击——每个攻击维度必须从标准场景库中选取。
 
 1. 使用 `core/templates/spec-adversarial-checklist.md`，按复杂度选择快速、聚焦或全面模式。
 2. 对每个相关 AC 提出具体场景，并用选择题请求处置：“若发生此场景，系统应选择 A、B、C，还是其他行为？”

@@ -97,3 +97,4 @@ The imported domain rules define stable responsibilities and Workspace boundarie
 @import ../verification/rules.md
 @import ../review/rules.md
 @import ../knowledge/rules.md
+@import ../attribution/rules.md

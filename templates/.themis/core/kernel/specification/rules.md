@@ -17,7 +17,13 @@ Save Draft Specification artifacts only beneath `workspace/specs/<spec-id>/`. Ke
 
 ## Requirement Questioning
 
-Before Spec validation, follow the Step 0–4 flow in `core/templates/spec-questioning.md`. Use `core/policies/specification.yaml` for complexity modes and `core/policies/transitions.yaml` for the declared `draft_to_specified` evidence contract. P5 creates or completes a Draft; only a future deterministic P8 executor may record a lifecycle transition.
+You MUST Read these files before any Specification work:
+
+1. `core/templates/spec-questioning.md` — the Step 0–4 protocol.
+2. `core/policies/specification.yaml` — complexity thresholds and flow modes.
+3. `core/policies/transitions.yaml` — the `draft_to_specified` evidence contract.
+
+Do not begin Step 0, assess complexity, or create a Draft Spec until all three files have been read. P5 creates or completes a Draft; only a future deterministic P8 executor may record a lifecycle transition.
 
 ## Boundaries
 

@@ -5,6 +5,31 @@ specification:
   schema: themis-specification-policy/v1
 
   questioning:
+    # ---------------------------------------------------------------------------
+    # 复杂度分类规则（确定性判定顺序，Prompt 不得自行实现）：
+    #
+    # 1. 若请求满足 low 的全部条件 ——
+    #      max_files_touched ≤ 1
+    #      max_new_apis = 0
+    #      allows_state_change = false
+    #      requires_unambiguous_scope 通过
+    #    且不命中 forced_triggers
+    #    → low
+    #
+    # 2. 否则若请求在 medium 上限内 ——
+    #      max_files_touched ≤ 8
+    #      max_new_apis ≤ 3
+    #    且不命中 forced_triggers
+    #    → medium
+    #
+    # 3. 否则 → high
+    #
+    # forced_triggers（任意命中强制 high）：
+    #   multi_subsystem · architecture_change · security_sensitive · performance_sensitive
+    #
+    # require_user_confirmation = true 表示用户必须显式确认最终分类；
+    # 用户可覆盖，但覆盖原因必须写入 Draft Spec。
+    # ---------------------------------------------------------------------------
     complexity:
       precedence: [low, medium, high]
       low:

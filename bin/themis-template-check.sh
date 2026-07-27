@@ -616,7 +616,7 @@ fi
 themis_template_require_markdown_line_limit "${THEMIS_TEMPLATE_ROOT}/CLAUDE.themis.md" 120 'top-level guidance too large' || exit 1
 themis_template_require_markdown_line_limit "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/orchestrator/rules.md" 220 'Orchestrator guidance too large' || exit 1
 themis_template_require_import_count "${THEMIS_TEMPLATE_ROOT}/CLAUDE.themis.md" 0 'contained guidance import count invalid' || exit 1
-themis_template_require_import_count "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/orchestrator/rules.md" 6 'Orchestrator import count invalid' || exit 1
+themis_template_require_import_count "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/orchestrator/rules.md" 7 'Orchestrator import count invalid' || exit 1
 
 themis_template_require_markdown_line "${THEMIS_TEMPLATE_ROOT}/CLAUDE.themis.md" '# Themis Project Guidance' 'top-level guidance heading missing' || exit 1
 themis_template_require_markdown_line "${THEMIS_TEMPLATE_ROOT}/CLAUDE.themis.md" '## Installation Boundary' 'installation boundary missing' || exit 1

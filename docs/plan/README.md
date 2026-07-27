@@ -17,6 +17,7 @@
 | P5 | [Requirement Questioning](50-requirement-questioning/) | Spec 创建前的追问与需求澄清 | P1、P2 | 已完成（P8 状态执行器待实施） |
 | P5.5 | [Knowledge Governance](55-knowledge-governance/) | 人机混合知识治理（候选→审核→提升→废弃） | P1、P2、P5 | 待发起 |
 | P5.8 | [Planning Enhancement](58-planning-enhancement/) | 计划增强（Task 模型、依赖 DAG、Traceability、Plan 校验） | P1、P5 | 待发起 |
+| P5.9 | [Implementation Enhancement](59-implementation-enhancement/) | 实施增强（Task 执行、范围锁定、证据记录、进度评估） | P1、P5、P5.8 | 设计中 |
 | P6 | [Behavior Map & Change Localization](60-behavior-map/) | 代码行为地图与变更定位子系统 | P1、P5 | 待发起 |
 | P6.5 | [Verification Enhancement](65-verification-enhancement/) | 验证增强（Gate 策略、失败分类、对抗式证据检查） | P1、P5 | 待发起 |
 | P6.8 | [Review Enhancement](68-review-enhancement/) | 评审增强（评审维度、严重级别、独立证据审查） | P1、P5、P6.5 | 待发起 |
@@ -35,6 +36,7 @@ P0 Init Environment Validation
       │    └── P5 Requirement Questioning
       │         ├── P5.5 Knowledge Governance    ← 知识治理
       │         ├── P5.8 Planning Enhancement    ← 计划增强
+      │         │    └── P5.9 Implementation Enhancement ← 实施增强
       │         ├── P6 Behavior Map              ← 行为地图
       │         ├── P6.5 Verification Enhancement ← Gate 策略
       │         └── P6.8 Review Enhancement      ← 评审增强
