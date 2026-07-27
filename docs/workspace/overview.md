@@ -85,6 +85,49 @@ paths:
 
 ---
 
+## 规范层级与路径规则
+
+已安装项目使用以下 Workspace 层级；仓库中的 `templates/.themis/workspace/` 只是该层级的源模板：
+
+```text
+workspace/
+├── manifest.yaml
+├── policies/
+├── context/
+│   ├── catalog.yaml
+│   ├── .abstract.md
+│   ├── .overview.md
+│   ├── architecture/
+│   │   └── behavior-map/
+│   ├── domain/
+│   ├── engineering/
+│   ├── decisions/
+│   ├── pitfalls/
+│   ├── glossary/
+│   └── external/
+├── specs/
+├── state/
+│   └── context-signals/
+├── runs/
+├── evidence/
+├── outcomes/
+├── knowledge/
+│   └── actions/
+└── cache/
+    ├── context-index/
+    └── resolved-context/
+```
+
+- 项目事实只由受治理 Context 或绑定当前 revision 的代码、配置与 Schema 支撑；Spec、Plan、State、Evidence 和对话各自保留流程职责，不能替代项目事实来源。
+- 不存在 `workspace/domain/`。领域规则、业务不变量和领域模型属于正式 Context，固定存储在 `workspace/context/domain/`。
+- `workspace/context/catalog.yaml` 是唯一持久 Context Item 注册表；L1/L2、缓存索引和 Bundle 均为可重建派生数据。
+- `workspace/context/architecture/behavior-map/` 是 P6 规划中的代码派生 Context 位置；目录存在不代表生成器、Adapter 或新鲜度执行器已实现。
+- `specs/` 保存人工/Agent 编写的生命周期工件，`state/` 保存机器可读状态和持久 Context Signal；二者不得相互替代。
+- `runs/`、`evidence/`、`outcomes/` 分别表示执行记录、证明材料和真实交付结果，不能合并为一个结论文件。
+- `cache/` 可删除和重建，不得成为正式事实、批准或生命周期状态的唯一来源。
+
+---
+
 ## policies/ — 项目策略
 
 项目级策略覆盖。与 Core 默认策略合并生成有效策略。
@@ -110,41 +153,70 @@ paths:
 
 ## context/ — 项目上下文
 
-项目长期事实和知识。
+项目长期事实和知识。知识分类与读取深度使用两个正交维度：
+
+```text
+分类：domain / glossary / decisions / architecture / engineering / pitfalls / external
+深度：L1 Abstract → L2 Overview → L3 Detail
+```
+
+- L1 `.abstract.md` 用于快速过滤，必须引用派生来源；
+- L2 `.overview.md` 用于领域导航，每项事实性说明必须引用 L3 Context ID 或 current B3 Anchor；
+- L3 Context Item 保存正式知识内容、authority、Scope、provenance、digest、freshness、依赖和 supersession。
 
 ### 子目录
 
 | 目录 | 内容 |
 |---|---|
-| `architecture/` | 架构决策、组件图、技术栈 |
-| `domain/` | 领域规则、业务逻辑、术语定义 |
-| `engineering/` | 工程规范、代码风格、约定 |
-| `decisions/` | ADR（架构决策记录） |
-| `pitfalls/` | 历史陷阱、已知问题、反模式 |
-| `glossary/` | 项目术语表 |
-| `external/` | 外部协议和文档引用 |
+| `architecture/` | 系统结构、组件边界、交互路径和可重新生成的 Behavior Map |
+| `domain/` | 业务概念、规则、不变量、状态机、流程和领域模型；不是独立的 `workspace/domain/` |
+| `engineering/` | 项目级开发、测试、构建、运行和维护约定 |
+| `decisions/` | 已选择的架构或工程决策、上下文、替代方案和理由 |
+| `pitfalls/` | 经证据验证的历史陷阱、已知问题和反模式 |
+| `glossary/` | 项目术语、缩写和精确定义 |
+| `external/` | 受治理的外部协议、文档和来源引用 |
 
-### 索引
+### Behavior Map（P6 规划契约）
 
-`context-map.yaml` 维护所有上下文项的索引：
+`architecture/behavior-map/` 保存从源码与配置确定性事实中派生的代码行为地图，而不是人工编写的第二份代码说明：
+
+- **B1 System**：系统边界、模块关系、入口和生命周期路径；
+- **B2 Behavior Unit**：行为域、职责、输入输出、状态与跨模块关系；
+- **B3 Evidence**：绑定 revision 的文件、符号、分支、副作用、执行路径和代码证据锚点；
+- **索引与元数据**：符号/函数清单、受支持关系、锚点索引、源码 revision、Adapter 版本、语言能力覆盖、置信度和新鲜度。
+
+B1/B2 是 `derived_navigation`；只有 `current` 且受支持的 B3 事实可直接支撑当前实现声明。非 `current` 覆盖必须回退源码检查。
+
+P6 尚未实施。当前目录只是 Template Contract 的预留位置，不得声称已有静态分析、自动生成、变更定位或新鲜度维护能力。
+
+### Catalog
+
+`catalog.yaml` 是所有 L3 Context Item 的唯一持久注册表：
 
 ```yaml
+context_catalog_schema: themis-context-catalog/v1
 items:
-  - id: CTX-001
-    title: "系统架构概览"
-    type: architecture
-    path: workspace/context/architecture/overview.md
-    freshness: 2026-07-20
-    source: manual
-  - id: CTX-002
-    title: "订单状态机"
-    type: domain
-    path: workspace/context/domain/order-state-machine.md
-    freshness: 2026-07-15
-    source: spec_execution
+  CTX-order-state-machine:
+    path: domain/orders/state-machines/order.md
+    layer: L3
+    category: domain
+    knowledge_kind: state_machine
+    authority: declared
+    status: active
+    scope:
+      domains: [orders]
+      entities: [order]
+      operations: [transition]
+      states: []
+    tags: [order, lifecycle]
+    content_digest: ""
+    source_revision: null
+    verified_at: null
+    depends_on: []
+    supersedes: null
 ```
 
-**Core 只能通过 Context Protocol 读取和治理这些内容，不能在内部复制一份项目 Context。**
+目录摘要、Behavior Map Anchor Index、TSV 索引和 Context Bundle 都不能替代 Catalog。Core 只能通过 Context Protocol 读取和治理这些内容，不能在内部复制一份项目 Context。
 
 ---
 
@@ -188,6 +260,7 @@ Draft → Specified → Planned → Implemented → Verified → Reviewed → Ar
 | `retries/` | 重试记录 |
 | `locks/` | 并发锁（防止同时修改同一 Spec） |
 | `sessions/` | 执行会话记录 |
+| `context-signals/` | Context missing、stale、conflict 与 Context/代码 drift 信号；只记录问题，不自动裁决 |
 
 ---
 
@@ -275,6 +348,7 @@ workspace/runs/
 |---|---|
 | `candidates/` | 待审核的知识候选 |
 | `reviews/` | 审核记录 |
+| `actions/` | 经批准的 promote、merge、revise、reject 或 archive 处置记录 |
 | `rejected/` | 被拒绝的候选 |
 | `archive/` | 已废弃的知识 |
 
@@ -301,8 +375,8 @@ workspace/context/decisions/
 
 | 目录 | 内容 |
 |---|---|
-| `context-index/` | 上下文索引缓存 |
-| `resolved-context/` | 解析后的有效上下文快照 |
+| `context-index/` | 由 Catalog 重建的 items/tags/scopes/paths/references 文本索引 |
+| `resolved-context/` | 按 Spec/Task 装配的 Context Bundle 与 manifest |
 | `metadata/` | 文件元数据缓存 |
 
-**缓存位于 Workspace 而非 Core，因为同一套 Core 在不同分支或不同项目内容下运行时可能产生上下文污染。**
+**Cache 只加速检索与装配，不保存唯一事实、批准、冲突处置或生命周期状态。缓存位于 Workspace 而非 Core，因为同一套 Core 在不同分支或不同项目内容下运行时可能产生上下文污染。**

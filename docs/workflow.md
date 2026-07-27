@@ -14,6 +14,17 @@
 | Workspace | 保存项目配置、上下文、Spec、Plan、状态、证据、结果与知识治理数据 |
 | 人工门禁 | 需求批准、冲突裁决、知识提升、迁移授权等不能由模型自行越过的决策 |
 
+## 项目事实可信边界
+
+```text
+受治理 Context → 项目应当是什么
+当前代码/配置/Schema → 项目现在是什么
+State/Run/Evidence → 流程与 Gate 发生了什么
+Spec/Plan → 希望改变什么、准备如何改变
+```
+
+只有前两类能够支撑项目事实。Context 与代码冲突时产生持久 `context_code_drift` Signal；Spec、Plan、Evidence、Outcome、对话、摘要或 Agent 推断不得替它们静默选边。Context Resolution 按 `Catalog → L1 → L2 → L3 → 当前代码` 装配可追溯 Bundle，Bundle 和 Cache 都不是新的事实源。
+
 ## 端到端总流程
 
 ```mermaid
@@ -31,13 +42,16 @@ flowchart TD
         IF[Init 失败：回滚本次修改]
     end
 
-    subgraph ROUTING[请求识别与上下文准备]
+    subgraph ROUTING[请求识别与 Context Resolution · P5.4 设计]
         R0{是否为受管理的项目变更?}
         R1[只读解释、调查或研究]
-        R2[Orchestrator 读取持久工件与状态]
-        R3[Context 加载项目事实、规则与已有知识]
-        R4{上下文是否缺失、冲突或过期?}
-        R5[报告冲突并请求补充或人工裁决]
+        R2[Orchestrator 读取持久工件与流程状态]
+        R3[提取 Context ID、domain、entity、operation 与 state]
+        R31[Catalog 过滤并按 L1 → L2 → L3 渐进加载]
+        R32[按声明类型读取当前代码、配置与 Schema]
+        R4{Context 与代码是否完整且一致?}
+        R5[持久化 missing/stale/conflict/drift Signal 并请求处置]
+        R6[生成可追溯 Context Bundle]
     end
 
     subgraph SPEC[Draft → Specified 证据契约]
@@ -110,7 +124,7 @@ flowchart TD
         K4[Promote：提升为正式 Context]
         K5[Reject：写入 rejected]
         K6[Revise：修改后重新提交]
-        K7[更新 context-map 与正式知识索引]
+        K7[原子更新 L3 Context Item 与 catalog.yaml]
         K8[Context Freshness 检测过期知识或 Behavior Map]
         K9{确认已过期?}
         K10[归档到 workspace/knowledge/archive]
@@ -138,11 +152,10 @@ flowchart TD
     R0 -- 否 --> R1
     R1 --> NEXT
     R0 -- 是或不确定 --> R2
-    R2 --> R3
-    R3 --> R4
-    R4 -- 是 --> R5
+    R2 --> R3 --> R31 --> R32 --> R4
+    R4 -- 否或未知 --> R5
     R5 --> R3
-    R4 -- 否 --> S0
+    R4 -- 是或职责互补 --> R6 --> S0
 
     S0 --> S1
     S1 --> S2
@@ -262,16 +275,27 @@ Draft → Specified → Planned → Implemented → Verified → Reviewed → Ar
 
 ## 规划与变更定位流程
 
-Planning 只定义和校验 Plan，不执行 Task；行为地图只提供事实锚定的定位依据，不直接修改代码。
+Planning 只定义和校验 Plan，不执行 Task；Behavior Map 只提供事实锚定的建议性定位依据，不直接修改代码、扩展 Plan 或形成 Gate verdict。
+
+P6 使用以下契约，但仍处于规划状态：
+
+- Context 拥有代码派生数据的生成治理、存储、冲突报告和新鲜度；语言 Adapter 只输出受支持的确定性事实；
+- B1 描述系统和生命周期，B2 描述行为单元，B3 描述绑定 revision 的路径、符号、分支、副作用和 Evidence Anchor；
+- 每个事实声明必须关联路径、符号、源码范围、revision/digest、提取方式和置信度；
+- 新鲜度为 `current`、`stale`、`unknown`、`unsupported`；非 `current` 内容必须回退源码检查；
+- 定位结果为 `AC → Behavior Unit → Candidate File/Symbol → Task → Gate`，候选包含角色、理由、锚点、revision、置信度和未决区域；
+- Verification 可使用 Anchor 发现相关检查，但 Anchor 和 Behavior Map 本身不是 Evidence 或 verdict。
+
+完整设计契约见 [P6 Behavior Map](plan/60-behavior-map/README.md)。
 
 ```mermaid
 flowchart LR
     AC[已批准 Acceptance Criteria]
 
     subgraph BM[Behavior Map · P6 规划中]
-        L1[System Context<br/>整体架构与请求生命周期]
-        L2[Component Context<br/>行为单元职责与状态]
-        L3[Code Evidence<br/>文件、函数、调用路径与锚点]
+        B1[System Context<br/>整体架构与请求生命周期]
+        B2[Behavior Unit<br/>行为单元职责与状态]
+        B3[Code Evidence<br/>文件、函数、调用路径与锚点]
     end
 
     CTX[人工维护 Context<br/>架构、领域、ADR、规则、陷阱]
@@ -283,9 +307,9 @@ flowchart LR
     READY[进入 Planned]
     REVISE[修订 Task、依赖或证据要求]
 
-    AC --> L1 --> L2 --> L3
+    AC --> B1 --> B2 --> B3
     CTX --> LOC
-    L3 --> LOC
+    B3 --> LOC
     AC --> LOC
     LOC --> TASK --> TRACE --> PLAN --> CHECK
     CHECK -- 不通过 --> REVISE --> TASK
@@ -293,7 +317,7 @@ flowchart LR
 
     classDef planned fill:#fff4d6,stroke:#9a6b00,color:#4f3800,stroke-dasharray:5 3;
     classDef data fill:#e8effa,stroke:#315f9b,color:#173453;
-    class L1,L2,L3 planned;
+    class B1,B2,B3 planned;
     class CTX,PLAN data;
 ```
 
@@ -301,28 +325,33 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    SRC[项目源代码]
-    STATIC[tree-sitter 静态分析<br/>function inventory + call graph]
-    CLASSIFY[AI 辅助按行为分类]
-    FACTS{每个声明是否具有代码事实锚点?}
-    MAP[写入 workspace/context/architecture/behavior-map]
-    USE[Context、Planning、Verification 按需使用]
-    CHANGE[代码发生变化]
-    STALE[Freshness 标记相关地图项可能过期]
-    HUMAN{是否触发手动重生成?}
+    SRC[受 manifest 限定的源码、配置、Schema 与构建元数据]
+    ADAPTER[语言 Adapter<br/>按能力矩阵提取确定性事实]
+    INVENTORY[Symbol Inventory + Relation Graph]
+    CLASSIFY[AI 辅助行为归类与说明]
+    ANCHOR[Anchor lint<br/>每条事实关联 revision/digest]
+    MAP[B1/B2/B3 + Anchor Index<br/>写入 behavior-map]
+    USE[Context 与 Planning 按需使用<br/>Verification 仅发现检查]
+    CHANGE[Anchor 或相关依赖变化]
+    FRESH{Freshness 判定}
+    REGEN{是否手动重生成?}
+    SOURCE[回退直接源码检查]
 
-    SRC --> STATIC --> CLASSIFY --> FACTS
-    FACTS -- 否 --> STATIC
-    FACTS -- 是 --> MAP --> USE
-    USE --> CHANGE --> STALE --> HUMAN
-    HUMAN -- 是 --> STATIC
-    HUMAN -- 否 --> USE
+    SRC --> ADAPTER --> INVENTORY --> CLASSIFY --> ANCHOR
+    ANCHOR -- 失败 --> CLASSIFY
+    ANCHOR -- 通过 --> MAP --> USE
+    USE --> CHANGE --> FRESH
+    FRESH -- current --> USE
+    FRESH -- stale --> REGEN
+    FRESH -- unknown / unsupported --> SOURCE
+    REGEN -- 是 --> ADAPTER
+    REGEN -- 否 --> SOURCE
 
     classDef planned fill:#fff4d6,stroke:#9a6b00,color:#4f3800,stroke-dasharray:5 3;
-    class STATIC,CLASSIFY,FACTS,MAP,STALE,HUMAN planned;
+    class ADAPTER,INVENTORY,CLASSIFY,ANCHOR,MAP,FRESH,REGEN planned;
 ```
 
-首版计划采用“手动触发重生成 + 新鲜度标记”，不承诺全自动增量同步。行为地图是 Context 派生数据；缺失时 Planning 回退到源码搜索，但不得把低置信度推断伪装成事实。
+首版计划采用“手动触发重生成 + 四态新鲜度”，不承诺全自动增量同步。Behavior Map 是可重新生成的 Context 派生数据；缺失、过期、未知或 Adapter 不支持时必须回退源码检查，且不得把低置信度推断伪装成事实。Map 只参与定位和检查发现，不取代 Spec、Plan、Evidence 或 Verification verdict。
 
 ## 人机混合知识记录与治理
 
@@ -355,7 +384,7 @@ flowchart TD
         GLOSS[glossary]
     end
 
-    INDEX[更新 context-map 与索引]
+    INDEX[原子更新 L3 Context Item 与 Catalog]
     FRESH[Context Freshness 检测]
     STALE{知识是否过期或与代码冲突?}
     DEP_REVIEW{人工确认废弃?}

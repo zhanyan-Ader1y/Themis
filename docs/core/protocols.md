@@ -57,14 +57,16 @@ Protocols 定义 Core 与 Workspace、Core 与外部工具之间的数据契约�
 
 ### Context Protocol — 上下文协议
 
-定义上下文项的结构和引用规则：
+Context 使用四个相互引用但职责独立的协议：
 
-- Context Item 的字段：ID、标题、内容、类型、来源、版本、最后更新时间
-- Context 类型：架构、领域、工程、决策、术语、陷阱、外部引用
-- Context 引用规则：如何引用其他 Context Item
-- Context 索引格式：`workspace/context/context-map.yaml` 的结构
+- **Context Item**：L3 正式知识，记录稳定 ID、category、knowledge kind、authority、status、Scope、tags、provenance、source revision、content digest、freshness、dependencies 和 supersession；
+- **Context Catalog**：`workspace/context/catalog.yaml` 的唯一持久注册表，保存 Item 身份、路径和完整性元数据；
+- **Context Bundle**：按 Spec/Task 查询装配的可重建快照，记录选中与排除项、代码路径、revision/digest、token budget、理由、未决 Signal 和完整性状态；
+- **Context Signal**：持久记录 `missing`、`stale`、`context_conflict`、`context_code_drift` 等问题及其来源和处置状态。
 
-**边界**：Context Protocol 定义上下文项的结构，不定义上下文的内容。
+L1 `.abstract.md` 和 L2 `.overview.md` 是引用 L3/B3 的 `derived_navigation` 投影，不是独立事实协议。Cache 索引和 Bundle 可以删除重建；Signal 存于 State，不得只存在 Cache。
+
+**边界**：Context Protocol 定义数据结构、引用与完整性约束，不决定知识内容是否正确，也不批准 Knowledge Promotion。
 
 ### Outcome Protocol — 产出协议
 
@@ -109,7 +111,10 @@ core/protocols/
 │       └── evidence-schema.yaml
 ├── context/
 │   └── v1/
-│       └── context-item-schema.yaml
+│       ├── context-item-schema.yaml
+│       ├── catalog-schema.yaml
+│       ├── bundle-schema.yaml
+│       └── signal-schema.yaml
 ├── outcome/
 │   └── v1/
 │       └── outcome-schema.yaml

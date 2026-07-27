@@ -1,5 +1,7 @@
 # Themis 模块合作关系、加载机制与结构审计
 
+> 历史审计说明：本文的结构缺失清单记录初始模板骨架时期的分析基线，不是当前仓库清单。现行设计契约以 `AGENTS.md` 为准，实现状态以当前代码、`docs/workflow.md` 和各模块计划为准；本文保留的方案建议若与这些来源冲突，以现行来源为准。
+
 ## 一、项目如何加载 Themis
 
 ### 1.1 业界实践对比
@@ -201,28 +203,32 @@ applies_to: ["architecture", "module-boundaries"]
 
 ### 3.3 对 Themis 的建议（结论）
 
-**推荐方案：Skill + Command 收口入口，统一知识写入路径**
+**推荐方案：Skill + Command 收口人工知识治理入口；Behavior Map 使用独立的 Context 派生流程**
 
 ```
-所有知识维护操作通过统一的 .claude/commands/ 入口：
+人工维护或执行中提取的知识通过统一的 .claude/commands/ 入口：
 
 /themis-capture  → Knowledge Capture Skill
   ├── 来源：Spec 执行 / Review 发现 / Verification 失败
   ├── 流程：候选识别 → 去重 → 审核 → 提升
-  ├── 行为地图更新（触发 Behavior Map 重生成）
-  └── 写入 workspace/context/ 对应子目录
+  └── 经批准写入 workspace/context/ 对应正式知识分类
 
 /themis-context  → Context Discovery Skill
   ├── 按需加载：通过 workspace/context/README.md 索引路由
   ├── 搜索：bash .themis/core/kernel/context/backends/knowledge.sh <keywords>
   └── 只读：不修改已有知识
+
+P6 Behavior Map → Context 派生数据流程
+  ├── 来源：受 manifest 限定的源码、配置、Schema 与构建元数据
+  ├── 流程：确定性事实提取 → 行为归类 → Anchor 校验 → 新鲜度维护
+  └── 写入 workspace/context/architecture/behavior-map/
 ```
 
-**为什么需要 Skill + Command 收口**：
-1. **统一入口**：所有写入经过同一个审核流程，避免两套正式知识目录
-2. **可审计**：每次知识变更通过 `/capture` 触发，有明确记录
-3. **防止污染**：Agent 不能绕过审核直接写 `workspace/context/`
-4. **后续处理统一**：Behavior Map 重生成、新鲜度标记、冲突检查都在统一入口完成
+**为什么需要区分两个入口**：
+1. **知识治理收口**：人工知识和观察性结论必须经过候选、审核与批准，避免直接污染正式 Context。
+2. **派生数据独立**：Behavior Map 可重新生成，由 Context 治理，不经过 Knowledge 的人工提升流程。
+3. **可审计**：知识处置与 Map 生成分别保留自己的来源、证据、revision 和执行记录。
+4. **边界清晰**：Knowledge 不拥有 Map 新鲜度，P6 也不能把派生定位结果提升为正式人工知识。
 
 ---
 
@@ -302,9 +308,9 @@ applies_to: ["architecture", "module-boundaries"]
 
 **三层编排**：声明式 flow.yaml（阶段+迁移） → Shell 执行器（可审计操作） → SKILL 路由（用户+Agent 入口）。编排保证来自硬门禁 + 状态迁移前置条件 + 证据门禁 + Red Flags 防绕过。
 
-### 知识维护结论
+### 知识与派生 Context 结论
 
-**Skill + Command 统一收口**：所有知识写入通过 `/themis-capture` 命令进入统一的候选→去重→审核→提升流程。Behavior Map 和人工维护知识共用同一个入口和审核链。
+**Skill + Command 收口人工知识治理**：观察性知识通过 `/themis-capture` 进入候选→去重→审核→提升流程。Behavior Map 不进入该提升链，而由 P6 的 Context 派生流程根据源码事实独立生成、校验和维护新鲜度。
 
 ### 结构缺失
 

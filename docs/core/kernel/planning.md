@@ -2,9 +2,9 @@
 
 ## 职责边界
 
-Planning 定义 Plan 和 Task 的结构、依赖关系和可追踪性。它负责将 Spec 中的需求分解为可执行的任务，并确保每个 AC 都有对应的 Task 覆盖。
+Planning 负责 Plan 和 Task 的结构、依赖、范围和可追踪性。它使用已批准 Spec 定义目标和 AC，使用 P5.4 Context Bundle 与当前代码确定项目事实，并可在 P6 可用时只读消费 Behavior Map 进行候选定位。
 
-**Planning 关心"任务如何组织"，不关心"任务如何执行"（那是 Orchestrator 的职责）。**
+**Planning 关心“任务如何组织和证明完成”，不执行任务、不修改代码，也不拥有生命周期迁移。Spec/Plan 不能自证当前实现，Context Bundle 不完整或冲突时不得假装定位完成。**
 
 ## 核心能力
 
@@ -41,6 +41,18 @@ Planning 定义 Plan 和 Task 的结构、依赖关系和可追踪性。它负�
 
 **边界**：Task-Model 定义 Task 的抽象结构，不定义具体 Task 的执行步骤。
 
+### Change Localization — 变更定位（P6 规划中）
+
+Planning 可只读消费 `current` Behavior Map，将已批准 AC 映射为建议性的变更范围：
+
+```text
+AC → Behavior Unit → Candidate File/Symbol → Task → Gate
+```
+
+每个候选位置必须记录角色（primary/supporting/test/config/schema）、理由、Anchor ID、source revision、置信度和未决区域。低置信度结果触发更广的只读源码调查，而不是更广的实施权限。
+
+**边界**：定位结果是导航和 Plan 设计输入，不是独立项目事实或实现授权；它不能修改代码、自动创建或完成 Task、静默扩展 Plan 范围，也不能把 Behavior Map Anchor 当作 Verification verdict。只有 current B3 Anchor 可支持候选定位，关键当前实现仍需读取代码核验；Map 缺失、过期、未知或不支持时必须回退源码检查并记录该降级。P6 尚未实施。
+
 ### Traceability — 可追踪性
 
 确保需求到实现的双向追踪：
@@ -71,9 +83,12 @@ AC → Task → 代码变更 → 验证结果
 
 ```
 Planning 读取:
-  workspace/specs/<spec-id>/spec.md   # 关联的 Spec
+  workspace/specs/<spec-id>/spec.md   # 已批准目标与 AC
   workspace/specs/<spec-id>/plan.md   # 当前 Plan
-  workspace/context/                   # 工程上下文
+  workspace/cache/resolved-context/   # P5.4 Context Bundle manifest
+  workspace/context/                   # 被 Bundle 引用的正式知识
+  当前代码、配置与 Schema              # 当前实现与目标位置
+  workspace/context/architecture/behavior-map/ # P6 可选导航
 
 Planning 写入:
   （校验结果通过 Verification 的 Gate 机制记录）

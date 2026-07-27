@@ -2,17 +2,18 @@
 
 ## 职责边界
 
-Knowledge 管理从项目执行过程中沉淀的结构化知识的完整生命周期：候选识别、去重、冲突检查、审核、提升、废弃。
+Knowledge Governance 管理观察性知识从候选、事实核验、去重、冲突评估、审核、批准到提升或废弃的完整生命周期。
 
-**Knowledge 是治理过程，不是知识存储——知识内容始终存储在 Workspace 中。Core 内不得保存项目学习结果。**
+**Knowledge 是治理过程，不是项目事实来源或第二套知识存储。候选、审核和批准都不能独立证明事实；正式知识只存在于受治理 `workspace/context/`。**
 
 ## 核心能力
 
 | 能力 | 说明 |
 |---|---|
 | 候选识别 | 从执行过程中识别可能的知识候选 |
-| 去重 | 检查新候选是否与已有知识重复 |
-| 冲突检查 | 检查新候选是否与已有知识冲突 |
+| 事实核验 | 通过 P5.4 Context 结果或当前代码确认候选可支撑性 |
+| 去重 | 确定性检查精确重复，Prompt 标记潜在语义重复 |
+| 冲突评估 | 消费 Context Signal 并提出处置建议，不自行裁决 |
 | 审核 | 对候选进行结构化审核 |
 | 提升 | 将通过审核的候选提升为正式知识 |
 | 废弃 | 将过时知识标记为废弃 |
@@ -31,16 +32,27 @@ Knowledge 管理从项目执行过程中沉淀的结构化知识的完整生命�
 
 **边界**：Candidate 只识别候选，不做质量判断。
 
+### Validation — 事实核验与冲突评估
+
+候选进入审核前必须区分“观察”与“可支撑项目事实”：
+
+- 使用 P5.4 Context Search 查找相关 L3 Item、authority、Scope 和开放 Signal；
+- 按声明类型读取当前代码、配置或 Schema；
+- 无 Context/代码支撑时推荐 reject/revise，不得 promote；
+- 与 Context 或代码冲突时保持 blocked，等待持久化人工裁决。
+
+**边界**：人工批准授权处置，但不替代事实核验。Knowledge 不自行实现 Catalog 检索、Freshness 或冲突检测算法。
+
 ### Deduplication — 去重
 
 检查候选是否与已有知识重复：
 
-- 语义相似度比较（标题、关键词、内容）
-- 与 `workspace/context/` 中已有知识比较
-- 与 `workspace/knowledge/candidates/` 中其他候选比较
-- 重复候选标记为 `duplicate`，不再进入审核
+- 脚本确定性比较稳定 ID、内容摘要和来源摘要；
+- Prompt 在 Context 返回的候选集合内标记潜在语义重复；
+- 与其他待审候选比较，保留 canonical 引用；
+- 重复处置记录为追加式 action，不删除原候选。
 
-**边界**：Deduplication 只做相似度判断，不删除重复内容（决策由审核流程做出）。
+**边界**：Deduplication 不删除候选，也不依赖未实现的 Embedding 相似度阈值。
 
 ### Review — 知识审核
 
@@ -55,26 +67,24 @@ Knowledge 管理从项目执行过程中沉淀的结构化知识的完整生命�
 
 ### Promotion — 知识提升
 
-将通过审核的候选提升为正式知识：
+将通过核验和批准的候选提升为正式知识：
 
-- 将候选内容移动到 `workspace/context/` 对应子目录
-- 更新 `workspace/context/context-map.yaml` 索引
-- 记录提升历史
-- 架构知识 → `workspace/context/architecture/`
-- 领域知识 → `workspace/context/domain/`
-- 陷阱 → `workspace/context/pitfalls/`
-- 决策 → `workspace/context/decisions/`
+- 确定性 Apply 脚本在锁内写入符合 Context Item Protocol 的 L3 文件；
+- 在同一原子处置中更新 `workspace/context/catalog.yaml`；
+- 保留 candidate、review、action、来源 artifact/evidence 和摘要引用；
+- read-back 校验 Context ID、path、digest 和引用后才记录成功；
+- 支持 architecture、domain、engineering、decisions、pitfalls、glossary 和 external，Behavior Map 不经过该提升流程。
 
-**边界**：Promotion 是执行提升动作，不判断是否应该提升（那是 Review 的职责）。
+**边界**：Promotion 执行已批准动作，不判断语义，也不得在目标 Workspace 未完成 P5.4 Migration 时隐式创建或转换结构。
 
 ### Deprecation — 知识废弃
 
 将过时知识标记为废弃：
 
-- 接收来自 Context Freshness 的过期标记
-- 执行废弃审核（确认该知识确实不再适用）
-- 将废弃知识移动到 `workspace/knowledge/archive/`
-- 更新索引，标记废弃时间
+- 接收来自 `workspace/state/context-signals/` 的 stale 或 conflict Signal；
+- 执行废弃审核并持久化人工决定；
+- 保存被废弃 Context 的历史快照与 action；
+- 原子移除活动 L3 Item 和 Catalog 项，不改写历史候选。
 
 **边界**：Deprecation 是废弃执行器，废弃判断来自 Context Freshness 和人工审核。
 
@@ -94,18 +104,23 @@ Knowledge 管理从项目执行过程中沉淀的结构化知识的完整生命�
 
 ```
 Knowledge 读取:
-  workspace/knowledge/candidates/      # 候选知识
-  workspace/context/                   # 已有知识
-  workspace/outcomes/                  # 产出的经验教训
+  workspace/knowledge/candidates/      # 追加式候选
+  workspace/knowledge/reviews/         # 审核与批准
+  workspace/context/catalog.yaml       # 正式 Context 注册表
+  workspace/context/                   # 已有 L3 知识
+  workspace/state/context-signals/     # Context 发现的冲突与过期
+  当前代码、配置与 Schema              # 候选事实核验
 
 Knowledge 写入:
   workspace/knowledge/reviews/         # 审核记录
-  workspace/knowledge/rejected/        # 被拒绝的候选
-  workspace/knowledge/archive/         # 废弃的知识
-  workspace/context/                   # 提升后的正式知识
+  workspace/knowledge/actions/         # 经批准处置记录
+  workspace/knowledge/rejected/        # 拒绝记录
+  workspace/knowledge/archive/         # 废弃快照与记录
+  workspace/context/                   # 仅经批准的 L3 写入
+  workspace/context/catalog.yaml       # 与 L3 原子更新
 ```
 
 ## 输入/输出协议
 
-- **输入**：通过 Context Item Protocol 读取候选和已有知识
-- **输出**：治理结果通过 Outcome Protocol 记录，提升的知识通过 Context Protocol 写入 Workspace
+- **输入**：Knowledge Candidate/Review/Action 工件、Context Bundle/Signal 与当前代码核验结果
+- **输出**：追加式治理记录；经批准处置通过 Context Protocol 原子写入 L3 Item 和 Catalog

@@ -2,7 +2,7 @@
 
 **优先级**：P4.5（P4 Upgrade 的补充能力）
 **依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P4 Upgrade](../40-upgrade/README.md)
-**状态**：设计完成，待用户确认 impl
+**状态**：已完成
 
 ## 背景
 

@@ -1,7 +1,7 @@
 # P5.5 — 人机混合知识治理
 
 **优先级**：P5.5（可独立于 P6/P8 提前实施）
-**依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P2 Top-level Guidance](../20-top-level-guidance/README.md)
+**依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P2 Top-level Guidance](../20-top-level-guidance/README.md)、[P5 Requirement Questioning](../50-requirement-questioning/README.md)、[P5.4 Context Restructure](../54-context-restructure/README.md)
 **状态**：待用户主动发起
 
 ## 背景
@@ -39,10 +39,12 @@ P5 需求追问的方法论分析揭示了一个关键设计原则——**AI 生
 ## 核心原则
 
 1. **单一权威源**：`workspace/context/` 是唯一正式知识存储，`workspace/knowledge/` 是治理工作流数据
-2. **AI 不许直接写 Context**：未经人工审核，AI 不得将观察性结论写入 `workspace/context/`
-3. **候选可追溯**：每个知识候选必须引用其来源（哪个 Spec、哪次 Run、哪次 Review）
-4. **去重先于审核**：先检查是否已有类似知识，避免重复审核
-5. **废弃需确认**：Context Freshness 标记过期 ≠ 自动废弃，需人工确认
+2. **事实核验先于提升**：候选来源、审核或人工批准都不独立证明项目事实；Promote 前必须由受治理 Context 或当前代码核验
+3. **AI 不许直接写 Context**：未经人工审核，AI 不得将观察性结论写入 `workspace/context/`
+4. **候选可追溯**：每个知识候选必须引用其来源（哪个 Spec、哪次 Run、哪次 Review）
+5. **去重先于审核**：先检查是否已有类似知识，避免重复审核
+6. **废弃需确认**：Context Signal 标记过期 ≠ 自动废弃，需人工确认
+7. **不重复 Context 能力**：Catalog、检索索引、Freshness 和冲突检测由 P5.4 Context 拥有，P5.5 只消费结果并执行经批准处置
 
 ## 知识流转流程
 
@@ -59,17 +61,20 @@ P5 需求追问的方法论分析揭示了一个关键设计原则——**AI 生
         ├── 冲突检查（标记矛盾）
         │
         ▼
+  事实核验（现有 L3 Context / 当前代码）
+        │
+        ▼
   结构化审核（AI 辅助 + 人工决策）
         │
-        ├── promote → workspace/context/{architecture,domain,engineering,decisions,pitfalls}
+        ├── promote → 原子写入 L3 Context Item + catalog.yaml
         ├── reject  → workspace/knowledge/rejected/
         └── revise  → 修改后回到 candidates
         │
         ▼
-  索引更新（context-map 刷新）
+  Context lint + Catalog read-back 验证
         │
         ▼
-  新鲜度监控（Context Freshness）
+  消费 Context Freshness / Conflict Signal
         │
         └── 过期候选 → 人工确认 → workspace/knowledge/archive/
 ```
@@ -95,10 +100,10 @@ P5 需求追问的方法论分析揭示了一个关键设计原则——**AI 生
 
 ## 非范围
 
-- 不实现确定性 Shell 脚本（留待 P8）
-- 不实现自动语义去重（需要 embedding 基础设施）
-- 不修改 Workspace 目录结构（已由 P1 定义）
-- 不实现 Context Freshness 的自动化检测（属于 P6 Behavior Map 范围）
+- 不实现 Embedding 或自动语义去重基础设施
+- 不独立实现 Context Catalog、检索索引、Freshness 或冲突检测；消费 P5.4 Context 能力
+- 不实现 Behavior Map 生成或代码 Anchor Freshness（属于 P6）
+- 不自动裁决候选与 Context/代码冲突
 
 ## 风险与回滚
 
