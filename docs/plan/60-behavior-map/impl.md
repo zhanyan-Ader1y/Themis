@@ -10,6 +10,8 @@
 - 每条事实声明必须具有源码/配置 Evidence Anchor；不支持或无法证明的内容标记为 `unknown`、`unsupported` 或 `hypothesis`。
 - P6 首版只承诺手动重生成和过期标记，不承诺自动增量同步。
 
+正式边界见 [Context](../../design/core/kernel/context.md)、[Planning](../../design/core/kernel/planning.md)、[Protocols](../../design/core/protocols.md) 与 [Adapters](../../design/core/adapters.md)。
+
 ## 待创建的实施段落
 
 用户主动发起 P6 后，必须先创建并完成以下文件，再等待用户确认：
@@ -20,7 +22,7 @@
 | 静态事实提取 | `impl-02-extractor.md` | Adapter 能力矩阵、parser、规范化 JSON、夹具和 unsupported 行为 |
 | 变更定位 | `impl-03-localization.md` | AC → Behavior Unit → Candidate Location → Task → Gate、只读 Prompt 与回退 |
 | 策略、Prompt 与执行器 | `impl-04-policies-executors.md` | behavior-map.yaml、两个 Prompt、Map lint/Freshness 脚本、MUST Read 规则 |
-| 测试、文档与发布 | `impl-05-tests-docs.md` | 契约检查、模块回归、WIKI、版本和计划状态 |
+| 测试、文档与发布 | `impl-05-tests-docs.md` | 契约检查、模块回归、正式设计、版本和计划状态 |
 
 ## 预期目标文件
 
@@ -37,8 +39,8 @@
 | Rules | `templates/.themis/core/kernel/planning/rules.md` | 更新 |
 | Contract check | `bin/themis-template-check.sh` | 扩展 |
 | Tests | `tests/template-contract/test.sh`、`tests/behavior-map/test.sh` | 扩展/新建 |
-| Wiki | `docs/core/kernel/context.md`、`docs/core/kernel/planning.md`、`docs/core/adapters.md`、`docs/core/protocols.md`、`docs/workflow.md` | 更新 |
-| Repository contract | `AGENTS.md`、`AGENTS.CN.md` | 按最终实现同步 |
+| Design | `docs/design/core/kernel/context.md`、`docs/design/core/kernel/planning.md`、`docs/design/core/adapters.md`、`docs/design/core/protocols.md`、`docs/design/workflow.md` | 更新正式合同和实现状态 |
+| Plan/Release | `docs/plan/60-behavior-map/README.md`、`docs/plan/README.md`、`CHANGES.md` | 更新状态与发布记录 |
 
 不得把 Behavior Map Schema 预装到 `templates/.themis/workspace/context/`。Core Upgrade 不修改 Workspace，因此控制契约放入 Workspace 会导致版本漂移且无法安全更新。
 
@@ -48,7 +50,7 @@
 Protocol Schema ─┬─→ Adapter 与事实夹具 ─┐
                  └─→ Policy/Prompt ─────┼─→ lint/Freshness 执行器
                                         ├─→ Context/Planning rules
-                                        └─→ 契约与模块测试 → WIKI/发布 → 全量回归
+                                        └─→ 契约与模块测试 → 正式设计/发布 → 全量回归
 ```
 
 ## 待细化验证矩阵

@@ -6,7 +6,7 @@
 
 ## 背景
 
-Themis 在 `docs/core/kernel/verification.md` 和 `docs/workflow.md` 中已定义了 Verification 的完整理论模型——Gate 调度、证据采集、失败分类、Verdict 计算。但当前基线：
+Themis 在 `docs/design/core/kernel/verification.md` 和 `docs/design/workflow.md` 中已定义了 Verification 的完整理论模型——Gate 调度、证据采集、失败分类、Verdict 计算。但当前基线：
 
 - `verification/rules.md` 定义了模块边界，但内容为基线占位
 - 无 Gate 策略配置文件
@@ -68,7 +68,7 @@ P5 方法论分析揭示的设计原则——**对抗式验证、假设探测、
 | 1 | `templates/.themis/core/policies/verification.yaml` | 新建 | Gate 类型、默认策略、失败分类规则、对抗检查维度 |
 | 2 | `templates/.themis/core/templates/failure-classification.md` | 新建 | 失败分类 Prompt 模板 |
 | 3 | `templates/.themis/core/kernel/verification/rules.md` | 更新 | 从占位内容更新为完整验证规则 |
-| 4 | `docs/core/kernel/verification.md` | 更新 | 同步 WIKI |
+| 4 | `docs/design/core/kernel/verification.md` | 更新 | 同步 WIKI |
 
 ## 验收条件
 

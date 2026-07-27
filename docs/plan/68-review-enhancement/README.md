@@ -4,6 +4,8 @@
 **依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P5 Requirement Questioning](../50-requirement-questioning/README.md)、[P6.5 Verification Enhancement](../65-verification-enhancement/README.md)
 **状态**：待用户主动发起
 
+> **历史提案注记**：以下“`major` 可记录为已知债务后通过”的方案已被 [Review 正式规范](../../design/core/kernel/review.md) 取代。未解决的 `critical` 或 `major` finding 阻止 `approved`；实施本计划时以正式规范为准，原文仅保留为历史提案。
+
 ## 背景
 
 Review 是 SDD 生命周期中 Verified → Reviewed 的关键阶段。它提供独立于 Verification 的第二层质量保障——Verification 回答"Gate 是否通过"，Review 回答"证据是否真的支撑 Spec 和 Plan 的完成"。当前基线：
@@ -69,7 +71,7 @@ P5 需求追问引入的"对抗式验证"用于攻击需求完整性，Review �
 | 1 | `templates/.themis/core/policies/review.yaml` | 新建 | 评审维度、严重级别、通过标准 |
 | 2 | `templates/.themis/core/templates/review-execution.md` | 新建 | Review 执行 Prompt（Spec + Plan + Diff + Evidence → 评审结果） |
 | 3 | `templates/.themis/core/kernel/review/rules.md` | 更新 | 从占位内容更新为完整评审规则 |
-| 4 | `docs/core/kernel/review.md` | 更新 | 同步 WIKI |
+| 4 | `docs/design/core/kernel/review.md` | 更新 | 同步 WIKI |
 
 ## 验收条件
 

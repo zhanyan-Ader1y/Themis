@@ -89,14 +89,13 @@ P5.5 必须自行提供最小确定性执行器；P8 未来只负责 Agent、Com
 
 | 文件 | 操作 |
 |---|---|
-| `AGENTS.md`、`AGENTS.CN.md` | 同步追加式治理、人工批准和确定性处置规则 |
+| `docs/design/core/kernel/knowledge.md` | 更新实际治理流程和边界 |
+| `docs/design/core/policies.md` | 更新真实 policy 结构，删除虚构的相似度阈值 |
+| `docs/design/core/templates.md` | 记录三个持久工件模板和两个 Prompt |
+| `docs/design/core/protocols.md` | 记录候选、审核、处置和 Context provenance 约束 |
+| `docs/design/workspace/overview.md` | 澄清可选子目录、追加式记录和 Catalog 处置行为 |
+| `docs/design/workflow.md` | 标记 P5.5 已交付流程及 P6/P7.5/P8 的缺失输入处理 |
 | `docs/plan/55-knowledge-governance/README.md` | 修正依赖、脚本边界、目标资产与验收条件 |
-| `docs/core/kernel/knowledge.md` | 更新实际治理流程和边界 |
-| `docs/core/policies.md` | 更新真实 policy 结构，删除虚构的相似度阈值 |
-| `docs/core/templates.md` | 记录三个持久工件模板和两个 Prompt |
-| `docs/core/protocols.md` | 记录候选、审核、处置和 Context provenance 约束 |
-| `docs/workspace/overview.md` | 澄清可选子目录、追加式记录和 Catalog 处置行为 |
-| `docs/workflow.md` | 标记 P5.5 已交付流程及 P6/P7.5/P8 的缺失输入处理 |
 | `docs/plan/README.md` | P5.5 完成后更新状态 |
 | `CHANGES.md` | 记录新能力 |
 | `templates/.themis/VERSION`、`templates/.themis/core/core.yaml` | 协调升级 Core/Bundle 版本 |
@@ -111,7 +110,7 @@ P5.5 必须自行提供最小确定性执行器；P8 未来只负责 Agent、Com
 | KG-04 | Knowledge rules 与 Orchestrator 可达性复核 | KG-02、KG-03 | rules 不超过 50 行并显式 MUST Read；现有 import 图保持浅层。 |
 | KG-05 | 模板检查与隔离回归 | KG-01、KG-02、KG-03、KG-04 | 新资产、稳定 ID/计数、Prompt 标题和 rules 预算均有失败夹具。 |
 | KG-06 | 模块行为测试 | KG-03 | 候选、审核、六类处置、无批准拒绝、重复执行和失败回滚覆盖。 |
-| KG-07 | WIKI、计划、AGENTS 与发布同步 | KG-04、KG-05、KG-06 | 文档与实现一致，版本和 Upgrade 期望同步。 |
+| KG-07 | 正式设计、计划与发布同步 | KG-04、KG-05、KG-06 | `docs/design/**` 与实现一致，版本和 Upgrade 期望同步。 |
 | KG-08 | 全量验证 | KG-07 | 所有适用命令输出已观察且通过，最终工作树已检查。 |
 
 ```text

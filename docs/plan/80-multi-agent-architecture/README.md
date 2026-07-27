@@ -4,6 +4,8 @@
 **依赖**：[P7 Integration Audit](../70-integration-audit/README.md)、[P1 Template Contract](../10-template-contract/README.md)、[P5 Requirement Questioning](../50-requirement-questioning/README.md)
 **状态**：待用户主动发起
 
+> **历史提案注记**：以下先 Review、后 Verification 的阶段顺序已被 [完整工作流程](../../design/workflow.md) 取代。正式顺序为 `Implemented → Verified → Reviewed`；实施本计划时必须先验证再评审，原文仅保留为历史提案。
+
 ## 背景
 
 当前 Themis 设计以模块划分能力边界，但未定义**执行层的 Agent 拆分**。如果所有 SDD 阶段共用一个 Agent（god agent），会导致：

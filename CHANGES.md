@@ -2,6 +2,13 @@
 
 ## 0.2.0
 
+### 2026-07-27
+
+- 将已确认的 Themis 设计规范统一迁入 `docs/design/**`，建立设计治理、架构、工作流、Core 与 Workspace 的单一权威入口
+- 精简 `AGENTS.md`、`AGENTS.CN.md` 和文档导航为仓库协作与链接入口；旧 `docs/core/**`、`docs/workspace/**`、`docs/workflow.md` 和 `docs/runtime-environment.md` 保留为非规范兼容指针
+- 校准 Init、Explicit Migration、Adapter、Protocol、Policy 与各 Kernel 模块的实现状态，并让待实施计划的未来文档目标指向 `docs/design/**`
+- 将 `main` 新增的 P5.4 Context Trust 正式合同并入设计规范，保留 P5.2 Spec 双视图为待确认实施设计
+
 ### 2026-07-25
 
 - 完成 P5 Requirement Questioning：新增 Step 0–4 的自适应追问 Prompt、Five Whys、Pre-mortem、Option Zero、AC 分段确认和对抗验证场景库

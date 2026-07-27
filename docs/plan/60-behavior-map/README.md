@@ -284,6 +284,7 @@ Verification 模块:
 | Executor | `templates/.themis/core/bin/themis-behavior-map-freshness.sh` | 根据锚点和依赖摘要确定性标记新鲜度 |
 | Rules | `templates/.themis/core/kernel/context/rules.md` | 按需 MUST Read 生成资产并保持 Context 边界 |
 | Rules | `templates/.themis/core/kernel/planning/rules.md` | 按需 MUST Read 定位资产并保持只读 Planning 边界 |
+| Design | `docs/design/core/{adapters,protocols}.md`、`docs/design/core/kernel/{context,planning}.md`、`docs/design/workflow.md` | 在实现后同步正式合同和能力状态 |
 | Workspace output | `workspace/context/architecture/behavior-map/` | 保存项目特定生成实例、锚点、图和元数据 |
 
 Schema 和控制逻辑必须位于 Core；Workspace 只保存项目实例。不得把 Schema 文件预装进 `workspace/context/` 作为控制源，因为 Core Upgrade 不会更新 Workspace。

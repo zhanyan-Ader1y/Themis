@@ -1,10 +1,11 @@
 <p align="center">
   <h1 align="center">Themis</h1>
   <p align="center">
-    <strong>面向团队的自进化repo-local AI Coding Harness</strong>
+    <strong>面向团队的自进化 repo-local AI Coding Harness</strong>
   </p>
   <p align="center">
-    <a href="docs/">Wiki</a> ·
+    <a href="docs/design/">设计规范</a> ·
+    <a href="docs/">文档</a> ·
     <a href="docs/plan/">实施计划</a> ·
     <a href="CHANGES.md">更新日志</a>
   </p>
@@ -17,20 +18,12 @@
 
 ---
 
-
 ## 介绍
 
-Themis 是一个能够自我沉淀知识的规范驱动开发框架。
+Themis 是一个能够自我沉淀知识的规范驱动开发框架。它将 Themis 管理的能力层与项目持有的内容和运行数据分离，并通过明确的工件、证据和门禁管理开发生命周期。
 
-## 核心设计原则
-
-```
-Core 定义能力，不保存项目内容
-Workspace 保存内容，不实现控制逻辑
-Core 可以升级，Workspace 不被覆盖
-Workspace 可以演进，Core 通过协议解释
-```
+完整设计与模块合同以 [Themis 设计规范](docs/design/) 为准。
 
 ## 安装
 
-将 `templates/.themis/` 复制到目标项目的 `<project-root>/.themis/`。
+从 Themis 源仓库运行 `bash bin/themis-init.sh <project-root>`，由 Init 校验环境和模板、写入项目 Manifest，并安装受管 Guidance。环境要求和生命周期边界见 [Init 设计](docs/design/runtime-environment.md) 与 [完整工作流程](docs/design/workflow.md#initupgrade-与-migration)。

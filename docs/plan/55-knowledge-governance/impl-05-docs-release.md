@@ -4,17 +4,9 @@
 
 让仓库级设计契约、模块 WIKI、工作流、计划索引和发布元数据与 P5.5 实际行为一致。文档不得声称未安装的 Agent、Command、Freshness、Embedding 或上游结构化工件已经可用。
 
-## `AGENTS.md` 与 `AGENTS.CN.md`
+## 正式设计页
 
-在 Knowledge Governance 领域同步记录：
-
-- candidate/review/action 是追加式治理记录；修订通过新候选和 `supersedes` 表达；
-- 精确重复是脚本事实，语义重复/冲突是待治理判断；
-- 所有 v1 最终处置需要持久化人工批准；
-- 正式 Context 的提升和废弃只能通过确定性 apply 执行器完成；
-- apply 不得静默覆盖 Context，失败必须回滚或报告不确定状态。
-
-英文与中文文件语义必须同步；`AGENTS.md` 继续作为冲突时的权威来源。
+在实施完成并取得验证证据后，将追加式治理、人工批准、事实核验和确定性处置合同同步到对应 `docs/design/**` 所属页。`AGENTS.md` 与 `AGENTS.CN.md` 只保留仓库工作约定和设计入口，不复制产品规则。
 
 ## P5.5 计划文档
 
@@ -31,7 +23,7 @@
 
 ## Kernel WIKI
 
-更新 `docs/core/kernel/knowledge.md`：
+更新 `docs/design/core/kernel/knowledge.md`：
 
 - 明确 Candidate Extraction、Review Recommendation、Human Decision、Deterministic Apply 的职责分离；
 - 将 `workspace/knowledge/` 定义为治理历史而非第二知识库；
@@ -42,7 +34,7 @@
 
 ## Policies WIKI
 
-更新 `docs/core/policies.md` 中 `knowledge-governance.yaml`：
+更新 `docs/design/core/policies.md` 中 `knowledge-governance.yaml`：
 
 - 使用真实根 Schema 和稳定 ID；
 - 展示来源、分类、流程顺序、审核维度和处置；
@@ -54,7 +46,7 @@
 
 ## Templates 与 Protocols WIKI
 
-更新 `docs/core/templates.md`：
+更新 `docs/design/core/templates.md`：
 
 - `knowledge-candidate.md`：候选工件；
 - `knowledge-review-record.md`：审核和批准工件；
@@ -62,7 +54,7 @@
 - `knowledge-candidate-extraction.md`：候选提取 Prompt；
 - `knowledge-review.md`：审核/废弃 Prompt。
 
-更新 `docs/core/protocols.md`：
+更新 `docs/design/core/protocols.md`：
 
 - 三类知识治理工件的 Schema 和引用关系；
 - candidate/review/action/context 的摘要绑定；
@@ -73,7 +65,7 @@
 
 ## Workspace WIKI
 
-更新 `docs/workspace/overview.md`：
+更新 `docs/design/workspace/overview.md`：
 
 - `candidates/` 保存原始追加式候选；
 - `reviews/` 保存审核和 promote/revise/merge/retain action；
@@ -84,7 +76,7 @@
 
 ## 工作流 WIKI
 
-更新 `docs/workflow.md` 的 Knowledge 流程：
+更新 `docs/design/workflow.md` 的 Knowledge 流程：
 
 - 使用真实 Prompt/Script 读取顺序；
 - 区分 AI recommendation、human decision、script action；
@@ -105,10 +97,10 @@ P5.5 是新增可安装 Runtime 能力，协调提升 Core/Bundle 次版本：
 
 完成后逐项确认：
 
-1. README、impl、AGENTS、WIKI、policy 和 Prompt 使用相同来源/分类/处置 ID。
+1. README、impl、正式设计、policy 和 Prompt 使用相同来源/分类/处置 ID。
 2. 所有脚本路径均为 `core/bin/`，不存在根 `bin/` 与安装后路径混淆。
 3. 文档不再宣称自动 embedding、Freshness 或 P8 Agent 已实现。
 4. Workspace 文档不再描述“移动 candidate”导致历史丢失。
 5. `catalog.yaml` 的字段、Context Item digest 与 apply 脚本实际输出一致。
 6. 版本、CHANGES、计划状态和测试期望一致。
-7. 所有确认的新仓库级设计规则同时进入英文和中文 AGENTS。
+7. 所有确认的长期设计规则只进入对应 `docs/design/**` 页面；AGENTS 继续只保存协作约定和链接。

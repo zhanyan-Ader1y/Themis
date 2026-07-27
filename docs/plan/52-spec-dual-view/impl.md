@@ -86,7 +86,7 @@ workspace/specs/<spec-id>/
 
 | 文件或范围 | 作用 |
 |---|---|
-| `AGENTS.md` | 登记单一语义源、双视图、机器证据与显式迁移的仓库级规则。 |
+| `docs/design/core/{protocols,templates}.md`、`docs/design/core/kernel/{specification,planning}.md`、`docs/design/workspace/overview.md`、`docs/design/workflow.md` | 在实施获批后同步单一语义源、双视图、机器证据与显式迁移的正式设计。 |
 | `templates/.themis/{VERSION,core/core.yaml,workspace/manifest.yaml}` | Artifact v2、可读/可写兼容矩阵、迁移描述符和版本。 |
 | `templates/.themis/core/policies/{specification,transitions,migration}.yaml` | 投影规则、readiness check、稳定 transition evidence 与迁移验证。 |
 | `templates/.themis/core/templates/{spec-questioning,spec-adversarial-checklist,migration-execution}.md` | 使用结构化 candidate、执行器与对象级攻击处置。 |
@@ -94,7 +94,7 @@ workspace/specs/<spec-id>/
 | `templates/.themis/{CLAUDE.themis.md,core/kernel/orchestrator/rules.md}` | 双视图路径、v1 只读兼容和 fail-closed 路由。 |
 | `bin/{themis-template-check,themis-migrate}.sh` | 新 Core 契约检查、ASCII migration ID、Artifact v2 配对验证。 |
 | `tests/{template-contract,init,upgrade,migrate}/test.sh` | 新安装、无损升级、显式迁移和负向 fixture。 |
-| `docs/core/`、`docs/workspace/overview.md`、`docs/workflow.md`、`docs/analysis/loading-chain.md` | 同步长期 Wiki 与 P5/P8 边界。 |
+| `docs/design/core/`、`docs/design/workspace/overview.md`、`docs/design/workflow.md`、`docs/analysis/loading-chain.md` | 同步正式设计、实现边界与 P5/P8 集成。 |
 | `docs/plan/README.md`、`CHANGES.md` | 登记 P5.2 与已交付能力。 |
 
 原 `templates/.themis/core/templates/spec.md` 不再作为 v2 创建模板；迁移适配器是唯一允许解析旧标题的路径。
@@ -102,7 +102,7 @@ workspace/specs/<spec-id>/
 ## 实施顺序
 
 ```text
-AGENTS.md + Protocol/Version contract
+Canonical design + Protocol/Version contract
   → spec.yaml template + validator
   → Human renderer + OID drift
   → transactional publisher

@@ -2,7 +2,7 @@
 
 **优先级**：P4.5（P4 Upgrade 的补充能力）
 **依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P4 Upgrade](../40-upgrade/README.md)
-**状态**：已完成
+**状态**：已完成；当前实现边界见 [Migrations 正式规范](../../design/core/migrations.md)
 
 ## 背景
 
