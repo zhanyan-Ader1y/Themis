@@ -402,13 +402,17 @@ themis_template_check_schema_compatibility() {
   return 1
 }
 
-# 解析并验证 Core Markdown import，确保其规范化后仍受限于 Core。
+# 解析并验证 Core Markdown import；先移除 Windows CRLF 行尾，再确保规范化目标仍受限于 Core。
 themis_template_check_import() {
   local themis_template_import_source=$1
   local themis_template_import_path=$2
+  local themis_template_import_carriage_return
   local themis_template_import_target
   local themis_template_import_directory
   local themis_template_import_resolved
+
+  themis_template_import_carriage_return=$(printf '\r')
+  themis_template_import_path=${themis_template_import_path%"${themis_template_import_carriage_return}"}
 
   case "${themis_template_import_path}" in
     /*)
