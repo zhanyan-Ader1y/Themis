@@ -17,7 +17,7 @@ Specification WIKI 说明 Step 0–4、复杂度自适应、Draft Spec、攻击�
 - P5 已落地的模板、声明式策略、Prompt 和结构契约；
 - P8 尚未落地的确定性状态评估和 `workspace/state/transitions/` 记录。
 
-Policies WIKI 使用 `draft_to_specified` keyed mapping 展示一个完整 transition contract，不把 sequence 和 `forbidden` map 混为无效 YAML。Templates WIKI 登记新的真实 `spec.md` 模板及两个 P5 Prompt 资源。
+Policies WIKI 使用 `draft_to_specified` keyed mapping 展示一个完整 transition contract，不把 sequence 和 `forbidden` map 混为无效 YAML。Templates WIKI 登记权威 `spec.yaml` 模板、生成式 `spec.md` 投影及两个 P5 Prompt 资源。
 
 Workflow 的 Specification 子图更新为 Step 0–4 和对抗验证，但状态迁移节点必须标为 P8 未来执行器。P5 在能力表中更新为已落地的需求追问与 Draft 审批证据契约。
 

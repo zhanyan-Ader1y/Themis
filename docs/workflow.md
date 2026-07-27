@@ -2,7 +2,7 @@
 
 本文描述 Themis 从安装、需求进入、上下文加载、需求追问、规范与计划、任务实施、验证评审、交付结果、归因分析，到人机混合知识治理与后续升级的完整工作流程。
 
-> 图中“已落地”表示当前仓库已有契约、模板、指引或脚本支持；“规划中”表示已进入后续设计但尚未形成可执行运行时。P5 已提供 Prompt、策略、Draft Spec 契约与人工批准证据；P8 尚未提供确定性状态迁移执行器。缺少规划中能力时，Themis 必须停留在当前阶段并明确报告，不得虚构状态、证据或执行结果。
+> 图中“已落地”表示当前仓库已有契约、模板、指引或脚本支持；“规划中”表示已进入后续设计但尚未形成可执行运行时。P5/P5.2 已提供 Prompt、策略、Spec v2 双视图、确定性校验/渲染/发布和人工批准证据；P8 尚未提供持久生命周期状态迁移执行器。缺少规划中能力时，Themis 必须停留在当前阶段并明确报告，不得虚构状态、证据或执行结果。
 
 ## 状态与所有权图例
 
@@ -61,8 +61,8 @@ flowchart TD
         S3[Step 2：上下文、约束、证据与 Option Zero · medium/high · P5]
         S4[Step 3：方案取舍与分段 Acceptance Criteria · P5]
         S5[Step 4：对抗验证 · P5]
-        S6[写入或更新 workspace/specs/spec-id/spec.md Draft]
-        S7[Spec 自检：结构、假设、证据与攻击处置]
+        S6[写入临时 spec.yaml candidate，并由 publisher 生成 canonical pair]
+        S7[Spec validator：结构、引用、readiness 与 projection OID]
         S8{用户是否明确批准 Draft Spec?}
         S9[记录批准证据；Spec 仍保持 Draft]
         S10[[P8 规划中：校验 Gate 并记录 Specified 状态]]
@@ -70,7 +70,7 @@ flowchart TD
     end
 
     subgraph PLAN[Specified → Planned]
-        P0[Planning 读取已批准 Spec 与 Context]
+        P0[Planning 读取已验证的 spec.yaml、validator JSON 与 Context]
         P1[Behavior Map 逐层定位行为与代码 · P6 规划中]
         P2[拆分会话级 Task、依赖 DAG 与完成标准]
         P3[建立 AC → Task → 代码位置 → Gate 追踪]
@@ -263,8 +263,8 @@ Draft → Specified → Planned → Implemented → Verified → Reviewed → Ar
 
 | 阶段 | 控制模块 | 主要门禁 | Workspace 持久工件 |
 |---|---|---|---|
-| Draft | Orchestrator、Specification、Context | P5 追问、对抗验证与批准证据完整；P8 前不记录状态迁移 | `specs/<spec-id>/spec.md` Draft、批准/攻击证据 |
-| Specified | P8 状态执行器（规划中） | 确定性验证 P5 声明式门禁并记录迁移 | 已批准 `spec.md`、`state/transitions/`（P8） |
+| Draft | Orchestrator、Specification、Context | P5 追问、对抗验证、批准证据与八项 validator check；P8 前不记录状态迁移 | `specs/<spec-id>/spec.yaml` 权威 Draft、`spec.md` Human 投影 |
+| Specified | P8 状态执行器（规划中） | 复用 P5.2 readiness JSON 并记录迁移，不重写 Spec 校验逻辑 | 已验证 Spec pair、`state/transitions/`（P8） |
 | Planned | Planning | AC 全覆盖、Task DAG 合法、证据要求明确 | `plan.md`、`state/tasks/` |
 | Implemented | Orchestrator、实施者 | 全部 Task 满足完成标准并有证据 | 项目源码、Task evidence、会话状态 |
 | Verified | Verification | 所有阻塞 Gate 通过且证据充分 | `runs/<run-id>/`、`evidence/`、`verify.md` |
@@ -522,7 +522,7 @@ flowchart TD
         REPLACE[仅替换 .themis 中 workspace 之外的内容]
         CHECK[校验 Workspace 与 CLAUDE.md 指纹未变]
         RESTORE[失败时恢复旧受管内容]
-        MIGRATE[显式 Workspace/Artifact 迁移 · 未来能力]
+        MIGRATE[显式 Workspace/Artifact 迁移 · 已落地]
     end
 
     ENTRY -- 新项目 --> NEW --> ENV --> SOURCE --> COPY --> CONFIG --> IMPORT --> VALIDATE
@@ -542,11 +542,9 @@ flowchart TD
     COMPAT -- 有迁移描述符但不直接兼容 --> MIGRATE
     COMPAT -- 不支持 --> STOP[拒绝升级并给出诊断]
 
-    classDef planned fill:#fff4d6,stroke:#9a6b00,color:#4f3800,stroke-dasharray:5 3;
-    class MIGRATE planned;
 ```
 
-Init 只用于尚未安装 Themis 的项目；Upgrade 不加载 Init 环境校验，也绝不复制、删除、修改或恢复 `.themis/workspace/`。存在迁移描述符不等于允许自动迁移，未来迁移能力仍必须经过显式用户授权、备份、验证与回滚流程。
+Init 只用于尚未安装 Themis 的项目；Upgrade 不加载 Init 环境校验，也绝不复制、删除、修改或恢复 `.themis/workspace/`。当前首次发布原生使用 Artifact v2，不提供 Artifact v1 兼容或迁移能力。未来出现 Workspace 或 Artifact Schema 演进时，独立的 `themis-migrate.sh` 仍必须要求显式用户授权、持久备份、验证与回滚；Upgrade 只安装受支持的 Core，绝不自动迁移 Workspace。
 
 ## 当前实现边界
 
@@ -557,12 +555,12 @@ Init 只用于尚未安装 Themis 的项目；Upgrade 不加载 Init 环境校�
 | P2 顶层 Guidance 与生命周期路由规则 | 已落地 |
 | P3 Init 安装与失败回滚 | 已落地 |
 | P4 非 Workspace 受管内容升级、备份与回滚 | 已落地 |
-| P5 自适应需求追问、Draft Spec 与批准证据契约 | 已落地；确定性 `Specified` 状态执行器留待 P8 |
+| P5 自适应需求追问、Spec v2 双视图、确定性 lint/render/publish 与批准证据 | 已落地；持久 `Specified` 状态迁移留待 P8 |
 | P6 Behavior Map、事实提取与变更定位 | 规划中，仅目录占位已存在 |
 | P7 跨模块集成审计 | 分析已完成，不是运行时执行层 |
 | P8 专用 Agent、Command、Skill 与确定性 SDD 脚本 | 规划中，尚未实施 |
 | 自动 Attribution、知识提升和废弃执行器 | 仅有架构与边界定义，尚未实施 |
-| Workspace 与 Artifact Schema 迁移执行器 | 尚未实施，Upgrade 当前会拒绝 |
+| Workspace 与 Artifact Schema 迁移执行器 | 通用显式迁移基础设施已落地；当前原生 Artifact v2 不声明 Artifact migration，未来 Schema 演进仍须独立授权执行 |
 
 ## 关键不变规则
 

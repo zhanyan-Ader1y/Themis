@@ -16,24 +16,24 @@ Templates 保存默认工件模板和按需 Prompt 模板。它们是创建新�
 
 ## 模板列表
 
-### spec.md — Spec 模板
+### spec.yaml 与 spec.md — Spec 双视图
 
-`core/templates/spec.md` 是 P5 创建新 Draft Spec 的真实模板，前置元数据使用 `themis-spec/v1`：
+`core/templates/spec.yaml` 是 P5 创建新 Draft Spec candidate 的权威模板，使用 `themis-spec/v2`：
 
 ```yaml
-spec_schema: themis-spec/v1
+spec_schema: themis-spec/v2
 id: ""
 title: ""
 status: draft
-template_version: 1
-complexity: pending
-approval:
-  decision: pending
+revision: 1
+template_version: 2
 ```
 
-正文提供稳定章节：`Intent and Root Cause`、`Scope`、`Context, Constraints, and Evidence`、`Options and Decision`、`Requirements`、`Acceptance Criteria`、`Assumptions`、`Adversarial Validation`、`Limitations and Deferred Work`、`Rollback` 和 `Approval`。
+`workspace/specs/<spec-id>/spec.yaml` 是唯一机器语义源；Requirement、Decision、Contract、Invariant、Acceptance Criteria、对抗发现和 Risk 都使用稳定 ID 与显式引用。`workspace/specs/<spec-id>/spec.md` 不是第二份模板实例，而是 `core/kernel/specification/themis-spec.sh` 从 YAML 确定性生成的人类审阅投影。
 
-AC 使用 `AC-xxx`，对抗发现使用 `ADV-xxx`。P5 记录批准证据但保持 Draft；未来 P8 执行器才记录生命周期迁移。
+Human 投影固定压缩为 Review Summary、Architecture at a Glance、Key Decisions、Contracts and Invariants、Acceptance Criteria、Risks/Limitations/Rollback、Approval 和 Appendix。投影 marker 保存 source/body Git blob OID；YAML 变化、正文手改或 marker 损坏都会形成漂移，禁止从 Markdown 反向同步。
+
+不存在独立的 `core/templates/spec.md`：Human Markdown 只能由已安装 executor 从 YAML 生成。P5 记录批准证据但保持 Draft；未来 P8 执行器才记录生命周期迁移。
 
 ### plan.md — Plan 模板
 
@@ -88,11 +88,13 @@ P4.5 的迁移引导模板声明检查、备份、执行、验证和回滚脚本
 ## 模板生命周期
 
 ```text
-core/templates/spec.md
-        ↓ 初始化
-workspace/specs/SPEC-001/spec.md
+core/templates/spec.yaml
+        ↓ 创建临时 candidate
+core/kernel/specification/themis-spec.sh publish
+        ↓ 校验、渲染、事务发布
+workspace/specs/SPEC-001/spec.yaml + spec.md
         ↓ 项目独立演进
-Core 模板升级不影响已有实例
+Core 模板升级不影响已有实例；未来格式演进只经显式 Migration 转换
 ```
 
 ## 与 Workspace 的交互
@@ -102,7 +104,7 @@ Templates 读取:
   （无——Templates 是纯静态 Core 资源）
 
 Templates 被使用:
-  创建新 Spec 时 → 复制 spec.md 模板
+  创建新 Spec 时 → 复制 spec.yaml 到临时 candidate，并由 themis-spec.sh publish canonical pair
   创建新 Plan 时 → 复制 plan.md 模板
   记录 Review / Verify / Knowledge 候选时 → 复制相应模板
   Draft 追问时 → 读取 P5 Prompt 与攻击场景库

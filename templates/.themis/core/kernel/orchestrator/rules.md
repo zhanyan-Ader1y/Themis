@@ -41,7 +41,7 @@ Determine the next domain from existing Workspace artifacts and the effective pr
 
 ### Specification
 
-Route to Specification when no relevant approved Spec exists, intent or acceptance criteria remain unresolved, or requested scope exceeds the approved Spec. Do not implement from an unapproved draft.
+Route to Specification when no relevant approved Spec exists, intent or acceptance criteria remain unresolved, requested scope exceeds the approved Spec, or the Spec validator reports an invalid/stale pair. `spec.yaml` is machine authority and `spec.md` is display-only. Do not implement from an unapproved draft.
 
 ### Planning
 

@@ -38,7 +38,7 @@ Themis 区分"单次验证通过"和"实际交付结果成功"——这是 Verif
 ### Attribution 关联链
 
 ```
-Spec (spec.md)
+Spec (`spec.yaml` 权威语义；`spec.md` Human 投影)
   → Plan (plan.md)
     → Task (plan.md tasks[])
       → Commit (git history)

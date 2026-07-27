@@ -19,7 +19,7 @@ Protocols 定义 Core 与 Workspace、Core 与外部工具之间的数据契约�
 
 定义 SDD 工件的结构和语义：
 
-- **Spec Artifact Protocol**：Spec 文档的字段、类型、约束、版本
+- **Spec Artifact Protocol v2**：`spec.yaml` 的字段、类型、稳定 ID、引用与 readiness check；`spec.md` 是由 projection protocol 定义的 Human 审阅投影
 - **Plan Artifact Protocol**：Plan 文档的字段、Task 结构、依赖关系
 - **Review Artifact Protocol**：Review 文档的字段、严重级别、评审状态
 - **Verify Artifact Protocol**：Verify 文档的字段、Gate 结果、Verdict
@@ -102,7 +102,8 @@ core/protocols/
 │   │   ├── plan-schema.yaml
 │   │   └── review-schema.yaml
 │   └── v2/
-│       └── ...
+│       ├── spec-schema.yaml
+│       └── spec-projection.yaml
 ├── gate/
 │   └── v1/
 │       └── gate-result-schema.yaml

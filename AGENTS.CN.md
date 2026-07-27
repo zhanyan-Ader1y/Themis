@@ -189,6 +189,9 @@ Draft → Specified → Planned → Implemented → Verified → Reviewed → Ar
 - 每个行为变更请求都需要 Spec；低复杂度可使用较短路径，但不得跳过对抗验证。
 - P5 使用五个阶段：Step 0 意图发现、Step 1 范围评估、Step 2 上下文收集、Step 3 设计收敛、Step 4 对抗验证。
 - P5 创建并完成 Draft Spec。必须保持 `status: draft`；只有确定性状态执行器才能记录 `draft → specified`。
+- 每个活动 Spec 是一个配对工件：`spec.yaml` 是唯一权威语义源，`spec.md` 是确定性生成、可重建的人类审阅投影。
+- Agent、Planning、状态转换与 Verification 必须消费 `spec.yaml` 中的稳定对象和引用；Markdown 标题与正文永远不是机器证据。
+- `spec.md` 必须由已安装的 Spec 执行器生成并检查漂移；不得把 Markdown 手改反向同步到 `spec.yaml`。
 - Acceptance Criteria 和对抗发现需要稳定标识符。
 
 ### Context

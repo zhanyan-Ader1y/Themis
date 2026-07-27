@@ -1,11 +1,13 @@
 core_schema: themis-core/v1
-core_version: 0.2.0
+core_version: 0.3.0
 compatibility:
   workspace:
     supported: [themis-workspace/v1]
+    writable: themis-workspace/v1
     migrations: []
   artifact:
-    supported: [themis-artifact/v1]
+    supported: [themis-artifact/v2]
+    writable: themis-artifact/v2
     migrations: []
 migration_roots:
   workspace: migrations/workspace

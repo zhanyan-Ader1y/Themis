@@ -1,35 +1,37 @@
 # Themis 生命周期迁移声明
-# P5 仅定义 Draft → Specified 的证据契约。P8 将来负责确定性评估和状态记录。
+# P5.2 提供稳定 validator check；P8 负责确定性评估、状态记录和跨工件追踪。
 
 transitions:
   draft_to_specified:
     from: draft
     to: specified
     hard_gate: true
-    description: 需求追问、对抗验证和用户批准已形成可复核证据。
+    description: Spec v2 已通过完整 readiness、投影漂移和用户批准检查。
     conditions:
-      - id: intent_documented
-        description: Step 0 的核心意图和根因已记录。
-        evidence: sections.Intent and Root Cause
-      - id: scope_and_complexity_confirmed
-        description: Step 1 的范围、复杂度及用户确认已记录。
-        evidence: sections.Scope
-      - id: context_documented
-        description: Step 2 的约束、证据和假设已记录。
-        required_for: [medium, high]
-        evidence: sections.Context, Constraints, and Evidence
-      - id: design_and_ac_documented
-        description: 选定方案和可验证 Acceptance Criteria 已记录。
-        evidence: sections.Options and Decision,Requirements,Acceptance Criteria
-      - id: adversarial_validation_resolved
-        description: 每个有效攻击均有 cover、accept 或 defer 终态。
-        evidence: sections.Adversarial Validation,Limitations and Deferred Work
-      - id: spec_self_check_completed
-        description: 策略定义的结构与对抗自检已完成。
-        evidence: questioning and adversarial_validation front matter
-      - id: user_approval_recorded
-        description: 用户已明确批准 Draft Spec。
-        evidence: approval front matter,sections.Approval
+      - id: spec_intent_complete
+        description: 核心意图、结果和根因已记录。
+        evidence: validator.checks.spec_intent_complete
+      - id: spec_scope_complexity_confirmed
+        description: 范围、复杂度及用户确认已记录。
+        evidence: validator.checks.spec_scope_complexity_confirmed
+      - id: spec_context_complete
+        description: 复杂度所需的证据和 Context 已记录。
+        evidence: validator.checks.spec_context_complete
+      - id: spec_design_acceptance_complete
+        description: 决策、Requirement 和完整 Acceptance Criteria 已记录并可追踪。
+        evidence: validator.checks.spec_design_acceptance_complete
+      - id: spec_adversarial_resolved
+        description: 每个有效攻击均有可验证终态，延期符合策略。
+        evidence: validator.checks.spec_adversarial_resolved
+      - id: spec_self_check_passed
+        description: 策略定义的结构与对抗自检均通过。
+        evidence: validator.checks.spec_self_check_passed
+      - id: spec_user_approval_recorded
+        description: 用户明确批准证据完整。
+        evidence: validator.checks.spec_user_approval_recorded
+      - id: spec_projection_current
+        description: Human 投影与当前权威源逐字一致且 marker 完整。
+        evidence: validator.checks.spec_projection_current
 
 adversarial_validation:
   unresolved_attack_block: true

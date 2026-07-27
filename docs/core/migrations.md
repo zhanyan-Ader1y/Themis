@@ -99,8 +99,10 @@ supported_workspace_schemas:
 ```yaml
 # workspace/manifest.yaml
 workspace_schema: themis-workspace/v1
-artifact_schema: themis-artifact/v1
+artifact_schema: themis-artifact/v2
 ```
+
+当前 0.3.0 首次发布只支持上述原生 Schema，Artifact migration descriptor 为空。未来 Schema 演进时，Core 才可在 `compatibility.*.migrations` 中声明显式转换；在此之前不应虚构历史版本或兼容模式。
 
 Core 在加载时检查：
 - `workspace_schema` 是否在 `supported_workspace_schemas` 列表中

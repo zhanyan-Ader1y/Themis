@@ -54,7 +54,8 @@ Review 约束只读评审过程并标准化评审结果。它确保评审是结�
 
 ```
 Review 读取:
-  workspace/specs/<spec-id>/spec.md   # 评审对象
+  workspace/specs/<spec-id>/spec.yaml # 权威语义、稳定 ID 与追踪关系
+  workspace/specs/<spec-id>/spec.md   # Human 审阅投影；先确认 projection current
   workspace/specs/<spec-id>/plan.md   # 实施计划
   workspace/policies/review.yaml      # 项目评审策略
 

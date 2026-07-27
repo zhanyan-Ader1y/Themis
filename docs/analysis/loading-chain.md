@@ -2,7 +2,7 @@
 
 本文以项目 agent 视角，追踪 Themis 从启动到各 SDD 阶段的完整 Prompt、YAML、Shell 脚本读取顺序，并标记结构性问题与增强建议。
 
-> 分析基准：Themis 0.2.0（P5 已落地，P6/P8 及后续能力尚未实施）。
+> 分析基准：Themis 0.3.0（P5/P5.2 原生 Artifact v2 / Spec v2 双视图已落地；P6/P8 状态执行层及后续能力尚未实施）。
 
 ## 图例
 
@@ -59,30 +59,33 @@ flowchart TD
 ```mermaid
 flowchart TD
     RULES["specification/rules.md<br/>已通过 @import 常驻内存"]
-    MANUAL_READ_1{"agent 是否遵循<br/>rules.md 的文本指引？"}
-    POLICY["② core/policies/specification.yaml<br/>复杂度阈值 · flow 模式 · 六维攻击面 ·<br/>五项快速检查 · dispositions · Red Flags · 自检项"]
-    PROMPT["③ core/templates/spec-questioning.md<br/>Role · 全局约束 · Available Scripts ·<br/>复杂度路由表 · Step 0–4 协议 · Final Approval"]
-    SPEC_TEMPLATE["④ core/templates/spec.md<br/>themis-spec/v1 Draft 模板<br/>11 个固定 Section · YAML front matter"]
-    ADV_LIB["⑤ core/templates/spec-adversarial-checklist.md<br/>五项快速检查 · 六维攻击场景库（29 个场景）<br/>结果记录规范"]
-    TRANSITIONS["⑥ core/policies/transitions.yaml<br/>draft_to_specified · 7 项证据条件 ·<br/>adversarial_validation Gate"]
+    MANUAL_READ_1{"agent 是否遵循<br/>rules.md 的 MUST Read？"}
+    POLICY["② core/policies/specification.yaml<br/>复杂度 · flow · 对抗策略 · readiness ID"]
+    PROMPT["③ core/templates/spec-questioning.md<br/>Step 0–4 · candidate flow · Available Scripts · Final Approval"]
+    PROTOCOL["④ core/protocols/artifact/v2/<br/>spec-schema.yaml + spec-projection.yaml"]
+    SPEC_TEMPLATE["⑤ core/templates/spec.yaml<br/>themis-spec/v2 authoritative candidate"]
+    EXECUTOR["⑥ specification/themis-spec.sh<br/>validate · render · publish · pair rollback"]
+    ADV_LIB["⑦ core/templates/spec-adversarial-checklist.md<br/>快速检查 · 六维攻击场景 · ADV/RSK 处置"]
+    TRANSITIONS["⑧ core/policies/transitions.yaml<br/>draft_to_specified · 8 个 validator check ID"]
 
     RULES --> MANUAL_READ_1
     MANUAL_READ_1 -- "✅ 遵循" --> POLICY
-    MANUAL_READ_1 -- "🔴 跳过" --> SKIP["直接开始追问<br/>丢失复杂度自适应和门禁"]
+    MANUAL_READ_1 -- "🔴 跳过" --> SKIP["直接开始追问<br/>丢失机器契约和 fail-closed 门禁"]
     POLICY --> PROMPT
     PROMPT -->|"Step 1 评估复杂度"| POLICY
-    PROMPT -->|"Step 3 创建 Draft"| SPEC_TEMPLATE
+    PROMPT -->|"创建 candidate"| SPEC_TEMPLATE
+    SPEC_TEMPLATE --> PROTOCOL
+    PROTOCOL --> EXECUTOR
     PROMPT -->|"Step 4 对抗验证"| ADV_LIB
-    SPEC_TEMPLATE -->|"final approval 前"| TRANSITIONS
+    EXECUTOR -->|"readiness JSON"| TRANSITIONS
 
     classDef auto fill:#e8f3ec,stroke:#247047,color:#153b28;
     classDef manual fill:#fff4d6,stroke:#9a6b00,color:#4f3800,stroke-dasharray:5 3;
     classDef broken fill:#fce4e4,stroke:#b91c1c,color:#7f1d1d;
     classDef output fill:#e8effa,stroke:#315f9b,color:#173453;
     class RULES auto;
-    class POLICY,PROMPT,ADV_LIB,TRANSITIONS manual;
+    class POLICY,PROMPT,PROTOCOL,SPEC_TEMPLATE,EXECUTOR,ADV_LIB,TRANSITIONS manual;
     class MANUAL_READ_1,SKIP broken;
-    class SPEC_TEMPLATE output;
 ```
 
 ### 🔴 核心问题：软依赖链（已部分修复）
@@ -97,9 +100,11 @@ specification/rules.md 中的**旧**原文是：
 
 > "You MUST Read these files before any Specification work:
 > 1. `core/templates/spec-questioning.md` — the Step 0–4 protocol.
-> 2. `core/policies/specification.yaml` — complexity thresholds and flow modes.
-> 3. `core/policies/transitions.yaml` — the `draft_to_specified` evidence contract.
-> Do not begin Step 0, assess complexity, or create a Draft Spec until all three files have been read."
+> 2. `core/policies/specification.yaml` — complexity, projection, publication, and readiness policy.
+> 3. `core/policies/transitions.yaml` — stable transition check IDs.
+> 4. `core/protocols/artifact/v2/spec-schema.yaml` — authoritative semantic shape.
+> 5. `core/protocols/artifact/v2/spec-projection.yaml` — Human projection contract.
+> Do not begin Specification work until these files and the declared executor availability have been checked."
 
 此外：
 - **B1**：spec-questioning.md Step 4 首行新增 "开始 Step 4 前，你必须 Read `core/templates/spec-adversarial-checklist.md`。不要凭记忆或通用知识即兴攻击。"
@@ -116,7 +121,9 @@ specification/rules.md 中的**旧**原文是：
 | `specification.yaml` | rules.md 文本指引 → agent 主动 Read | **中高** | 丢失复杂度分类、强制 high 信号、flow 模式 |
 | `spec-questioning.md` | 同上 | **中** | 丢失 Step 0 Five Whys、Step 4 对抗验证协议、Red Flags |
 | `spec-adversarial-checklist.md` | questioning.md Step 4 的文本提及 | **高** | 对抗验证退化为 agent 即兴发挥，场景覆盖不完整 |
-| `transitions.yaml` | questioning.md Final Approval 文本提及 | **高** | 丢失 7 项证据条件的具体定义 |
+| `transitions.yaml` | rules.md 强制 Read + executor readiness JSON | **低** | 若跳过则无法可靠判断八项门禁 |
+| `spec-schema.yaml` / `spec-projection.yaml` | rules.md 强制 Read | **低** | 丢失权威字段、引用与 Human 投影契约 |
+| `themis-spec.sh` | Prompt Available Scripts + fail-closed 检查 | **低** | 不得发布或手工维护 canonical pair |
 
 ---
 
@@ -125,7 +132,7 @@ specification/rules.md 中的**旧**原文是：
 ```mermaid
 flowchart TD
     RULES["planning/rules.md<br/>已通过 @import 常驻内存"]
-    SPEC["workspace/specs/spec-id/spec.md<br/>已批准 Spec"]
+    SPEC["workspace/specs/spec-id/spec.yaml<br/>已验证的权威 Spec"]
     CTX["workspace/context/<br/>架构 · 领域 · 工程 · ADR · 陷阱"]
     PLAN_OUT["workspace/specs/spec-id/plan.md<br/>Task 拆分 · 依赖 · AC 追踪"]
 
@@ -151,7 +158,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     ORCH["Orchestrator Artifact-First Routing<br/>已通过 @import 常驻内存"]
-    SPEC["workspace/specs/spec-id/spec.md<br/>批准范围"]
+    SPEC["workspace/specs/spec-id/spec.yaml<br/>批准范围与稳定 ID"]
     PLAN["workspace/specs/spec-id/plan.md<br/>当前 Task"]
     SRC["项目源代码"]
     EVIDENCE["workspace/evidence/<br/>Task 执行记录"]
@@ -212,7 +219,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     RULES["review/rules.md<br/>已通过 @import 常驻内存"]
-    SPEC["workspace/specs/spec-id/spec.md"]
+    SPEC["workspace/specs/spec-id/spec.yaml + spec.md<br/>机器语义 + 人类投影"]
     PLAN["workspace/specs/spec-id/plan.md"]
     DIFF["实现 diff"]
     EVIDENCE["workspace/evidence/ · workspace/runs/"]
@@ -290,7 +297,8 @@ flowchart LR
         M2["spec-questioning.md"]
         M3["spec-adversarial-checklist.md"]
         M4["transitions.yaml"]
-        M5["spec.md（模板）"]
+        M5["spec.yaml template + v2 protocols"]
+        M6["themis-spec.sh executor"]
     end
 
     subgraph WORKSPACE["运行时按需读取"]
@@ -326,7 +334,8 @@ flowchart LR
     A4 -.->|"文本指引"| M2
     M2 -.->|"文本提及"| M3
     M2 -.->|"文本提及"| M4
-    M2 -.->|"Step 3 创建"| M5
+    M2 -.->|"创建 candidate"| M5
+    M5 -.->|"validate/render/publish"| M6
 
     A4 --> W3
     A5 --> W2
@@ -346,7 +355,7 @@ flowchart LR
     classDef ws fill:#e8effa,stroke:#315f9b,color:#173453;
     classDef missing fill:#fce4e4,stroke:#b91c1c,color:#7f1d1d;
     class A1,A2,A3,A4,A5,A6,A7,A8,A9,A10 auto;
-    class M1,M2,M3,M4,M5 manual;
+    class M1,M2,M3,M4,M5,M6 manual;
     class W1,W2,W3,W4,W5,W6 ws;
     class D1,D2,D3,D4,D5 missing;
 ```
@@ -358,9 +367,9 @@ flowchart LR
 | 阶段 | @import 规则 | Prompt 模板 | YAML 策略 | Shell 脚本 | 完整性 |
 |---|---|---|---|---|---|
 | **启动** | ✅ 8 文件自动加载 | — | — | — | 🟢 完整 |
-| **Specification** | ✅ rules.md | ✅ spec-questioning.md | ✅ specification.yaml | — | 🟡 Prompt/策略靠软依赖 |
-| | | ✅ spec-adversarial-checklist.md | ✅ transitions.yaml | | |
-| | | ✅ spec.md（Draft 模板） | | | |
+| **Specification** | ✅ rules.md | ✅ spec-questioning.md | ✅ specification.yaml + transitions.yaml | ✅ themis-spec.sh | 🟢 双视图验证、渲染与发布完整；持久状态迁移仍属 P8 |
+| | | ✅ spec-adversarial-checklist.md | ✅ Spec v2 schema/projection | | |
+| | | ✅ spec.yaml candidate template | | | |
 | **Planning** | ✅ rules.md | ❌ | ❌ | ❌ | 🔴 只有边界声明 |
 | **Implementation** | ❌ 无独立模块 | ❌ | ❌ | ❌ | 🔴 靠 Orchestrator 三句话 |
 | **Verification** | ✅ rules.md | ❌ | ❌ | ❌ | 🔴 manifest 命令为 null 时阻塞 |
@@ -397,7 +406,7 @@ flowchart LR
 | **C1** | 启动 @import 链一层加载全部领域规则，浅层图、无嵌套 |
 | **C2** | Core/Workspace 所有权边界在每个规则文件中一致声明 |
 | **C3** | Safe Degradation 规则完整禁止虚构不存在的能力 |
-| **C4** | P5 的 YAML 策略、Prompt 模板、Draft Spec 模板、攻击场景库四层资产齐全 |
+| **C4** | P5/P5.2 的 YAML 策略、Prompt、Spec v2 protocol/template、攻击场景库和确定性 executor 已形成完整资产链 |
 
 ---
 
@@ -413,10 +422,10 @@ flowchart LR
 | Step 1 开始 | questioning.md Step 1 指引 | `specification.yaml` | `.questioning.complexity`（low/medium/high 阈值 + forced_triggers） |
 | Step 1 判定 | YAML 阈值 | — | 比对请求特征得出复杂度 |
 | Step 2 | questioning.md Step 2 指引 | `workspace/context/` | 相关架构、领域、工程文件 |
-| Step 3 创建 Draft | questioning.md Step 3 指引 | `spec.md`（模板） | 全文，基于模板创建实例 |
+| Step 3 创建 Draft | questioning.md Step 3 指引 | `spec.yaml` template + v2 protocols | 写临时 candidate，并通过 `themis-spec.sh publish` 生成 canonical pair |
 | Step 4 开始 | questioning.md Step 4 指引 | `spec-adversarial-checklist.md` | 按 medium → focused 模式选择场景 |
 | Step 4 处置 | specification.yaml | `.adversarial_validation` | dispositions、max_iterations、deferral 规则 |
-| Final Approval | questioning.md Final Approval | `transitions.yaml` | `.transitions.draft_to_specified` 条件清单 |
+| Final Approval | questioning.md Final Approval | `themis-spec.sh validate --readiness` + `transitions.yaml` | 读取八个稳定 check，记录批准但保持 Draft |
 | 批准后 | P5 边界 | — | 保持 `status: draft`，不写 transition history |
 
 ---
@@ -438,6 +447,9 @@ flowchart LR
 | `templates/.themis/core/policies/transitions.yaml` | draft_to_specified 证据契约 |
 | `templates/.themis/core/templates/spec-questioning.md` | Step 0–4 Prompt |
 | `templates/.themis/core/templates/spec-adversarial-checklist.md` | 攻击场景库 |
-| `templates/.themis/core/templates/spec.md` | Draft Spec 模板 |
+| `templates/.themis/core/templates/spec.yaml` | Spec v2 authoritative candidate 模板 |
+| `templates/.themis/core/protocols/artifact/v2/spec-schema.yaml` | Spec v2 结构、ID、引用和 readiness 契约 |
+| `templates/.themis/core/protocols/artifact/v2/spec-projection.yaml` | Human 投影顺序与漂移契约 |
+| `templates/.themis/core/kernel/specification/themis-spec.sh` | validate/render/publish 确定性执行器 |
 | `templates/.themis/core/core.yaml` | Core 版本与兼容性元数据 |
 | `templates/.themis/workspace/manifest.yaml` | 项目配置与 Gate 命令 |

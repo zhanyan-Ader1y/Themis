@@ -189,6 +189,9 @@ Every runtime module must separate policy, semantic work, and deterministic oper
 - Every behavior-changing request requires a Spec; low complexity may use a shorter path but must not skip adversarial validation.
 - P5 uses five stages: Step 0 Intent Discovery, Step 1 Scope Assessment, Step 2 Context Gathering, Step 3 Design Convergence, and Step 4 Adversarial Validation.
 - P5 creates and completes a Draft Spec. It must keep `status: draft`; only a deterministic state executor may record `draft → specified`.
+- Each active Spec is a pair: `spec.yaml` is the sole authoritative semantic source and `spec.md` is a deterministic, rebuildable human-review projection.
+- Agents, Planning, transitions, and Verification must consume stable objects and references from `spec.yaml`; Markdown headings and prose are never machine evidence.
+- `spec.md` must be generated and drift-checked by the installed Spec executor. Never reverse-sync Markdown edits into `spec.yaml`.
 - Acceptance Criteria and adversarial findings require stable identifiers.
 
 ### Context

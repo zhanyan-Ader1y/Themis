@@ -56,15 +56,15 @@ transitions:
     to: specified
     hard_gate: true
     conditions:
-      - id: intent_documented
-        evidence: sections.Intent and Root Cause
-      - id: scope_and_complexity_confirmed
-        evidence: sections.Scope
-      - id: user_approval_recorded
-        evidence: approval front matter,sections.Approval
+      - id: spec_intent_complete
+        evidence: validator.checks.spec_intent_complete
+      - id: spec_scope_complexity_confirmed
+        evidence: validator.checks.spec_scope_complexity_confirmed
+      - id: spec_projection_current
+        evidence: validator.checks.spec_projection_current
 ```
 
-P5 目前只声明 `draft_to_specified` 的七项证据条件，并由 Prompt 将证据写入 Draft Spec。未来 P8 的确定性执行器负责加载有效策略、判定条件、写入状态记录并拒绝非法跳转。Core policy 不能由项目覆盖来弱化 `hard_gate` 或改变失败语义。
+P5.2 已将 `draft_to_specified` 固化为八个稳定 validator check ID，覆盖意图、范围/复杂度、Context、设计/AC、对抗处置、自检、批准和 Human 投影同步。P5 通过 `themis-spec.sh validate --readiness` 生成机器报告并保持 Draft；未来 P8 直接消费该 JSON、写入状态记录并拒绝非法跳转，不得重新解析 Markdown 或重写 Spec 校验逻辑。Core policy 不能由项目覆盖来弱化 `hard_gate` 或改变失败语义。
 
 ### artifact-rules.yaml — 工件规则
 

@@ -1,0 +1,62 @@
+spec_schema: themis-spec/v2
+id: ""
+title: ""
+status: draft
+revision: 1
+template_version: 2
+created_at: ""
+updated_at: ""
+author: ""
+complexity:
+  level: pending
+  confirmed: false
+  rationale: ""
+  override_reason: null
+review:
+  summary:
+    request: ""
+    intent: ""
+    root_cause: ""
+    included: []
+    excluded: []
+    success: ""
+    blockers: []
+  primary_decisions: []
+  primary_risks: []
+  primary_diagrams: []
+  no_diagram_reason: ""
+questioning:
+  intent_status: pending
+  scope_status: pending
+  context_status: pending
+  design_status: pending
+  adversarial_status: pending
+  self_checks:
+    structural: {}
+    adversarial: {}
+intent:
+  request: ""
+  outcome: ""
+  root_cause: ""
+scope: {}
+evidence: {}
+assumptions: {}
+options: {}
+decisions: {}
+requirements: {}
+interfaces: {}
+contracts: {}
+invariants: {}
+acceptance_criteria: {}
+adversarial_findings: {}
+risks: {}
+diagrams: {}
+rollback:
+  triggers: []
+  steps: []
+  impact: ""
+approval:
+  decision: pending
+  approved_by: null
+  approved_at: null
+  record: ""

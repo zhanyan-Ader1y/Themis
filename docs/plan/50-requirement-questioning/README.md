@@ -23,7 +23,7 @@ Draft
   → P8 将来记录 Specified 状态迁移
 ```
 
-P5 创建并完善 `workspace/specs/<spec-id>/spec.md` Draft，记录可复核的意图、范围、AC、假设、证据、攻击处置、限制、回滚与批准信息。它不写入机器生命周期状态，也不声称已执行 `draft → specified`；该确定性职责属于未来 P8。
+P5 创建并完善 Draft Spec，记录可复核的意图、范围、AC、假设、证据、攻击处置、限制、回滚与批准信息。持久格式固定为 `workspace/specs/<spec-id>/spec.yaml` 权威源与 `spec.md` Human 投影。P5 不写入机器生命周期状态，也不声称已执行 `draft → specified`；该确定性职责属于未来 P8。
 
 ## 三层执行模型
 
@@ -31,7 +31,7 @@ P5 创建并完善 `workspace/specs/<spec-id>/spec.md` Draft，记录可复核�
 |---|---|
 | YAML Policy | 复杂度阈值、各阶段模式、AC 分段、攻击维度、迭代与延期限制、声明式门禁条件。 |
 | Prompt | 一次一问、Five Whys、方案取舍、Pre-mortem、对抗场景、用户确认和语义判断。 |
-| Script | 仅检查文件存在、YAML 结构、稳定 ID、必需标题和行数预算；不判断需求质量或批准语义。 |
+| Script | `themis-spec.sh` 负责 Draft/readiness 校验、确定性渲染、漂移检测和事务式 pair 发布；模板检查器保护安装契约，不判断需求质量或批准语义。 |
 
 ## 核心流程
 
@@ -68,7 +68,9 @@ Agent 明确切换到攻击者视角。low 使用五项快速检查；medium 聚
 
 - `core/policies/specification.yaml`：复杂度、对抗验证、Red Flags 与自检配置
 - `core/policies/transitions.yaml`：唯一的 `draft_to_specified` 声明式证据契约
-- `core/templates/spec.md`：持久 Draft Spec 模板
+- `core/templates/spec.yaml`：P5.2 后的权威 Draft candidate 模板；`spec.md` 由 executor 生成
+- `core/protocols/artifact/v2/`：Spec v2 与 Human projection 契约
+- `core/kernel/specification/themis-spec.sh`：Draft/readiness 校验、渲染和 pair 发布
 - `core/templates/spec-questioning.md`：五阶段 Prompt
 - `core/templates/spec-adversarial-checklist.md`：快速检查和六维攻击场景库
 - `core/kernel/specification/rules.md`：简洁路由与边界
@@ -78,14 +80,14 @@ Agent 明确切换到攻击者视角。low 使用五项快速检查；medium 聚
 
 - 不实现多轮会话持久化。
 - 不实现命令、Skill、领域 Agent 或需求质量判断脚本。
-- 不实现确定性状态转换、Spec lint 或 `workspace/state/transitions/` 写入（P8）。
-- 不迁移或改写已有项目 Spec，也不改变 Workspace/Artifact Schema。
+- P5 初始版本不实现确定性状态转换或 `workspace/state/transitions/` 写入；P5.2 已实现单 Spec lint/render/publish，但 P8 仍拥有状态迁移。
+- Artifact v2 与 Spec v2 是首次投入使用的原生契约；本阶段没有历史 Spec 转换或兼容模式。
 
 ## 验收条件
 
 - Step 0–4 均由 Prompt 明确定义，low 仍执行五项快速对抗检查。
-- 新建 Draft Spec 具有稳定的 `themis-spec/v1` 契约及完整的审批、攻击和限制记录位置。
-- `draft_to_specified` 声明七项稳定证据条件，且 policy 与 Prompt 不暗示 P5 已执行机器状态迁移。
+- 新建 Draft Spec 使用稳定的 `themis-spec/v2` 权威 YAML 契约，并通过确定性 Human 投影保留完整审批、攻击和限制审阅信息。
+- `draft_to_specified` 声明八个稳定 validator check ID，且 policy 与 Prompt 不暗示 P5 已执行机器状态迁移。
 - 模板检查器拒绝缺失、损坏或不完整的 P5 策略、模板及门禁结构。
 - Specification 常驻 rules 保持在 50 行以内；详细行为位于按需 Prompt 模板。
 

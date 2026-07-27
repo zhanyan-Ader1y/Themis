@@ -83,12 +83,16 @@ AC → Task → 代码变更 → 验证结果
 
 ```
 Planning 读取:
-  workspace/specs/<spec-id>/spec.md   # 已批准目标与 AC
+  workspace/specs/<spec-id>/spec.yaml # 已验证的权威目标、稳定 AC/Requirement/Contract/Invariant ID
+  Specification validator JSON        # readiness 与 projection currency；不得重写校验逻辑
   workspace/specs/<spec-id>/plan.md   # 当前 Plan
   workspace/cache/resolved-context/   # P5.4 Context Bundle manifest
   workspace/context/                   # 被 Bundle 引用的正式知识
   当前代码、配置与 Schema              # 当前实现与目标位置
   workspace/context/architecture/behavior-map/ # P6 可选导航
+
+Planning 展示:
+  workspace/specs/<spec-id>/spec.md   # 仅供人类审阅，不得解析为机器输入
 
 Planning 写入:
   （校验结果通过 Verification 的 Gate 机制记录）

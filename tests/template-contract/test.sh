@@ -106,7 +106,7 @@ case "$("${YQ_EXECUTABLE}" --version 2>&1)" in
     ;;
 esac
 
-printf '1..58\n'
+printf '1..64\n'
 
 CLEAN_FIXTURE=$(make_fixture clean)
 run_checker "${CLEAN_FIXTURE}"
@@ -140,7 +140,7 @@ assert_output_contains 'unsupported Workspace schema' 'unsupported Workspace sch
 MIGRATABLE_WORKSPACE_FIXTURE=$(make_fixture migratable-workspace)
 set_yaml '.workspace_schema = "themis-workspace/v0"' "${MIGRATABLE_WORKSPACE_FIXTURE}/workspace/manifest.yaml"
 printf '%s\n' '# Placeholder migration fixture.' >"${MIGRATABLE_WORKSPACE_FIXTURE}/core/migrations/workspace/from-v0.sh"
-set_yaml '.compatibility.workspace.migrations = [{"from_schema": "themis-workspace/v0", "to_schema": "themis-workspace/v1", "script": "migrations/workspace/from-v0.sh"}]' "${MIGRATABLE_WORKSPACE_FIXTURE}/core/core.yaml"
+set_yaml '.compatibility.workspace.migrations = [{"id": "workspace-v0-to-v1", "from_schema": "themis-workspace/v0", "to_schema": "themis-workspace/v1", "script": "migrations/workspace/from-v0.sh", "reversible": true}]' "${MIGRATABLE_WORKSPACE_FIXTURE}/core/core.yaml"
 run_checker "${MIGRATABLE_WORKSPACE_FIXTURE}"
 assert_status 1 'migratable Workspace schema still requires explicit migration'
 assert_output_contains 'requires explicit migration' 'migratable Workspace schema reports explicit migration'
@@ -148,7 +148,7 @@ assert_output_contains 'requires explicit migration' 'migratable Workspace schem
 INVALID_MIGRATION_PATH_FIXTURE=$(make_fixture invalid-migration-path)
 set_yaml '.workspace_schema = "themis-workspace/v0"' "${INVALID_MIGRATION_PATH_FIXTURE}/workspace/manifest.yaml"
 printf '%s\n' '# Wrong-root migration fixture.' >"${INVALID_MIGRATION_PATH_FIXTURE}/core/migrations/artifacts/from-v0.sh"
-set_yaml '.compatibility.workspace.migrations = [{"from_schema": "themis-workspace/v0", "to_schema": "themis-workspace/v1", "script": "migrations/artifacts/from-v0.sh"}]' "${INVALID_MIGRATION_PATH_FIXTURE}/core/core.yaml"
+set_yaml '.compatibility.workspace.migrations = [{"id": "workspace-v0-to-v1", "from_schema": "themis-workspace/v0", "to_schema": "themis-workspace/v1", "script": "migrations/artifacts/from-v0.sh", "reversible": true}]' "${INVALID_MIGRATION_PATH_FIXTURE}/core/core.yaml"
 run_checker "${INVALID_MIGRATION_PATH_FIXTURE}"
 assert_status 1 'wrong-root migration descriptor fails validation'
 assert_output_contains 'migration script path invalid' 'wrong-root migration reports path diagnostic'
@@ -158,6 +158,24 @@ mkdir -p "${LEGACY_PATH_FIXTURE}/core/migations"
 run_checker "${LEGACY_PATH_FIXTURE}"
 assert_status 1 'legacy misspelled path fails validation'
 assert_output_contains 'legacy template path present' 'legacy path reports spelling diagnostic'
+
+LEGACY_SPEC_TEMPLATE_FIXTURE=$(make_fixture legacy-spec-template)
+printf '%s\n' '# Obsolete Spec v1 template.' >"${LEGACY_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md"
+run_checker "${LEGACY_SPEC_TEMPLATE_FIXTURE}"
+assert_status 1 'legacy Spec Markdown template fails validation'
+assert_output_contains 'legacy Spec migration asset present' 'legacy Spec template reports compatibility diagnostic'
+
+LEGACY_ARTIFACT_MIGRATION_FIXTURE=$(make_fixture legacy-artifact-migration)
+printf '%s\n' '# Obsolete Artifact migration.' >"${LEGACY_ARTIFACT_MIGRATION_FIXTURE}/core/migrations/artifacts/v1-to-v2.sh"
+run_checker "${LEGACY_ARTIFACT_MIGRATION_FIXTURE}"
+assert_status 1 'legacy Artifact migration script fails validation'
+assert_output_contains 'legacy Spec migration asset present' 'legacy Artifact migration reports compatibility diagnostic'
+
+ARTIFACT_V1_SUPPORT_FIXTURE=$(make_fixture artifact-v1-support)
+set_yaml '.compatibility.artifact.supported = ["themis-artifact/v1", "themis-artifact/v2"]' "${ARTIFACT_V1_SUPPORT_FIXTURE}/core/core.yaml"
+run_checker "${ARTIFACT_V1_SUPPORT_FIXTURE}"
+assert_status 1 'Artifact v1 compatibility fails validation'
+assert_output_contains 'Artifact support list invalid' 'Artifact v1 compatibility reports support-list diagnostic'
 
 MISSING_IMPORT_FIXTURE=$(make_fixture missing-import)
 rm "${MISSING_IMPORT_FIXTURE}/core/kernel/planning/rules.md"
@@ -243,7 +261,7 @@ assert_status 1 'missing draft-to-specified transition fails validation'
 assert_output_contains 'Draft-to-specified transition missing' 'missing transition reports structure diagnostic'
 
 WRONG_CONDITION_COUNT_FIXTURE=$(make_fixture wrong-condition-count)
-set_yaml 'del(.transitions.draft_to_specified.conditions[6])' "${WRONG_CONDITION_COUNT_FIXTURE}/core/policies/transitions.yaml"
+set_yaml 'del(.transitions.draft_to_specified.conditions[7])' "${WRONG_CONDITION_COUNT_FIXTURE}/core/policies/transitions.yaml"
 run_checker "${WRONG_CONDITION_COUNT_FIXTURE}"
 assert_status 1 'wrong transition condition count fails validation'
 assert_output_contains 'Draft-to-specified condition count invalid' 'wrong transition condition count reports diagnostic'
@@ -267,11 +285,10 @@ assert_status 1 'missing adversarial dimension fails validation'
 assert_output_contains 'Specification adversarial dimensions invalid' 'missing adversarial dimension reports diagnostic'
 
 BROKEN_SPEC_TEMPLATE_FIXTURE=$(make_fixture broken-spec-template)
-awk '$0 != "## Approval"' "${BROKEN_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md" >"${BROKEN_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md.tmp"
-mv "${BROKEN_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md.tmp" "${BROKEN_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md"
+set_yaml '.template_version = 1' "${BROKEN_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.yaml"
 run_checker "${BROKEN_SPEC_TEMPLATE_FIXTURE}"
-assert_status 1 'missing Spec template heading fails validation'
-assert_output_contains 'Spec template heading missing' 'missing Spec template heading reports diagnostic'
+assert_status 1 'wrong Spec YAML template version fails validation'
+assert_output_contains 'Spec template version invalid' 'wrong Spec YAML template version reports diagnostic'
 
 MISSING_STEP_FOUR_FIXTURE=$(make_fixture missing-step-four)
 awk '$0 != "## Step 4 — Adversarial Validation（对抗验证）"' "${MISSING_STEP_FOUR_FIXTURE}/core/templates/spec-questioning.md" >"${MISSING_STEP_FOUR_FIXTURE}/core/templates/spec-questioning.md.tmp"

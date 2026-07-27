@@ -1,5 +1,5 @@
 workspace_schema: themis-workspace/v1
-artifact_schema: themis-artifact/v1
+artifact_schema: themis-artifact/v2
 project:
   name: ""
   root: "."

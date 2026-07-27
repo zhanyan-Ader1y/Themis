@@ -28,7 +28,7 @@ Workspace 完全属于当前项目，保存项目特有内容。它由项目持�
 ```yaml
 # 版本标识
 workspace_schema: themis-workspace/v1
-artifact_schema: themis-artifact/v1
+artifact_schema: themis-artifact/v2
 
 # 项目信息
 project:
@@ -229,11 +229,11 @@ items:
 ```
 workspace/specs/
 └── <spec-id>/
-    ├── spec.md        # Spec 规范
+    ├── spec.yaml      # Agent-readable 唯一权威语义源
+    ├── spec.md        # 确定性生成的 Human 审阅投影
     ├── plan.md        # 实施计划
     ├── review.md      # 评审结果
-    ├── verify.md      # 验证结果
-    └── artifacts/     # 相关附件（图表、截图等）
+    └── verify.md      # 验证结果
 ```
 
 ### 生命周期
@@ -242,7 +242,7 @@ workspace/specs/
 Draft → Specified → Planned → Implemented → Verified → Reviewed → Archived
 ```
 
-每个阶段的工件状态由 Orchestrator 驱动，工件内容由开发者或 Agent 维护。
+每个活动 Spec 必须以 `spec.yaml`/`spec.md` 配对存在。Agent、Planning、Transition 与 Verification 只消费 YAML 中的稳定对象和 validator check；Markdown 可以重建且不得反向同步。每个阶段的机器状态由 Orchestrator 与未来状态执行器驱动，工件语义由开发者或 Agent 经受控 publisher 维护。
 
 ---
 

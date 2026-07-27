@@ -47,7 +47,7 @@ compatibility:
     supported: [themis-workspace/v1]
     migrations: []
   artifact:
-    supported: [themis-artifact/v1]
+    supported: [themis-artifact/v2]
     migrations: []
 migration_roots:
   workspace: migrations/workspace
@@ -66,7 +66,7 @@ migration_roots:
 
 ```yaml
 workspace_schema: themis-workspace/v1
-artifact_schema: themis-artifact/v1
+artifact_schema: themis-artifact/v2
 project:
   name: ""
   root: "."

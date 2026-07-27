@@ -1,35 +1,54 @@
 # Themis 需求追问策略配置
-# 该策略声明 Draft 阶段的结构化门禁；语义判断与用户确认由 Prompt 驱动。
+# 该策略声明 Draft 阶段的语义门禁；字段类型、对象 ID 和引用由 Spec v2 协议定义。
 
 specification:
-  schema: themis-specification-policy/v1
+  schema: themis-specification-policy/v2
+
+  artifact:
+    authoritative_source: spec.yaml
+    human_projection: spec.md
+    source_schema: themis-spec/v2
+    projection_schema: themis-spec-projection/v1
+    writable_schemas: [themis-spec/v2]
+    reverse_sync: forbidden
+
+  publishing:
+    executor: core/kernel/specification/themis-spec.sh
+    candidate_root: workspace/cache/spec-candidates
+    publisher_only: true
+    fail_closed: true
+    require_pair_validation: true
+    restore_previous_pair_on_failure: true
+    preserve_complete_backup_on_restore_failure: true
+    report_recovery_path_on_restore_failure: true
+
+  projection:
+    renderer_summarizes: false
+    primary_view:
+      max_decisions: 5
+      max_risks: 5
+      diagrams:
+        low: {min: 0, max: 1, require_reason_when_empty: true}
+        medium: {min: 1, max: 2, require_reason_when_empty: false}
+        high: {min: 1, max: 2, require_reason_when_empty: false}
+      acceptance_criteria: all
+
+  readiness:
+    draft_validity:
+      - spec_schema_valid
+      - spec_ids_valid
+      - spec_references_valid
+    specified:
+      - spec_intent_complete
+      - spec_scope_complexity_confirmed
+      - spec_context_complete
+      - spec_design_acceptance_complete
+      - spec_adversarial_resolved
+      - spec_self_check_passed
+      - spec_user_approval_recorded
+      - spec_projection_current
 
   questioning:
-    # ---------------------------------------------------------------------------
-    # 复杂度分类规则（确定性判定顺序，Prompt 不得自行实现）：
-    #
-    # 1. 若请求满足 low 的全部条件 ——
-    #      max_files_touched ≤ 1
-    #      max_new_apis = 0
-    #      allows_state_change = false
-    #      requires_unambiguous_scope 通过
-    #    且不命中 forced_triggers
-    #    → low
-    #
-    # 2. 否则若请求在 medium 上限内 ——
-    #      max_files_touched ≤ 8
-    #      max_new_apis ≤ 3
-    #    且不命中 forced_triggers
-    #    → medium
-    #
-    # 3. 否则 → high
-    #
-    # forced_triggers（任意命中强制 high）：
-    #   multi_subsystem · architecture_change · security_sensitive · performance_sensitive
-    #
-    # require_user_confirmation = true 表示用户必须显式确认最终分类；
-    # 用户可覆盖，但覆盖原因必须写入 Draft Spec。
-    # ---------------------------------------------------------------------------
     complexity:
       precedence: [low, medium, high]
       low:
