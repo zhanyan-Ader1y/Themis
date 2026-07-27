@@ -15,6 +15,7 @@
 | P4 | [Upgrade](40-upgrade/) | 无损升级 | P1、P3 | 已完成 |
 | P4.5 | [Explicit Migration](45-explicit-migration/) | 显式 Workspace/Artifact Schema 迁移执行器 | P1、P4 | 待发起 |
 | P5 | [Requirement Questioning](50-requirement-questioning/) | Spec 创建前的追问与需求澄清 | P1、P2 | 已完成（P8 状态执行器待实施） |
+| P5.2 | [Spec Dual View](52-spec-dual-view/) | `spec.yaml` Agent 权威源 + `spec.md` Human 审阅投影 | P4.5、P5 | 实施设计待确认 |
 | P5.5 | [Knowledge Governance](55-knowledge-governance/) | 人机混合知识治理（候选→审核→提升→废弃） | P1、P2、P5 | 待发起 |
 | P5.8 | [Planning Enhancement](58-planning-enhancement/) | 计划增强（Task 模型、依赖 DAG、Traceability、Plan 校验） | P1、P5 | 待发起 |
 | P5.9 | [Implementation Enhancement](59-implementation-enhancement/) | 实施增强（Task 执行、范围锁定、证据记录、进度评估） | P1、P5、P5.8 | 设计中 |
@@ -34,6 +35,7 @@ P0 Init Environment Validation
       │    ├── P3 Init ── P4 Upgrade
       │    │    └── P4.5 Explicit Migration      ← 迁移执行器
       │    └── P5 Requirement Questioning
+      │         ├── P5.2 Spec Dual View           ← Agent/Human 双视图
       │         ├── P5.5 Knowledge Governance    ← 知识治理
       │         ├── P5.8 Planning Enhancement    ← 计划增强
       │         │    └── P5.9 Implementation Enhancement ← 实施增强
@@ -46,6 +48,7 @@ P0 Init Environment Validation
 
 P0 仅由 Init 调用。
 P4.5 是 P4 的补充能力，可独立实施。
+P5.2 依赖 P4.5 的显式 Artifact Migration 执行器，并为后续 Planning 与 P8 提供结构化 Spec 契约。
 P5.5/P5.8/P6/P6.5/P6.8/P7.5/P8 属于 SDD 运行时能力。
 P7 是跨模块分析性审计。
 P8 是最终执行层。
