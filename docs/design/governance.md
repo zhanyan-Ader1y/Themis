@@ -1,6 +1,6 @@
 # 设计治理
 
-> 规范状态：正式设计。实现状态：治理规则已生效；P5.4 Context Trust 的 Protocol、检索、装配、Signal 与迁移执行器尚未实现。
+> 规范状态：正式设计。实现状态：治理规则已生效；P5.4 Context Trust 的 Protocol、检索、装配与 Signal 执行器尚未实现。
 
 本文定义 Themis 设计规范、项目事实、流程事实、持久证据和非规范文档之间的权威关系。文档分类与状态语义见 [设计规范入口](README.md)。
 
@@ -44,9 +44,27 @@
 - Outcome 只记录交付后的测量结果；
 - Core policy、protocol、rules 和 Prompt 只定义 Themis 控制合同；
 - Knowledge 只保存候选和治理历史；
+- Human projection（包括 `spec.md`、`review.md`、`verify.md`、`summary.md`）只用于审阅和交付表达，不独立建立机器事实或状态；
 - 对话、模型记忆、搜索排名、摘要、Cache 和 Agent 推断均不能独立建立事实。
 
+代码变更使受影响的 Verification evidence 失效，相关 Gate 必须重新执行。
+
 State、Run、Evidence 和 Outcome 可以是各自命名空间中的权威记录，但其中可复用的观察必须经 Context 或当前代码核验并通过 Knowledge Governance，才能成为正式项目知识。详细读取和冲突合同见 [Context](core/kernel/context.md)。
+
+## 知识候选来源与准入
+
+CLAUDE/AGENTS 文件、验收测试、代码与配置、对话、决策表、Implementation 经验、Verification escalation、Review finding、Outcome 和人工输入都可以提供 candidate 或 evidence，但不能因其形式、出现频率或模型置信度而直接成为正式知识。
+
+进入受治理 Context 的知识至少必须满足：
+
+- 有可解析的来源 artifact 或 evidence，且可以归因到目标项目、Workspace 与 source revision；
+- 是项目特定且会跨需求重复影响判断的规则、约束、术语、决策、事故经验或外部合同；
+- 在预期生命周期内足够稳定，提前提供能够防止“能运行但不符合项目意图”的实现；
+- 已读取当前 Context 和相关代码、配置或 Schema，完成重复、冲突和新鲜度检查；
+- Scope 与表述清楚，不把临时讨论、大段源码、泛化 Prompt 技巧或一次性修复步骤提升为长期规则；
+- 已审核敏感信息，并经过持久化人工批准和确定性处置。
+
+候选不满足任一条件时应保留为治理记录、要求 revise 或 reject，不得直接污染 `workspace/context/`。
 
 ## 实现事实与证据
 
@@ -65,9 +83,9 @@ State、Run、Evidence 和 Outcome 可以是各自命名空间中的权威记录
 - 生命周期路由必须来自持久工件和机器状态，而不是对话声明。
 - 用户批准、Prompt 输出或完成的 Markdown 工件可以成为门禁证据，但不是机器状态迁移本身。
 - 只有持久状态或确定性执行器可以记录状态迁移。
-- 缺失、不可访问或不确定的证据不构成成功；Verification 必须返回 `inconclusive` 或失败，Review 必须返回 `blocked` 或 `changes_requested`。
-- 代码变更使受影响的 Verification evidence 失效，相关 Gate 必须重新执行。
-- Review 是只读判断，不能代替命令驱动的 Verification。
+- 缺失、不可访问或不确定的证据不构成成功；前置 Review 必须返回 `blocked` 或 `changes_requested`，Verification 必须返回 `inconclusive` 或失败。
+- Review 是 Implementation 前的只读设计与计划批准，不能代替命令驱动的 Verification。
+- Human Acceptance 只能在 current Verification `pass` 后记录；`summary.md` 只能在 `accepted` 后生成，并且不是机器状态或证据源。
 
 生命周期与返工路由的完整定义见 [完整工作流程](workflow.md)。
 

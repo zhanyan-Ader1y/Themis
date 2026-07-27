@@ -2,7 +2,7 @@
 #
 # Themis 项目初始化器。
 # 用途：向尚未安装 Themis 的项目复制已验证模板，并向 CLAUDE.md 追加受管直接 import 块。
-# 边界：已有 .themis/ 的项目必须使用 Upgrade；Init 不执行项目命令、不创建 SDD 产物，也不修改 AGENTS.md。
+# 边界：仅支持全新安装；已有 .themis/ 时在写入前失败，不执行项目命令、不创建 SDD 产物，也不修改 AGENTS.md。
 # 兼容性：保持 Bash 3.2 兼容，仅在 P0 前置条件通过后使用 mikefarah/yq v4。
 #
 THEMIS_INIT_GUIDANCE_START='<!-- themis:guidance:start -->'
@@ -303,7 +303,7 @@ if [ ! -w "${THEMIS_INIT_TARGET}" ]; then
   exit 1
 fi
 if [ -e "${THEMIS_INIT_TARGET}/.themis" ]; then
-  themis_init_error 'existing .themis installation' 'Use Themis Upgrade; Init never replaces project-owned Workspace content.'
+  themis_init_error 'existing .themis installation' 'In-place updates are not supported. Preserve the existing Workspace and do not run Init over it.'
   exit 1
 fi
 if ! bash "${THEMIS_INIT_CHECKER}" "${THEMIS_INIT_TEMPLATE_SOURCE}"; then

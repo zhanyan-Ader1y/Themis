@@ -6,7 +6,7 @@ This Themis-managed guidance defines cross-stage boundaries for the installed pr
 
 - `.themis/core/` is Themis-owned capability and policy content. Treat it as read-only during project work.
 - `.themis/workspace/` is project-owned configuration, context, specifications, state, evidence, outcomes, and knowledge.
-- A Core upgrade must not replace project-owned Workspace content. Schema changes require an explicit compatible migration.
+- `.themis/core/` and `.themis/workspace/` are not updated or converted in place by this release. Preserve an existing installation rather than running Init over it.
 - Files under a Themis source repository's `templates/` tree are installation sources. In an installed project, use the corresponding `.themis/` instance paths.
 - Do not edit project `AGENTS.md` or other project guidance to resolve a Themis conflict. Stop and surface the conflicting instructions.
 
@@ -27,17 +27,19 @@ A lower-ranked source must not override a higher-ranked fact. Missing evidence i
 The documented default lifecycle is:
 
 ```text
-Draft → Specified → Planned → Implemented → Verified → Reviewed → Archived
+Draft → Specified → Planned → Reviewed → Implemented → Verified → Human Acceptance → Summary → Archived
 ```
 
 Route from existing artifacts rather than from what the conversation claims has happened:
 
 - No approved specification: use Specification.
 - Approved specification without an adequate plan: use Planning.
-- Approved plan with unfinished tasks: implement only the current planned scope.
+- Current plan without an approved pre-implementation review: use Review.
+- Approved review with unfinished tasks: implement only the reviewed scope.
 - Implemented work without command-backed evidence: use Verification.
-- Verified work without an evidence-based review: use Review.
-- Archive only after required outcomes and knowledge handling are complete.
+- Passing Verification without human acceptance: request acceptance against the approved Spec, Plan, Review, and Verification evidence.
+- Accepted work without a final delivery projection: generate Summary when that capability exists.
+- Archive only after acceptance, Summary, required outcomes, and knowledge handling are complete.
 
 Workspace policy or a future deterministic status tool may refine this routing. Do not hand-edit lifecycle state or claim a transition that has not been durably recorded.
 

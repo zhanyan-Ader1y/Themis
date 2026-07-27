@@ -1,6 +1,6 @@
 # Adapters — 适配器层
 
-> 规范状态：正式设计。实现状态：已确认但未实现；当前模板只提供 Adapter 目录骨架和 Behavior Extractor 占位目录。
+> 规范状态：正式设计。实现状态：已确认但未实现；当前模板只保留 Adapter 目录骨架，没有具体 Adapter 实现。
 
 ## 职责边界
 
@@ -8,8 +8,8 @@ Adapter 封装 Themis 与项目工具链之间的交互。Adapter 实现属于 C
 
 - 所有 Adapter 遵循统一的 [Adapter Protocol](protocols.md)。
 - 配置存放在 `workspace/manifest.yaml`，实现中不得固化项目名称、业务模块或项目专用路径。
-- Adapter 只翻译和执行外部工具交互，不决定生命周期状态、需求范围或评审结论。
-- Adapter 输出必须保留退出码、stdout、stderr 和可引用的结构化结果，供 Verification 或其他调用领域记录证据。
+- Adapter 只翻译和执行外部工具交互，不决定生命周期状态、需求范围、Review result 或 Verification verdict。
+- Adapter 输出必须保留退出码、stdout、stderr 和可引用的结构化结果，供调用领域记录证据。
 
 ## 设计中的 Adapter 类型
 
@@ -18,13 +18,11 @@ Adapter 封装 Themis 与项目工具链之间的交互。Adapter 实现属于 C
 | Git | `status`、`diff`、`log`、`blame`、SHA 与 branch 信息 | 未实现 |
 | Command | 执行命令、超时、环境变量和结构化结果 | 未实现 |
 | Testing | 测试执行、结果解析与覆盖率 | 未实现 |
-| Schema | Migration、API/Schema 兼容性和 Behavior Map 事实提取 | 未实现；仅有 Behavior Extractor 目录占位 |
+| Schema | API、数据和配置 Schema 的读取与兼容性检查 | 未实现 |
 | CI | 查询或触发 CI、读取运行日志 | 未实现 |
 | Agent | 调用领域 Agent 并获取结构化结果 | 未实现 |
 
 JUnit、pytest、Jest、Go test、GitHub Actions 等名称仅是未来 Adapter 可以支持的工具示例，不代表当前模板已经提供对应实现。
-
-Behavior Map Adapter 不使用笼统的“支持某语言”布尔值，必须分别声明 parse、symbol inventory、reference relation、call graph、data/schema lineage 与 dynamic limits。每项确定性输出保留 source revision/digest、extraction method 和 confidence；不支持的能力返回 `unsupported`，不能由 Prompt 或 Agent 模拟。详细消费边界见 [Context](kernel/context.md#behavior-map)。
 
 ## Workspace 交互
 

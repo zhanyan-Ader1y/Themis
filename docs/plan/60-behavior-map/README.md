@@ -1,5 +1,7 @@
 # P6 — Behavior Map & Change Localization（代码行为地图与变更定位）
 
+> **Deferred/Superseded — 2026-07-28**：Behavior Map 已从当前产品设计、模板和运行路由中移除，以避免扩张 Themis 职责。本文仅保留历史研究与方案；Planning/Review 当前直接核验源码，未来若重启本方向必须重新确认设计。
+
 **优先级**：P6
 **依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P5 Requirement Questioning](../50-requirement-questioning/README.md)、[P5.4 Context Restructure](../54-context-restructure/README.md)
 **状态**：待用户主动发起

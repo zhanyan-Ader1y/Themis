@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Themis 模板契约 TAP 测试。
-# 用途：在隔离模板副本中验证 YAML、Schema、迁移描述符、导入图和 P2 指引约束。
+# 用途：在隔离模板副本中验证 YAML、固定 Schema allow-list、退役资产、导入图和 P2 指引约束。
 # 边界：仅修改临时夹具；源模板不会被测试写入。
 #
 TEST_ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)
@@ -137,21 +137,17 @@ run_checker "${UNSUPPORTED_WORKSPACE_FIXTURE}"
 assert_status 1 'unsupported Workspace schema fails validation'
 assert_output_contains 'unsupported Workspace schema' 'unsupported Workspace schema reports compatibility diagnostic'
 
-MIGRATABLE_WORKSPACE_FIXTURE=$(make_fixture migratable-workspace)
-set_yaml '.workspace_schema = "themis-workspace/v0"' "${MIGRATABLE_WORKSPACE_FIXTURE}/workspace/manifest.yaml"
-printf '%s\n' '# Placeholder migration fixture.' >"${MIGRATABLE_WORKSPACE_FIXTURE}/core/migrations/workspace/from-v0.sh"
-set_yaml '.compatibility.workspace.migrations = [{"id": "workspace-v0-to-v1", "from_schema": "themis-workspace/v0", "to_schema": "themis-workspace/v1", "script": "migrations/workspace/from-v0.sh", "reversible": true}]' "${MIGRATABLE_WORKSPACE_FIXTURE}/core/core.yaml"
-run_checker "${MIGRATABLE_WORKSPACE_FIXTURE}"
-assert_status 1 'migratable Workspace schema still requires explicit migration'
-assert_output_contains 'requires explicit migration' 'migratable Workspace schema reports explicit migration'
+WORKSPACE_MIGRATION_METADATA_FIXTURE=$(make_fixture workspace-migration-metadata)
+set_yaml '.compatibility.workspace.migrations = []' "${WORKSPACE_MIGRATION_METADATA_FIXTURE}/core/core.yaml"
+run_checker "${WORKSPACE_MIGRATION_METADATA_FIXTURE}"
+assert_status 1 'Workspace migration metadata fails validation'
+assert_output_contains 'workspace migration metadata present' 'Workspace migration metadata reports retired contract'
 
-INVALID_MIGRATION_PATH_FIXTURE=$(make_fixture invalid-migration-path)
-set_yaml '.workspace_schema = "themis-workspace/v0"' "${INVALID_MIGRATION_PATH_FIXTURE}/workspace/manifest.yaml"
-printf '%s\n' '# Wrong-root migration fixture.' >"${INVALID_MIGRATION_PATH_FIXTURE}/core/migrations/artifacts/from-v0.sh"
-set_yaml '.compatibility.workspace.migrations = [{"id": "workspace-v0-to-v1", "from_schema": "themis-workspace/v0", "to_schema": "themis-workspace/v1", "script": "migrations/artifacts/from-v0.sh", "reversible": true}]' "${INVALID_MIGRATION_PATH_FIXTURE}/core/core.yaml"
-run_checker "${INVALID_MIGRATION_PATH_FIXTURE}"
-assert_status 1 'wrong-root migration descriptor fails validation'
-assert_output_contains 'migration script path invalid' 'wrong-root migration reports path diagnostic'
+MIGRATION_ROOTS_METADATA_FIXTURE=$(make_fixture migration-roots-metadata)
+set_yaml '.migration_roots = {"workspace": "migrations/workspace"}' "${MIGRATION_ROOTS_METADATA_FIXTURE}/core/core.yaml"
+run_checker "${MIGRATION_ROOTS_METADATA_FIXTURE}"
+assert_status 1 'Migration roots metadata fails validation'
+assert_output_contains 'Migration roots metadata present' 'Migration roots metadata reports retired contract'
 
 LEGACY_PATH_FIXTURE=$(make_fixture legacy-path)
 mkdir -p "${LEGACY_PATH_FIXTURE}/core/migations"
@@ -163,13 +159,13 @@ LEGACY_SPEC_TEMPLATE_FIXTURE=$(make_fixture legacy-spec-template)
 printf '%s\n' '# Obsolete Spec v1 template.' >"${LEGACY_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md"
 run_checker "${LEGACY_SPEC_TEMPLATE_FIXTURE}"
 assert_status 1 'legacy Spec Markdown template fails validation'
-assert_output_contains 'legacy Spec migration asset present' 'legacy Spec template reports compatibility diagnostic'
+assert_output_contains 'legacy Spec compatibility asset present' 'legacy Spec template reports compatibility diagnostic'
 
-LEGACY_ARTIFACT_MIGRATION_FIXTURE=$(make_fixture legacy-artifact-migration)
-printf '%s\n' '# Obsolete Artifact migration.' >"${LEGACY_ARTIFACT_MIGRATION_FIXTURE}/core/migrations/artifacts/v1-to-v2.sh"
-run_checker "${LEGACY_ARTIFACT_MIGRATION_FIXTURE}"
-assert_status 1 'legacy Artifact migration script fails validation'
-assert_output_contains 'legacy Spec migration asset present' 'legacy Artifact migration reports compatibility diagnostic'
+RETIRED_CAPABILITY_ASSET_FIXTURE=$(make_fixture retired-capability-asset)
+mkdir -p "${RETIRED_CAPABILITY_ASSET_FIXTURE}/core/migrations"
+run_checker "${RETIRED_CAPABILITY_ASSET_FIXTURE}"
+assert_status 1 'retired capability namespace fails validation'
+assert_output_contains 'retired capability asset present' 'retired capability namespace reports contract diagnostic'
 
 ARTIFACT_V1_SUPPORT_FIXTURE=$(make_fixture artifact-v1-support)
 set_yaml '.compatibility.artifact.supported = ["themis-artifact/v1", "themis-artifact/v2"]' "${ARTIFACT_V1_SUPPORT_FIXTURE}/core/core.yaml"

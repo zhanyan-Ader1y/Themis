@@ -185,7 +185,7 @@ mkdir -p "${EXISTING_INSTALL_PROJECT}/.themis/workspace"
 printf '%s\n' 'preserve me' >"${EXISTING_INSTALL_PROJECT}/.themis/workspace/project-data.txt"
 run_init "${EXISTING_INSTALL_PROJECT}" --yes
 assert_status 1 'existing installation is rejected'
-assert_output_contains 'Use Themis Upgrade' 'existing installation points to Upgrade'
+assert_output_contains 'In-place updates are not supported' 'existing installation reports unsupported in-place update'
 assert_file_contains 'preserve me' "${EXISTING_INSTALL_PROJECT}/.themis/workspace/project-data.txt" 'existing Workspace remains unchanged after rejection'
 
 if [ "${TEST_FAILURES}" -ne 0 ]; then

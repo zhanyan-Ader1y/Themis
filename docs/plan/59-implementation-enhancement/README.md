@@ -1,14 +1,12 @@
 # P5.9 — Implementation Enhancement（实施增强）
 
 **优先级**：P5.9
-**依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P5 Requirement Questioning](../50-requirement-questioning/README.md)、[P5.8 Planning Enhancement](../58-planning-enhancement/README.md)
+**依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P5 Requirement Questioning](../50-requirement-questioning/README.md)、[P5.8 Planning Enhancement](../58-planning-enhancement/README.md)、[P6.8 Review Enhancement](../68-review-enhancement/README.md)
 **状态**：设计中
 
 ## 背景
 
-当前 Implementation 没有独立的 kernel 模块。Orchestrator 中只有三条规则：
-
-> "Implementation is allowed only for work represented by an approved Spec and the current Plan. Implement one bounded planned task at a time. Do not mix unrelated refactors or silently expand scope."
+当前 Implementation 没有独立的 kernel 模块。Orchestrator 只提供基础边界：Implementation 必须有 approved Spec、current Plan 与绑定二者的 current approved Review，并且一次只执行一个依赖就绪 Task。
 
 这导致以下问题：
 
@@ -27,7 +25,8 @@ P5.9 将 Implementation 从 Orchestrator 的三句话扩展为独立的 kernel �
 为 Implementation 阶段建立结构化执行协议：
 
 ```text
-Planned
+Reviewed
+  → I0 校验 Review authorization 绑定 current Spec/Plan
   → I1 选择下一个依赖已满足的 Task
   → I2 加载当前 Task 的 AC、约束与代码
   → I3 在限定范围内实施变更
@@ -61,7 +60,7 @@ P5.9 将此从 Orchestrator 的一句话扩展为可操作的检测和上报协�
 
 一个 Task = 一次Implementation会话的边界。不允许跨 Task 实施，不允许"顺便"修不相关的文件。
 
-Task 的定义由 P5.8 Planning Enhancement 提供。P5.9 依赖 P5.8 的 Task 模型（ID、AC 覆盖、依赖、完成标准、预期变更文件），但若 P5.8 尚未实施，P5.9 的回退模式是从当前 `plan.md` 的 Markdown 结构解析 Task。
+Task 的定义由 P5.8 Planning Enhancement 提供。P5.9 只消费通过前置 Review 的 current Task 模型（ID、AC 覆盖、依赖、完成标准、预期变更文件和 scope lock）；结构化 Plan 或 Review authorization 缺失时必须停止，不能从自由格式 Markdown 或对话推断实施许可。
 
 ### D3：范围检查是连续门禁
 
@@ -100,10 +99,10 @@ Implementation 只记录它做了什么。Gate 执行（lint、build、test）�
 检测到范围扩张
   → 立即停止当前 Task
   → 分类：
-      A. Plan 不足但在 Spec 内 → 返回 Planning 补充 Task
-      B. 超出 Spec → 返回 Specification 修订 Spec
-      C. 纯粹是代码质量改进（无行为变更，零风险）→ 记录但允许
-  → 不得在未路由的情况下"先改了再说"
+      A. Plan 不足但仍在 Spec 内 → 返回 Planning；更新后重新 Review
+      B. 超出 Spec → 返回 Specification；更新 Spec/Plan 后重新 Review
+      C. 与当前 Task 无关 → 不修改，记录为后续事项
+  → 未取得新的 approved Review 前不得继续实施
 ```
 
 ## 新增 Core 资产
@@ -136,19 +135,13 @@ P5.9 不分 low/medium/high——Implementation 的门禁是统一的。复杂�
 | "我知道 Spec 没写这个，但显然需要。" | 超出 Spec → 停止 → 返回 Specification |
 | "同时改这两个 Task 效率更高。" | 每次只实施一个 Task；跨 Task 混合会导致证据链断裂 |
 
-## 与 P5.8 的协调
+## 与 Planning 和 Review 的协调
 
-P5.8 (Planning Enhancement) 定义了 Task 的正式模型（ID、DAG、依赖、完成标准、预期变更文件）。P5.9 消费该模型。
+P5.8 定义 Task、DAG、完成标准、代码位置和 scope lock；P6.8 Review 绑定 current Spec/Plan 并批准设计、风险、实施边界、回滚与验收方案。P5.9 只消费 current approved Review 授权的 Task。
 
-若 P5.9 在 P5.8 之前实施：
-- Task 解析回退到当前 `plan.md` 的 Markdown 结构
-- 依赖 DAG 回退到 Plan 中的顺序列表
-- 完成标准回退到 AC 覆盖检查
-
-若 P5.8 在 P5.9 之前实施：
-- Task 模型直接读取 YAML/结构化格式
-- 依赖 DAG 可被脚本确定性解析
-- 完成标准可与 Verification Gate 联动
+- Spec、Plan 或 Review 绑定依据变化后，Implementation 必须停止并重新 Review。
+- Review `changes_requested` 或 `blocked` 时不得开始 Task。
+- Task 完成标准可关联 Verification Gate，但 Implementation 不执行这些 Gate。
 
 ## 边界
 
@@ -156,5 +149,5 @@ P5.8 (Planning Enhancement) 定义了 Task 的正式模型（ID、DAG、依赖�
 - 不执行 lint、build、test 命令或声称 Gate 已通过。
 - 不跳过 Verification——Implementation 完成 != 质量已验证。
 - 不混合无关重构——C 类偏差必须零风险且被记录。
-- 不在 Plan 缺失或不完整时开始实施。
+- 不在 Plan 缺失、不完整或未获 current approved Review 时开始实施。
 - Implementation 的"完成"只意味着所有 Task 有证据——`Implemented` 状态迁移仍需 P8。

@@ -1,93 +1,93 @@
 # P6.8 — Review Enhancement（评审增强）
 
-**优先级**：P6.8（在 P6.5 验证增强之后、P7 集成审计之前）
-**依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P5 Requirement Questioning](../50-requirement-questioning/README.md)、[P6.5 Verification Enhancement](../65-verification-enhancement/README.md)
-**状态**：待用户主动发起
-
-> **历史提案注记**：以下“`major` 可记录为已知债务后通过”的方案已被 [Review 正式规范](../../design/core/kernel/review.md) 取代。未解决的 `critical` 或 `major` finding 阻止 `approved`；实施本计划时以正式规范为准，原文仅保留为历史提案。
-
-## 背景
-
-Review 是 SDD 生命周期中 Verified → Reviewed 的关键阶段。它提供独立于 Verification 的第二层质量保障——Verification 回答"Gate 是否通过"，Review 回答"证据是否真的支撑 Spec 和 Plan 的完成"。当前基线：
-
-- `review/rules.md` 定义了模块边界，但内容为基线占位
-- 无 Review 策略配置（评审维度、严重级别、通过标准）
-- 无 Review 执行 Prompt 模板
-- 无标准化的评审结果格式
-
-P5 需求追问引入的"对抗式验证"用于攻击需求完整性，Review 的"独立评审"用于攻击实现证据的充分性。两者是不同阶段的对抗。
+**优先级**：P6.8
+**依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P5 Requirement Questioning](../50-requirement-questioning/README.md)、[P5.8 Planning Enhancement](../58-planning-enhancement/README.md)
+**状态**：实施设计待确认
 
 ## 目标
 
-将 Review 从文档化的理论模型落地为可执行的能力层：
+在实际 Implementation 前执行只读 Review，批准 current Spec、Plan、设计、风险、实施边界、回滚、Verification 方案与人工验收方案。只有 current Review result 为 `approved` 时，Implementation 才获得授权。
 
-1. 定义 Review 策略配置（评审维度、严重级别、通过标准）
-2. 编写 Review 执行 Prompt 模板（从 Spec + Plan + Diff + Evidence 生成评审结果）
-3. 更新 `review/rules.md` 使其不再为占位状态
-4. 同步更新 WIKI 文档
+完整 Policy、Protocol、Prompt、renderer、CLI 和测试设计见 [impl.md](impl.md)。
 
-## 核心设计
+## 生命周期位置
 
-### 评审维度
+```text
+Draft → Specified → Planned → Reviewed → Implemented → Verified
+      → Human Acceptance → Summary → Archived
+```
 
-| 维度 | 关注点 | 严重级别阈值 |
-|---|---|---|
-| correctness | 行为是否符合 Spec AC | 任何偏差 → critical |
-| security | 是否引入安全漏洞 | 任何漏洞 → critical |
-| performance | 是否引入性能退化 | 显著退化 → major |
-| maintainability | 代码可读性、结构合理性 | 混乱 → minor |
-| testability | 是否有足够测试覆盖 | 缺失关键路径 → major |
+Review 不读取已完成 implementation diff，不消费 Verification evidence，也不执行 Gate。它回答的是“当前 Spec 和 Plan 是否足以、安全地授权实施”，而不是“实现是否已经正确完成”。
 
-### 严重级别
+## 输入与绑定
 
-| 级别 | 含义 | 处理 |
-|---|---|---|
-| critical | 必须在合入前解决 | 返回 Implementation |
-| major | 应在合入前解决 | 返回 Implementation 或记录为已知债务 |
-| minor | 建议改进 | 可记录、不阻塞 |
-| suggestion | 可选优化 | 可忽略 |
+Review 至少绑定：
 
-### 评审结果
+- current `spec.yaml`/`spec.md` pair 与 Spec digest；
+- current Plan 与 Plan digest；
+- Context Bundle、直接源码/配置/Schema 依据及 revision/digest；
+- 设计选项、接口、风险、范围锁、rollback；
+- Task→AC→Gate→evidence 规划；
+- Verification 与 Human Acceptance 方案。
 
-| 结果 | 条件 |
-|---|---|
-| approved | 零 critical、零 major |
-| changes_requested | 存在 critical 或 major |
-| blocked | 证据不足、无法做出判断 |
+Spec、Plan 或关键依据变更后，既有 approval 失效；Implementation 不得使用 stale Review authorization。
 
-### 与 P5 对抗验证的关系
+## 评审维度
 
-| 维度 | P5 Step 4 对抗验证 | Review |
-|---|---|---|
-| 对象 | Spec（需求） | 实现 + 证据 |
-| 立场 | 攻击需求完整性 | 攻击证据充分性 |
-| 时机 | Draft → Specified | Verified → Reviewed |
-| 输出 | 加固后的 Spec + Limitation | review.md + 评审结果 |
+```text
+requirements_coverage
+design_soundness
+scope_and_task_completeness
+risk_and_security
+verification_and_acceptance_readiness
+```
 
-## 目标文件
+Finding severity：
 
-| # | 文件 | 操作 | 说明 |
-|---|---|---|---|
-| 1 | `templates/.themis/core/policies/review.yaml` | 新建 | 评审维度、严重级别、通过标准 |
-| 2 | `templates/.themis/core/templates/review-execution.md` | 新建 | Review 执行 Prompt（Spec + Plan + Diff + Evidence → 评审结果） |
-| 3 | `templates/.themis/core/kernel/review/rules.md` | 更新 | 从占位内容更新为完整评审规则 |
-| 4 | `docs/design/core/kernel/review.md` | 更新 | 同步 WIKI |
+```text
+critical | major | minor | suggestion
+```
+
+Review result：
+
+```text
+approved | changes_requested | blocked
+```
+
+未解决的 `critical` 或 `major` finding 阻止 `approved`。`minor` 和 `suggestion` 可作为非阻塞记录，但不得掩盖范围、风险或验收缺口。
+
+## 输出边界
+
+机器事实保存在结构化 Review artifact；`review.md` 是确定性 Human projection。Review 输出 Implementation authorization evidence，但不生成 Verification verdict、Human Acceptance decision 或 `summary.md`。
+
+当发现问题时：
+
+- Spec 语义或 AC 缺陷返回 Specification；
+- Plan、任务、范围或验收设计缺陷返回 Planning；
+- 依据缺失或冲突时返回 `blocked` 并请求补充，不猜测批准。
+
+## 与其他阶段的区别
+
+- Specification 对抗验证攻击需求与设计完整性；
+- Review 在实施前独立攻击 Spec/Plan 的可实施性、风险和验证设计；
+- Implementation 只执行已批准范围；
+- Verification 在实施后用命令 Evidence 判断 Gate；
+- Human Acceptance 决定用户是否接受当前交付；
+- Summary 只在 Acceptance `accepted` 后生成。
 
 ## 验收条件
 
-- `review.yaml` 定义 ≥5 个评审维度，每个有严重级别阈值
-- `review-execution.md` 含结构化的评审 Prompt（输入、维度扫描、结果生成）
-- `review/rules.md` 不再包含占位内容
-- Review 与 Verification 的职责边界清晰（Review 不执行 Gate）
-- Review 与 P5 对抗验证的角色差异有明确文档
+1. Policy、Review artifact 与 finding 使用稳定 Schema、ID 和枚举。
+2. `approved` 绑定 current Spec/Plan revision 与 digest。
+3. Prompt 不读取 completed implementation diff 或 Verification evidence。
+4. renderer 只投影结构化结果，不进行第二次语义裁决。
+5. stale authorization 在 Implementation 前 fail closed。
+6. Review 与 Gate status、Verification verdict、Acceptance decision 和 lifecycle state 命名空间独立。
+7. Template Contract、Review 模块、fresh Init 与相关回归测试全部通过。
 
 ## 非范围
 
-- 不实现确定性 Shell 脚本（`themis-review-summary.sh` 留待 P8）
-- 不实现多评审者协作机制
-- 不修改 Workspace 目录结构
-
-## 风险与回滚
-
-- **风险**：Review 过于严格导致开发停滞 → **缓解**：允许记录已知债务后通过
-- **回滚**：移除新增文件，恢复 rules.md 到基线
+- Implementation code review、Gate execution 或 Verification verdict；
+- Human Acceptance、Summary 或 Archive runtime；
+- 多评审者编排和 P8 Agent/Command/Skill 路由；
+- Behavior Map、Schema Migration 或 Core 原地更新。

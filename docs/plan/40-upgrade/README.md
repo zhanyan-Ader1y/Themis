@@ -1,5 +1,7 @@
 # P4 — Upgrade
 
+> **Superseded — 2026-07-28**：该能力已从当前产品退役，脚本、测试与现行规范均已移除。本文仅保留历史设计与实施记录；未来若恢复更新能力，必须重新设计并取得实施授权。
+
 **优先级**：P4
 **依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P3 Init](../30-init/README.md)
 **状态**：已完成

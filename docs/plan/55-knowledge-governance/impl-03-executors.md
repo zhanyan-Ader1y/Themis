@@ -12,7 +12,7 @@ core/bin/themis-knowledge-lint.sh
 core/bin/themis-knowledge-apply.sh
 ```
 
-源模板位置为 `templates/.themis/core/bin/`。Init 和 Upgrade 已复制/替换 Workspace 之外的完整 Core，因此无需另建根级安装入口。
+源模板位置为 `templates/.themis/core/bin/`。fresh Init 安装完整 Core；当前不存在原地 Core 更新入口，也无需另建根级安装入口。
 
 所有脚本必须：
 
@@ -22,7 +22,7 @@ core/bin/themis-knowledge-apply.sh
 - 对 Agent 消费的正常结果输出单个 JSON 对象；
 - 将人类诊断写入 stderr；
 - 不 source 或调用 P0 Init 环境校验；
-- 拒绝 `..`、绝对路径和逃逸 Workspace/Core 的输入路径。
+- 拒绝 `..`、外部绝对路径、符号链接穿越和任何解析后落在 `--workspace` 根之外的输入或输出路径；apply/lint 必须覆盖 action 的 `inputs`、`outputs`、evidence refs 和所有目标路径。
 
 ## `themis-knowledge-record.sh`
 
@@ -37,17 +37,18 @@ themis-knowledge-record.sh --help
 ### Candidate 行为
 
 1. 验证输入字段和枚举。
-2. 规范化不含 `created_at` 的语义 payload。
-3. 使用 `git hash-object --stdin` 计算完整摘要。
-4. 生成 `KNC-<digest>` 和目标路径。
-5. 若同 ID 文件存在且摘要一致，返回 `unchanged`。
-6. 若同 ID 文件存在但内容不一致，报告 collision/conflict 并拒绝覆盖。
-7. 通过临时文件写入 candidate 模板实例并原子 rename。
-8. 返回真实 ID、摘要和路径。
+2. 拒绝缺失或为空的 `project`、`workspace_root`、`source_revision`、`source.evidence`，并校验 Workspace 绑定。
+3. 规范化不含 `created_at` 的语义 payload。
+4. 使用 `git hash-object --stdin` 计算完整摘要。
+5. 生成 `KNC-<digest>` 和目标路径。
+6. 若同 ID 文件存在且摘要一致，返回 `unchanged`。
+7. 若同 ID 文件存在但内容不一致，报告 collision/conflict 并拒绝覆盖。
+8. 通过临时文件写入 candidate 模板实例并原子 rename。
+9. 返回真实 ID、摘要和路径。
 
 ### Review 行为
 
-1. 验证 candidate/context 存在。
+1. 验证 candidate/context 存在，并校验 `project`、`workspace_root`、`source_revision`、`evidence_refs` 与被绑定对象及当前调用一致。
 2. 重算被审核对象摘要，写入或核对绑定字段。
 3. 验证 recommendation/decision 属于 operation 的允许枚举。
 4. final decision 存在时校验人工批准字段；pending review 可不批准但不能 apply。
@@ -68,7 +69,7 @@ themis-knowledge-record.sh --help
 }
 ```
 
-`status` 允许 `created`、`unchanged`、`rejected`。
+`status` 允许 `created`、`unchanged`、`rejected`、`unavailable`。当 Verification exhaustion/escalation 调用 recorder 但 capability 自检失败时，脚本返回 `unavailable`，`errors` 包含 `candidate_pending`，不得创建 candidate 文件或声称 `created`。
 
 ## `themis-knowledge-lint.sh`
 
@@ -85,6 +86,7 @@ themis-knowledge-lint.sh --help
 ### 确定性检查
 
 - Schema 标识、字段类型、必填值和稳定枚举；
+- `project`、`workspace_root`、`source_revision`、`evidence_refs` 均非空，`workspace_root` 与 lint 调用参数一致，evidence refs 解析后均位于当前 Workspace；
 - ID 与重算摘要一致；
 - source artifact/evidence 路径存在且不逃逸 Workspace；
 - `supersedes` 指向既有 candidate；
@@ -141,26 +143,26 @@ themis-knowledge-apply.sh --help
   - 生成 `CTX-<candidate-digest>`；
   - 写入允许分类目录；
   - 保留 candidate/review/source/evidence provenance；
-  - 原子更新既有 `catalog.yaml`；目标 Workspace 未迁移时返回 `migration_required`；
-  - 创建 action record。
+  - 原子更新既有且受支持的 `catalog.yaml`；目标 Workspace layout 不受支持时返回 `unsupported_workspace_layout`，不创建目录或转换数据；
+  - 创建 canonical `workspace/knowledge/actions/<action-id>.md`。
 - `reject`
   - 不删除 candidate；
-  - 在 rejected 目录写 action record 和理由引用。
+  - 在 `actions/` 写 canonical action record，并在 `rejected/` 写拒绝投影或引用。
 - `revise`
   - 不修改 candidate；
-  - 写 action record；后续 record 的新 candidate 必须通过 `supersedes` 关联。
+  - 在 `actions/` 写 canonical action record；后续 record 的新 candidate 必须通过 `supersedes` 关联。
 - `merge_duplicate`
   - 校验 canonical 引用存在；
   - 不删除 candidate 或 canonical 项；
-  - 写 action record。
+  - 在 `actions/` 写 canonical action record。
 - `retain`
   - 保持 Context 和索引不变；
-  - 写废弃审核 action record。
+  - 在 `actions/` 写废弃审核的 canonical action record。
 - `archive`
   - 先保存 Context 内容及 provenance 的历史快照；
   - 从活动 Catalog 移除对应项；
   - 再移除活动 Context 文件；
-  - 写 archive action record。
+  - 在 `actions/` 写 canonical action record，并在 `archive/` 保存历史快照或引用。
 
 ### 原子性与回滚
 

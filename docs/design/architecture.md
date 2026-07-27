@@ -1,15 +1,15 @@
 # Themis 总体架构
 
-> 规范状态：正式设计。实现状态：部分实现；模板所有权、加载基线、Specification、Init、Upgrade 与 Migration 分步入口已落地，P5.4 Context Trust、完整状态机、领域 Agent 和多数运行时执行器尚未实现。
+> 规范状态：正式设计。实现状态：部分实现；模板所有权、加载基线、Specification 与 fresh Init 已落地，P5.4 Context Trust、完整状态机、领域 Agent 和多数运行时执行器尚未实现。
 
 ## Core 与 Workspace
 
-- `.themis/core/` 是 Themis 管理的能力层：Kernel rules、policies、protocols、templates、adapters、migrations 和确定性执行器。
+- `.themis/core/` 是 Themis 管理的能力层：Kernel rules、policies、protocols、templates、adapters 和确定性执行器。
 - `.themis/workspace/` 是项目持有的内容与运行数据：manifest、Context、Spec、Plan、状态、runs、evidence、outcomes 和知识治理记录。
 - Core 定义能力和控制规则，不保存项目特定事实或工作工件。
 - Workspace 保存项目内容，不实现控制逻辑。
-- Core Upgrade 不得复制、替换、删除、恢复或以其他方式修改 `.themis/workspace/`。
-- Workspace 或 Artifact Schema 只能通过显式、经用户授权且可回滚的 [Migration](core/migrations.md) 演进。
+- 当前版本只支持 fresh Init，不提供 Core 原地更新或 Workspace/Artifact Schema 转换能力。
+- `core.yaml` 只声明固定 supported/writable allow-list；不支持的 Schema 必须 fail closed，不能由 Prompt、脚本或目录复制隐式转换。
 
 Workspace 的目录与数据合同见 [Workspace](workspace/overview.md)。项目事实的双轴可信模型见 [设计治理](governance.md#项目事实可信模型)。
 
@@ -19,7 +19,7 @@ Workspace 的目录与数据合同见 [Workspace](workspace/overview.md)。项�
 
 ### YAML Policy
 
-- YAML 是步骤顺序、阈值、路由条件、Gate、迁移条件、限制、稳定标识符和允许处置的权威声明。
+- YAML 是步骤顺序、阈值、路由条件、Gate、兼容条件、限制、稳定标识符和允许处置的权威声明。
 - Prompt 引用 YAML policy，不得复制或独立重新定义确定性逻辑。
 - Policy identifier 必须稳定、ASCII-safe，并适合脚本解析。
 
@@ -32,9 +32,18 @@ Workspace 的目录与数据合同见 [Workspace](workspace/overview.md)。项�
 
 ### Shell
 
-- 生命周期迁移、Gate 执行、格式校验、策略分类、DAG/覆盖校验、文件操作、备份、迁移、索引更新和 evidence 骨架等确定性操作应实现为脚本。
+- 生命周期迁移、Gate 执行、格式校验、策略分类、DAG/覆盖校验、文件操作、备份、索引更新和 evidence 骨架等确定性操作应实现为脚本。
 - 适用时脚本必须幂等；Agent 消费的接口优先使用机器可读 JSON。
 - Agent 调用前必须验证脚本存在，解析真实输出并遵循声明的 fallback；不得发明脚本、跳过必需步骤或伪造结果。
+- Shell 只执行可确定验证的结构、状态和副作用，不判断需求是否合理、知识是否有价值或两个事实是否语义等价。
+
+## 执行器职责与位置
+
+- 脚本复杂度按职责和事务边界控制，不按任意行数阈值控制；一个 executor 只拥有一个协议操作或一组不可分割的原子处置。
+- 需要不同批准、锁、回滚或 evidence 合同的操作必须拆分；仅共享参数解析或文件读写不构成合并职责的理由。
+- Context、Knowledge 等跨生命周期的数据服务执行器位于 `core/bin/`。
+- Verification、Review 等生命周期领域 runner 位于 `core/kernel/<domain>/`，与其 `rules.md` 共置。
+- 文件位置不改变三层边界：稳定控制仍归 Policy，语义判断仍归 Prompt，确定性执行仍归 Shell。
 
 ## 加载结构
 
@@ -49,13 +58,14 @@ Workspace 的目录与数据合同见 [Workspace](workspace/overview.md)。项�
 
 | 领域 | 所有权 | 详细设计 |
 |---|---|---|
-| Orchestrator | 生命周期路由、迁移检查、任务调度与恢复 | [Orchestrator](core/kernel/orchestrator.md) |
+| Orchestrator | 生命周期路由、状态迁移检查、任务调度与恢复 | [Orchestrator](core/kernel/orchestrator.md) |
 | Specification | 意图、范围、需求、AC、对抗验证与批准证据 | [Specification](core/kernel/specification.md) |
-| Context | 项目事实解析、Catalog、渐进披露、Bundle、Signal 与 Behavior Map | [Context](core/kernel/context.md) |
+| Context | 项目事实解析、Catalog、渐进披露、Bundle 与 Signal | [Context](core/kernel/context.md) |
 | Planning | Plan、Task、依赖、完成标准、定位与 AC traceability | [Planning](core/kernel/planning.md) |
 | Implementation | 一次执行一个依赖就绪 Task，并记录实现 evidence | [Workflow](workflow.md#planned--implemented) |
-| Verification | 命令驱动的 Gate 事实、失败分类与 durable evidence | [Verification](core/kernel/verification.md) |
-| Review | 只读检查 Spec、Plan、diff 与 Verification evidence | [Review](core/kernel/review.md) |
+| Verification | Implementation 后的命令 Gate、失败分类与 durable evidence | [Verification](core/kernel/verification.md) |
+| Human Acceptance / Summary | 用户验收决定与接受后的最终交付投影；由 Orchestrator 执行门禁路由 | [Workflow](workflow.md#verified--human-acceptance--summary--archived) |
+| Review | Implementation 前审查 Spec、Plan、设计、风险、实施边界与验收方案 | [Review](core/kernel/review.md) |
 | Attribution | Spec、Task、commit、run、deployment 与 outcome 的关联 | [Attribution](core/kernel/attribution.md) |
 | Knowledge | 候选、事实核验、审核、提升、冲突与废弃 | [Knowledge](core/kernel/knowledge.md) |
 

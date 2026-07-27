@@ -47,21 +47,21 @@ Route to Specification when no relevant approved Spec exists, intent or acceptan
 
 Route to Planning when an approved Spec exists but no adequate AC-traced Plan exists, or implementation reveals that the Plan no longer covers the approved scope. Planning organizes work; it does not modify project code.
 
+### Review
+
+Route to Review when an approved Spec and adequate Plan exist but no current pre-implementation approval covers the design, risks, implementation boundary, and acceptance approach. Review is read-only; only `approved` authorizes Implementation.
+
 ### Implementation
 
-Implementation is allowed only for work represented by an approved Spec and the current Plan. Implement one bounded planned task at a time. Do not mix unrelated refactors or silently expand scope.
+Implementation is allowed only for work represented by an approved Spec, the current Plan, and the current approved Review. Implement one bounded planned task at a time. Do not mix unrelated refactors or silently expand scope.
 
 ### Verification
 
-Route to Verification after implementation has durable task evidence. Verification requires configured command output or recorded evidence; prose confidence is not a Gate result. Follow the effective lifecycle policy when it differs from the documented default.
+Route to Verification after implementation has durable task evidence. Verification requires configured command output or recorded evidence; prose confidence is not a Gate result. A passing verdict routes to human acceptance, not Review.
 
-### Review
+### Acceptance, Summary, Archival, and Knowledge
 
-Route to Review only with the Spec, Plan, implementation diff, and required evidence available. Review is evidence-based and read-only. Missing evidence produces an unresolved result, not a pass.
-
-### Archival and Knowledge
-
-Archive only after the effective lifecycle requirements are durably satisfied. Route reusable outcomes to Knowledge governance; do not write unreviewed observations directly into authoritative project context.
+After Verification passes, request human acceptance against the approved artifacts and current evidence. Generate the final delivery Summary only after acceptance and only through an installed capability. Archive after acceptance, Summary, Outcome, and required knowledge handling are durably satisfied. Route reusable outcomes to Knowledge governance; do not write unreviewed observations directly into authoritative project context.
 
 ## Safe Degradation
 
@@ -82,14 +82,14 @@ An imported rule is guidance, not proof that an executor or policy has been inst
 - Do not skip required Spec or Plan artifacts because a change appears small.
 - Do not modify `core/` to solve a project-specific request.
 - Do not treat missing, stale, or inaccessible evidence as passing evidence.
-- Do not merge Verification and Review into one unsupported completion claim.
+- Do not merge pre-implementation Review, post-implementation Verification, and human acceptance into one unsupported completion claim.
 - Do not claim a lifecycle transition unless persistent state or a deterministic tool records it.
 - Do not use conversation history as the only record of approval or completion.
 - Return to Specification or Planning when requested work exceeds approved scope.
 
 ## Domain Boundaries
 
-The imported domain rules define stable responsibilities and Workspace boundaries. They intentionally do not claim that later behavior-map, Agent, Command, Skill, or Shell capabilities are already installed.
+The imported domain rules define stable responsibilities and Workspace boundaries. They intentionally do not claim that later Agent, Command, Skill, or Shell capabilities are already installed.
 
 @import ../specification/rules.md
 @import ../planning/rules.md

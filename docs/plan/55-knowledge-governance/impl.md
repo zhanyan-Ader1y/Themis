@@ -19,13 +19,15 @@ P5.5 必须自行提供最小确定性执行器；P8 未来只负责 Agent、Com
 | D3 | 候选和治理记录采用追加式历史。拒绝、合并重复或修订均不删除原候选；修订创建带 `supersedes` 的新候选。 |
 | D4 | v1 的所有最终处置都要求持久化人工批准。AI 只可提取候选、标记潜在重复/冲突并给出推荐。 |
 | D5 | 精确内容/来源重复由脚本确定性识别；语义重复和事实冲突保持 Prompt 驱动，并由人工作最终裁决。不声明无实现基础的相似度数值阈值。 |
-| D6 | 支持五类候选来源：`implementation_experience`、`verification_failure`、`review_finding`、`outcome`、`manual`。缺失的上游能力只能报告 unavailable，不得伪造来源工件。 |
-| D7 | 可提升的 Context 类型与现有 Workspace 对齐：`architecture`、`domain`、`engineering`、`decisions`、`pitfalls`、`glossary`、`external`。Behavior Map 是 P6 派生数据，不属于知识提升目标。 |
-| D8 | Runtime 执行器安装在 `templates/.themis/core/bin/`，随 Init/Upgrade 作为 Core 内容交付；仓库根 `bin/` 只保留安装与模板支持工具。 |
-| D9 | P5.5 消费 P5.4 的 Workspace Schema 与显式 Migration；不得自行创建旧 `context-map.yaml`、并行索引或独立 Freshness 状态。治理子目录的按需创建必须与获批 P5.4 Migration 契约一致。 |
+| D6 | 支持五类候选来源：`implementation_experience`、`verification_failure`、`review_finding`、`outcome`、`manual`。`verification_failure` 只接受耗尽 Verification repair/retry 预算或进入 escalation 的 Run；单次瞬时失败不产生候选。缺失的上游能力只能报告 unavailable，不得伪造来源工件。 |
+| D7 | 可提升的 Context 类型与现有 Workspace 对齐：`architecture`、`domain`、`engineering`、`decisions`、`pitfalls`、`glossary`、`external`。不写入 Behavior Map 或其他派生源码表示。 |
+| D8 | Runtime 执行器安装在 `templates/.themis/core/bin/`，随 fresh Init 作为 Core 内容交付；仓库根 `bin/` 只保留安装与模板支持工具。 |
+| D9 | P5.5 消费 P5.4 的 current Workspace Schema 与 Context Protocol；不得创建旧 `context-map.yaml`、并行索引、独立 Freshness 状态或不兼容目录。目标 layout 缺失时返回 unsupported/unavailable，不执行转换。 |
 | D10 | 提升和废弃必须由脚本在锁内执行，校验候选/审核摘要和批准字段，使用临时文件与回滚恢复，且不得静默覆盖既有 Context。 |
 | D11 | 敏感信息判断由 Prompt/人工负责；脚本要求显式敏感度审核字段，并拒绝已知私钥 PEM 标记等明显禁入内容，但不声称完成通用秘密扫描。 |
 | D12 | Freshness、Context 冲突检测、Catalog 检索、Embedding、自动路由、Agent/Command/Skill 和策略授权的自动批准不属于 P5.5。Promote 前必须消费 Context/代码核验结果。 |
+| D13 | candidate、review、action 和提升后的 Context provenance 必须绑定 target project、规范化 Workspace root、source revision 与 evidence refs；脚本拒绝任何解析后跨 Workspace 的输入或输出路径。 |
+| D14 | Verification escalation 调用 recorder 失败或 capability 缺失时，Verification Run 保留 `candidate_pending` payload；P5.5 不伪造 candidate 文件或 `created` 状态。 |
 
 ## 子模块段落
 
@@ -51,11 +53,11 @@ P5.5 必须自行提供最小确定性执行器；P8 未来只负责 Agent、Com
   → themis-knowledge-lint.sh 校验候选、审核、批准和目标约束
   → themis-knowledge-apply.sh 在锁内执行
       ├─ promote → 原子写入 workspace/context/<category>/<context-id>.md + catalog.yaml
-      ├─ reject → workspace/knowledge/rejected/<action-id>.md
-      ├─ revise → 记录处置；新候选通过 supersedes 关联
-      ├─ merge_duplicate → 记录 canonical 引用，不删除候选
-      ├─ retain → 保留现有 Context 并记录废弃审核
-      └─ archive → 保存历史快照、移除活动 Context、原子更新 catalog.yaml
+      ├─ reject → workspace/knowledge/actions/<action-id>.md + rejected 投影/引用
+      ├─ revise → actions 中记录处置；新候选通过 supersedes 关联
+      ├─ merge_duplicate → actions 中记录 canonical 引用，不删除候选
+      ├─ retain → 保留现有 Context 并在 actions 中记录废弃审核
+      └─ archive → actions 中记录处置，archive 保存快照，移除活动 Context、原子更新 catalog.yaml
 ```
 
 ## 目标文件
@@ -82,8 +84,7 @@ P5.5 必须自行提供最小确定性执行器；P8 未来只负责 Agent、Com
 | `bin/themis-template-check.sh` | 扩展 P5.5 静态契约检查 |
 | `tests/template-contract/test.sh` | 增加缺失/损坏 P5.5 资产夹具 |
 | `tests/knowledge-governance/test.sh` | 新建脚本行为 TAP 测试 |
-| `tests/init/test.sh` | 断言新 Core 资产安装 |
-| `tests/upgrade/test.sh` | 断言 Core 更新且 Workspace 字节不变 |
+| `tests/init/test.sh` | 断言 fresh Init 安装新 Core 资产 |
 
 ### 设计契约、WIKI 与发布
 
@@ -110,7 +111,7 @@ P5.5 必须自行提供最小确定性执行器；P8 未来只负责 Agent、Com
 | KG-04 | Knowledge rules 与 Orchestrator 可达性复核 | KG-02、KG-03 | rules 不超过 50 行并显式 MUST Read；现有 import 图保持浅层。 |
 | KG-05 | 模板检查与隔离回归 | KG-01、KG-02、KG-03、KG-04 | 新资产、稳定 ID/计数、Prompt 标题和 rules 预算均有失败夹具。 |
 | KG-06 | 模块行为测试 | KG-03 | 候选、审核、六类处置、无批准拒绝、重复执行和失败回滚覆盖。 |
-| KG-07 | 正式设计、计划与发布同步 | KG-04、KG-05、KG-06 | `docs/design/**` 与实现一致，版本和 Upgrade 期望同步。 |
+| KG-07 | 正式设计、计划与发布同步 | KG-04、KG-05、KG-06 | `docs/design/**` 与实现一致，版本和 fresh Init 期望同步。 |
 | KG-08 | 全量验证 | KG-07 | 所有适用命令输出已观察且通过，最终工作树已检查。 |
 
 ```text
@@ -133,14 +134,14 @@ KG-01 ─┬─→ KG-02 ─┐
 | 已批准提升 | 检查 Context、索引和 action record | 三者一致写入，provenance 完整。 |
 | 重复 apply | 连续执行两次 | 第二次返回 `unchanged`，无重复项。 |
 | 失败回滚 | 注入索引写入失败 | 被触及的 Workspace 内容恢复原状。 |
-| Init/Upgrade/Migration | 运行相应 suite | 新 Core 可安装/升级；既有 Workspace 不被 Upgrade 修改；Migration 回归不退化。 |
+| Init / existing install | 运行 Init suite 与 layout 故障夹具 | fresh Init 安装新 Core；既有 Workspace 缺失目标结构时 fail closed 且字节不变。 |
 | 最终一致性 | `git diff --check` + `git status --short` | 无空白错误，变更仅限已确认范围。 |
 
 ## 关键行为样例
 
 实施完成后至少人工审阅以下场景：
 
-1. 从一次 Verification 失败提取可复用陷阱，生成 candidate 但不提升。
+1. 从一次耗尽 repair/retry 预算或已进入 escalation 的 Verification Run 提取可复用陷阱，生成 candidate 但不提升；单次瞬时失败不产生候选。
 2. 精确重复候选被 record 脚本识别为 `unchanged`。
 3. 语义相近但证据不同的候选只标记 potential duplicate，等待人工裁决。
 4. 未提供 `approved_by`/`approved_at` 的 promote 被 apply 拒绝。
@@ -148,11 +149,12 @@ KG-01 ─┬─→ KG-02 ─┐
 6. revise 保留原候选并要求新候选声明 `supersedes`。
 7. archive 在保存历史快照后移除活动 Context 索引；中途失败完整回滚。
 8. 输入包含私钥 PEM 标记时 lint 拒绝持久化或提升。
+9. Verification 已耗尽 retry，但 Knowledge recorder 不可用：Run 保存 `candidate_pending` 和 draft evidence，不创建 candidate 文件、不修改 Context、不丢弃观察。
 
 ## 非范围与后续集成
 
 - Embedding、向量库或数值语义相似度阈值。
-- P6 Context Freshness 和 Behavior Map 自动信号。
+- Context Freshness、Behavior Map 或其他派生源码表示。
 - P5.9 的结构化 Task evidence、P6.5 Verification、P6.8 Review、P7.5 Outcome 的完整生产者；P5.5 只消费实际存在且可验证的工件。
 - P8 的 `Themis-Knowledge` Agent、Command、Skill、自动路由和调度。
 - 无人工批准的策略授权提升。

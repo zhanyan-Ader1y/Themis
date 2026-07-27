@@ -2,6 +2,13 @@
 
 ## 0.3.0
 
+### 2026-07-28
+
+- 从当前产品退役 Behavior Map、Upgrade 与 Migration，移除其命令、测试、模板、策略、占位目录和现行规范入口；历史计划与发布记录继续保留
+- 将 Core 兼容合同固定为 Workspace v1 与 Artifact v2 allow-list；unsupported schema 直接 fail closed，不声明或执行转换路径
+- Init 收敛为 fresh installation，在任何写入前拒绝已有 `.themis/` 并保留现有 Workspace，不提供覆盖安装或删除重装绕行
+- 生命周期调整为前置 Review、后置 Verification、Verification 通过后 Human Acceptance、验收通过后确定性生成 `summary.md`，再进入归档
+
 ### 2026-07-27
 
 - 完成 P5.2 Spec 双视图：新安装使用 `themis-artifact/v2` 与 `themis-spec/v2`，`spec.yaml` 成为唯一权威语义源，`spec.md` 成为带 source/body OID 的确定性 Human 审阅投影

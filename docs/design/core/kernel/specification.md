@@ -20,7 +20,7 @@ spec.md    # 确定性生成的 Human-readable 审阅投影
 - Canonical pair 仅可由 `core/kernel/specification/themis-spec.sh publish` 写入。P5 仅修改 `workspace/cache/spec-candidates/<spec-id>.yaml` candidate。
 - `validate`、`render` 与 `publish` 均 fail closed；`publish` 在 staging 中验证、渲染和校验配对后，以备份与恢复避免留下半套活动工件。
 
-`spec.yaml` 使用 map key 作为稳定对象身份，并以 `SCP-`、`EVD-`、`ASM-`、`OPT-`、`DEC-`、`REQ-`、`IFC-`、`CTR-`、`INV-`、`AC-`、`ADV-`、`RSK-`、`DGM-` 等 ID 表达引用。其语义包含 intent、scope、evidence、assumptions、options、decisions、requirements、interfaces、contracts、invariants、AC、对抗发现、风险、回滚与批准。当前原生合同为 `themis-artifact/v2` / `themis-spec/v2`，不提供 Artifact v1 或 Spec v1 兼容及迁移路径。
+`spec.yaml` 使用 map key 作为稳定对象身份，并以 `SCP-`、`EVD-`、`ASM-`、`OPT-`、`DEC-`、`REQ-`、`IFC-`、`CTR-`、`INV-`、`AC-`、`ADV-`、`RSK-`、`DGM-` 等 ID 表达引用。其语义包含 intent、scope、evidence、assumptions、options、decisions、requirements、interfaces、contracts、invariants、AC、对抗发现、风险、回滚与批准。当前原生合同为 `themis-artifact/v2` / `themis-spec/v2`，不读取旧 Artifact/Spec schema，也不提供转换能力。
 
 Human 投影固定展示 Review Summary、Architecture at a Glance、Key Decisions、Contracts and Invariants、Acceptance Criteria、Risks/Limitations/Rollback、Approval 与 Appendix。摘要、主决策、主风险和图选择由 YAML 明确提供；渲染器只排版，不推断语义。
 
@@ -41,6 +41,7 @@ Step 4 — Adversarial Validation
 - 有效攻击使用 `cover`、`accept` 或 `defer` 处置；critical 安全、权限或数据完整性风险不能仅延期。
 - 用户必须明确确认复杂度和最终 Draft。
 - Step 0 提取初步 intent 与业务词汇后，Specification 必须请求 Context Resolution；显式 Context ID 优先，其次按 domain、entity、operation 和 state 查找。
+- Step 2 必须把采用的稳定 Context ID 写入 `kind: context` 的 evidence source，并由 Requirement、Decision、Assumption 或 AC 的既有引用链使用；无法获得可信 Context 时记录 missing/conflict Signal 或人工证据限制。
 - Spec 定义期望变化，不能自证既有业务事实。Context 缺失、冲突或与代码漂移时，相关内容必须保留为问题、假设或变更目标，不能静默写成已确认事实。
 
 P5.4 的 Catalog、Bundle 和 Signal 执行器尚未实现；缺失时回退当前代码与人工确认，并明确记录证据限制。完整合同见 [Context](context.md)。

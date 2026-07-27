@@ -21,4 +21,4 @@ Write validated project context and indexes only beneath `workspace/context/` an
 - Do not decide how a fact changes a Spec or Plan.
 - Surface stale, missing, or conflicting context instead of silently selecting a convenient version.
 
-Behavior-map extraction, Facts-First validation, freshness policy, and discovery tooling belong to the later Behavior Map capability and are not implied by this baseline.
+Context discovery, catalog validation, freshness policy, and resolution tooling require separately installed capabilities and are not implied by this baseline.

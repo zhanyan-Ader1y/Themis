@@ -1,19 +1,20 @@
 # Workspace — 项目空间
 
-> 规范状态：正式设计。实现状态：当前目录骨架、manifest 与 Spec v2 双视图已实现；P5.4 目标 Context/Catalog/Signal/Bundle 结构、通用 lifecycle state、Run、Evidence、Outcome 和知识治理执行器均尚未实现。
+> 规范状态：正式设计。实现状态：当前 `themis-workspace/v1` 目录骨架、manifest 与 Spec v2 双视图已实现；Context Catalog/Signal/Bundle、通用 lifecycle state、Review、Verification、Acceptance、Summary、Outcome 和知识治理执行器均尚未实现。
 
 ## 职责边界
 
 Workspace 完全属于当前项目，保存项目特有内容和运行数据；Core 读取并治理这些内容，但不得在内部复制项目事实。
 
 - Workspace 保存内容，不实现控制逻辑。
-- Core Upgrade 不得复制、替换、删除、恢复或修改 Workspace。
-- Workspace 与 Artifact Schema 独立于 Core Version；不兼容变更只能通过显式 [Migration](../core/migrations.md) 完成。
+- 当前版本只支持 fresh Init，不更新或转换既有 `.themis`。
+- Workspace/Artifact Schema 必须位于 `core.yaml` 的 fixed supported allow-list；不支持的值 fail closed。
+- 任何运行时都不得隐式改写 Schema、创建不兼容结构或以复制模板替代更新机制。
 - 正式项目知识只存在于 `workspace/context/`；`workspace/knowledge/` 是治理过程数据。
 
 ## manifest.yaml
 
-Manifest 是项目与 Core 之间的配置入口，由项目持有。当前模板结构为：
+当前模板结构：
 
 ```yaml
 workspace_schema: themis-workspace/v1
@@ -43,27 +44,27 @@ paths:
   cache: workspace/cache
 ```
 
-`null` command 表示对应 Gate 不可用。Agent 不得发明替代命令；Verification 应按 policy 返回不可用、`inconclusive` 或失败结果。
-
-Adapter、Gate 与 policy override 的具体字段在对应 Protocol 和执行器落地后扩展。工具名称只能作为明确标注的示例，不能写成当前默认合同。
+`null` command 表示 Gate 不可用。Agent 不得发明替代命令；Verification 应按 policy 返回 unavailable、`inconclusive` 或失败。
 
 ## 目录所有权
 
 | 路径 | 内容 | 当前状态 |
 |---|---|---|
 | `policies/` | 项目允许的 policy override | 目录骨架 |
-| `context/` | 正式项目知识与派生代码 Context | 目录骨架；P5.4 目标结构未迁移 |
-| `specs/` | Spec、Plan、Review、Verify 等 SDD 工件 | Spec v2 双视图已实现；其余目录骨架 |
+| `context/` | 正式项目知识 | 分类目录骨架；P5.4 Catalog/L1/L2/L3 未实现 |
+| `specs/` | Spec、Plan、Review、Verify、Summary 等 SDD 工件 | Spec v2 双视图已实现；其余未实现 |
 | `state/` | transition、Task、retry、lock、session、Context Signal 等机器状态 | 目录骨架 |
 | `runs/` | 一次执行的输入、Gate、verdict 与摘要 | 目录骨架 |
-| `evidence/` | 命令、构建、测试、Review、漂移与部署证据 | 目录骨架 |
+| `evidence/` | 命令、构建、测试、Review、Acceptance、漂移与部署证据 | 目录骨架 |
 | `outcomes/` | success、rework、defect、incident、rollback | 目录骨架 |
-| `knowledge/` | candidate、review、rejected、archive 等治理记录 | 目录骨架 |
+| `knowledge/` | candidate、review、canonical action、rejected projection、archive snapshot | 目录骨架 |
 | `cache/` | 可重建的 Context 索引、Bundle 与派生元数据 | 目录骨架 |
 
 目录存在不代表对应执行能力已经实现。
 
 ## P5.4 目标 Context 结构
+
+P5.4 必须在当前 `themis-workspace/v1` 可表达的目录内实施：
 
 ```text
 workspace/
@@ -72,12 +73,6 @@ workspace/
 │   ├── .abstract.md
 │   ├── .overview.md
 │   ├── architecture/
-│   │   └── behavior-map/
-│   │       ├── manifest.yaml
-│   │       ├── system/       # B1
-│   │       ├── units/        # B2
-│   │       ├── evidence/     # B3
-│   │       └── navigation/
 │   ├── domain/
 │   ├── engineering/
 │   ├── decisions/
@@ -97,62 +92,63 @@ workspace/
     └── resolved-context/
 ```
 
-- `catalog.yaml` 是目标唯一持久 Context 注册表。
-- L1/L2 是派生导航，L3 是正式 Context Item；详细合同见 [Context](../core/kernel/context.md)。
+- `catalog.yaml` 是唯一持久 Context 注册表。
+- L1/L2 是派生导航，L3 是正式 Context Item；Catalog Search 直接覆盖完整 L3 集合。
 - `context-signals/` 保存 missing、stale、conflict 和 drift 等流程信号，不保存项目事实。
+- Candidate 保持追加式；所有 canonical action 写入 `knowledge/actions/`。
 - Cache 可以删除重建，不能保存唯一批准、裁决、来源或项目知识。
-- Behavior Map 是派生 Context，不是第二套源码权威。
-
-该结构会改变已安装 Workspace，只有 P5.4 实施提供 descriptor、备份、验证和回滚后，才能通过显式 Migration 应用；Upgrade 不得补建或重写这些路径。
+- 若实施需要改变 Workspace Schema 或转换既有安装，该部分必须延期；当前版本没有转换能力。
 
 ## specs/ — SDD 工件
 
-当前已实现的 Spec 结构为：
+目标结构：
 
 ```text
 workspace/specs/<spec-id>/
-├── spec.yaml       # themis-spec/v2；Agent-readable 唯一语义源
-├── spec.md         # 由 executor 生成的 Human 审阅投影
+├── spec.yaml       # themis-spec/v2；唯一机器语义源
+├── spec.md         # 确定性 Human projection
 ├── plan.md
-├── review.md
-└── verify.md
+├── review.md       # 前置 Review projection
+├── verify.md       # 后置 Verification projection
+└── summary.md      # Human Acceptance 后的最终交付投影
 ```
 
-P5 通过 `workspace/cache/spec-candidates/<spec-id>.yaml` 写入 candidate；`themis-spec.sh publish` 在验证、渲染、配对校验与可恢复发布后写入 canonical pair。`spec.md` 不能被独立维护、反向同步或作为机器输入；source/body OID 或内容漂移须从 YAML 重新生成。
+当前只实现 `spec.yaml`/`spec.md` pair。P5 通过 `workspace/cache/spec-candidates/<spec-id>.yaml` 写 candidate；`themis-spec.sh publish` 负责验证、渲染、配对校验与可恢复发布。Plan、Review、Verify、Summary 的模板和执行器尚未落地。
 
-当前 Spec Artifact 是首次发布的 `themis-artifact/v2` / `themis-spec/v2` 原生合同。没有 v1 单文件 Spec 兼容、转换脚本或迁移状态。Plan、Review 和 Verify 模板及执行器尚未落地。
-
-生命周期统一为：
+生命周期状态统一为：
 
 ```text
-Draft → Specified → Planned → Implemented → Verified → Reviewed → Archived
+draft → specified → planned → reviewed → implemented → verified → archived
 ```
 
-工件内容由对应领域或用户维护；只有确定性状态执行器可以写入机器生命周期迁移。完整门禁见 [工作流程](../workflow.md)。
+完整阶段顺序还包含 `verified` 后的 Human Acceptance 与 Summary 门禁。工件内容由对应领域或用户维护；只有确定性状态执行器可以写入机器 transition。
 
 ## state/、runs/ 与 evidence/
 
 - `state/` 是机器可读索引和审计状态，不能脱离 Spec、Plan 与 Evidence 单独解释流程。
-- `runs/` 描述一次执行；`evidence/` 保存或引用支撑结论的材料。Run 与 Evidence 不得混为一谈。
-- Gate execution status、Verification verdict 和 Review result 使用不同命名空间，见 [Protocols](../core/protocols.md#状态词汇)。
-- 代码变更会使受影响的 Verification evidence 失效。
+- `runs/` 描述一次执行；`evidence/` 保存或引用支撑结论的材料，两者不得混为一谈。
+- Review result、Gate execution status、Verification verdict、Human Acceptance decision 和 lifecycle status 使用不同命名空间。
+- Review approval 绑定 Spec/Plan revision；相关工件变化后失效。
+- 代码变化使受影响的 Verification evidence 失效。
+- Acceptance evidence 绑定 accepted Spec/Plan/Review/Verification revision；实现变化后必须重新 Verification 与 Acceptance。
 
-当前通用 Run、Evidence 和 lifecycle state 执行器尚未实现。
+当前通用 Run、Evidence、Acceptance 和 lifecycle state 执行器尚未实现。
 
-## outcomes/ 与 knowledge/
+## Summary、Outcome 与 Knowledge
 
-Outcome 记录交付后的真实结果，用于区分某次 Verification 通过和实际交付成功。Attribution 只建立可追溯关联并区分相关性与因果解释。
+`summary.md` 只在 Human Acceptance 为 `accepted` 后生成，引用接受证据和来源 digest，汇总最终范围、实际变更、证据、偏差、残余风险和后续事项。它不是机器 acceptance、Verification verdict、Outcome 或 lifecycle state。
 
-Knowledge 流程为：
+Outcome 记录交付后的真实结果。Knowledge 流程为：
 
 ```text
-candidate → fact validation → dedup/conflict check → governed review
-  ├─ promote → workspace/context/ + catalog.yaml
-  ├─ reject  → workspace/knowledge/rejected/
-  └─ revise  → candidate
+candidate → fact validation → dedup/conflict check → governed review → human decision
+  ├─ promote         → workspace/context/ + catalog.yaml
+  ├─ reject/revise   → canonical action + retained candidate
+  ├─ merge_duplicate → canonical action + canonical reference
+  └─ retain/archive  → canonical action + optional historical projection/snapshot
 ```
 
-废弃的正式 Context 经审核后保留历史记录于 `workspace/knowledge/archive/`。自动治理执行器尚未实现。
+Candidate 不因处置被移动或删除。自动治理执行器尚未实现。
 
 ## cache/
 

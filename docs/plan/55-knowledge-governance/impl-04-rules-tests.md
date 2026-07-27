@@ -81,12 +81,16 @@ Orchestrator 已 import Knowledge rules，无需新增 import 或扩大 import �
 - 明显私钥标记拒绝；
 - 合法 pending review 可记录但不可 apply；
 - stale candidate digest 的 review lint 失败；
+- candidate 缺少 `project`、`workspace_root` 或 `source_revision` 时拒绝；
+- candidate/review 的 `workspace_root` 与 `--workspace` 不一致时拒绝；
+- review 缺少或越界 `evidence_refs` 时拒绝；
+- Verification exhaustion 调用 recorder 但 capability missing 时返回 `unavailable`，errors 含 `candidate_pending`，且不创建文件；
 - decision 与 operation 不匹配时失败。
 
 ### Apply 测试
 
 - 无批准 promote：非零、Workspace 指纹不变；
-- 已批准 promote：L3 Context、Catalog、review、action 一致；
+- 已批准 promote：L3 Context、Catalog、review、`actions/` canonical action 一致；
 - 目标 Context 已存在且相同：幂等 unchanged；
 - 目标 Context 已存在但不同：conflict，不覆盖；
 - reject：candidate 保留，rejected action 创建；
@@ -99,9 +103,10 @@ Orchestrator 已 import Knowledge rules，无需新增 import 或扩大 import �
 - 锁冲突：blocked，不删除未知锁；
 - 注入 Context 写入失败：回滚；
 - 注入 index rename 失败：回滚；
-- HUP/INT/TERM trap：恢复并释放本次锁。
+- HUP/INT/TERM trap：恢复并释放本次锁；
+- action 的 evidence refs、inputs、outputs 或目标路径指向 Workspace 外时拒绝，当前 Workspace 指纹不变。
 
-## 安装链回归
+## 安装边界回归
 
 ### Init
 
@@ -113,18 +118,13 @@ Orchestrator 已 import Knowledge rules，无需新增 import 或扩大 import �
 - 三个 Core Runtime 脚本；
 - 更新后的 Knowledge rules。
 
-### Upgrade
+### Existing Workspace
 
-`tests/upgrade/test.sh`：
+模块测试增加受支持 layout 与缺失 layout 夹具：
 
-- 候选 Core 版本高于新基线；
-- 新 P5.5 Core 资产被替换到目标；
-- 升级前已有 candidates/reviews/actions/rejected/archive/catalog 和 Context 文件字节不变；
-- Upgrade 不主动创建或迁移缺失的 Knowledge 子目录、Catalog 或 Context Signal；
-
-### Migration
-
-P5.5 不新增 Schema migration，但必须运行现有 migration suite，证明兼容描述符和 Workspace 保护未退化。
+- fresh Init 的 current Workspace layout 可正常运行；
+- 缺少 Catalog/治理目录或 schema 不受支持时返回 `unsupported_workspace_layout`/`unavailable`；
+- Runtime 不补建不兼容目录、不改写 manifest/schema，Workspace 指纹保持不变。
 
 ## 必跑命令
 
@@ -141,7 +141,7 @@ bash -n templates/.themis/core/bin/themis-knowledge-apply.sh
 ```
 
 ```bash
-shellcheck templates/.themis/core/bin/themis-knowledge-record.sh templates/.themis/core/bin/themis-knowledge-lint.sh templates/.themis/core/bin/themis-knowledge-apply.sh bin/themis-template-check.sh tests/template-contract/test.sh tests/knowledge-governance/test.sh tests/init/test.sh tests/upgrade/test.sh
+shellcheck templates/.themis/core/bin/themis-knowledge-record.sh templates/.themis/core/bin/themis-knowledge-lint.sh templates/.themis/core/bin/themis-knowledge-apply.sh bin/themis-template-check.sh tests/template-contract/test.sh tests/knowledge-governance/test.sh tests/init/test.sh
 ```
 
 ```bash
@@ -162,14 +162,6 @@ bash tests/init-environment/test.sh
 
 ```bash
 bash tests/init/test.sh
-```
-
-```bash
-bash tests/upgrade/test.sh
-```
-
-```bash
-bash tests/migrate/test.sh
 ```
 
 ```bash

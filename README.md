@@ -23,7 +23,16 @@
 
 Themis 是一个面向团队的 repo-local 规范驱动开发（SDD）Harness。它将受管的 AI Coding 能力安装到工程仓库中，同时将项目特定的 Context、Spec、运行记录和证据保留在项目持有的 Workspace 中。
 
-当前版本提供 **Init**、**Upgrade** 和显式 **Migration** 的分步入口。完整设计、模块边界与实现状态以 [Themis 设计规范](docs/design/) 为准；未实现的生命周期执行器不会被 README 描述为现有能力。
+## Themis 四大特点
+
+- **Spec 前追问**：在发布 Spec 前系统澄清意图、范围、假设、约束和验收条件，减少带着歧义进入实施。
+- **更轻松的 Spec Review**：以 `spec.yaml` 保存机器语义，以确定性 `spec.md` 提供聚焦关键决策、AC、风险和批准信息的人类投影。
+- **Agent 自主 Plan 的结果可沉淀**：Agent 生成的计划、任务拆分、决策和证据要求可以成为受治理、可追溯的项目工件，而不是随会话消失。
+- **不断进化的项目知识库**：将经过事实核验和人工批准的经验持续沉淀为项目持有的 Context，使后续 Spec、Plan、Review 和 Verification 能复用已有知识。
+
+四项特点描述 Themis 的产品方向；各能力是否已经可执行，以 [设计规范中的实现状态](docs/design/) 和下方当前版本说明为准。
+
+当前版本提供 **fresh Init** 与 Spec v2 双视图。它不提供 Core 原地更新、Workspace/Artifact Schema 转换或 Behavior Map；完整设计、模块边界与实现状态以 [Themis 设计规范](docs/design/) 为准，未实现的生命周期执行器不会被描述为现有能力。
 
 <a id="quick-start"></a>
 
@@ -31,7 +40,7 @@ Themis 是一个面向团队的 repo-local 规范驱动开发（SDD）Harness。
 
 ### 前置环境
 
-从 Themis 源仓库运行命令前，请准备以下环境：
+从 Themis 源仓库运行 Init 前，请准备以下环境：
 
 | 依赖 | 最低版本 | 用途 |
 |---|---:|---|
@@ -69,56 +78,30 @@ bash bin/themis-init.sh [target] [--yes] [--project-name <name>] [--lint <comman
 
 ## 使用指南
 
-### 升级已有安装
+### 已有安装
 
-已有 `.themis/` 的项目应使用 Upgrade，而不是再次执行 Init。建议先预演：
+如果目标项目已存在 `.themis/`，Init 会在任何写入前失败，并保留现有 Workspace。当前版本没有原地更新或 Schema 转换入口；请不要用重复 Init、覆盖复制或删除 `.themis/` 的方式绕过该边界。
 
-```bash
-bash bin/themis-upgrade.sh /path/to/project --dry-run
-```
+未来恢复更新能力时，将作为新的正式设计和实施计划重新确认，不复用已退役的 Upgrade/Migration 合同。
 
-确认后执行升级：
+### 当前 Spec 产物
 
-```bash
-bash bin/themis-upgrade.sh /path/to/project
-```
-
-Upgrade 仅替换 `.themis/` 中 **Workspace 以外**的 Themis 受管内容；它保持 Workspace 不变，也不会重写项目的 `CLAUDE.md` 或 `AGENTS.md`。若兼容性检查发现 Workspace 或 Artifact Schema 不兼容，Upgrade 会拒绝继续并要求显式 Migration。
-
-完整语法：
+Requirement Questioning 在 cache 中维护 Draft candidate，并由确定性 Spec executor 发布双视图：
 
 ```text
-bash bin/themis-upgrade.sh [target] [--dry-run]
+workspace/cache/spec-candidates/<spec-id>.yaml
+workspace/specs/<spec-id>/spec.yaml
+workspace/specs/<spec-id>/spec.md
 ```
 
-### 显式 Schema Migration
-
-Migration 是 Upgrade 因 Schema 不兼容而拒绝时使用的高级恢复路径。按以下顺序显式执行：
-
-```bash
-bash bin/themis-migrate.sh /path/to/project --check
-bash bin/themis-migrate.sh /path/to/project --backup
-bash bin/themis-migrate.sh /path/to/project --run --migration-id '<from→to>'
-bash bin/themis-migrate.sh /path/to/project --verify
-bash bin/themis-migrate.sh /path/to/project --rollback --backup-path <path>
-```
-
-> **当前限制：** 只有 `--check` 返回实际 descriptor 后才能执行对应的 `--run`。当前模板没有具体 migration descriptor 或 Schema 转换脚本，因此当前版本没有内置、可执行的版本转换路径。调用方需要显式确认迁移、保存 `--backup` 返回的路径；`--verify` 失败后也需要显式调用 `--rollback`，脚本尚未端到端强制这些安全前置条件。
-
-完整语法：
-
-```text
-bash bin/themis-migrate.sh <target> <action> [options]
-```
-
-可用 action 为 `--check`、`--backup`、`--run`、`--verify`、`--rollback`、`--dry-run` 和 `--help`。`--run` 必须提供 `--migration-id`，`--rollback` 必须提供 `--backup-path`；详见 [Migration 当前边界](docs/design/core/migrations.md)。
+`spec.yaml` 是唯一机器语义源，`spec.md` 是可重建的 Human projection。Planning、前置 Review、Implementation、Verification、Human Acceptance、Summary 和 Archived 的完整执行器仍待实施；目标生命周期见 [完整工作流程](docs/design/workflow.md)。
 
 ## 文档
 
 - [设计规范](docs/design/) — 已确认的 Themis 设计、模块合同与实现状态。
 - [文档门户](docs/) — 设计、计划、分析与参考资料入口。
 - [Init 运行环境](docs/design/runtime-environment.md) — Bash、Git 与 yq 的版本要求及跨平台安装指引。
-- [完整工作流程](docs/design/workflow.md) — 生命周期、能力边界与 Init / Upgrade / Migration 的关系。
+- [完整工作流程](docs/design/workflow.md) — 生命周期、阶段门禁、fresh Init 与当前能力边界。
 - [更新日志](CHANGES.md) — 版本变更记录。
 
 ## 许可证

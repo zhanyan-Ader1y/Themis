@@ -1,5 +1,7 @@
 # P4.5 — Explicit Migration（显式迁移）
 
+> **Superseded — 2026-07-28**：该能力已从当前产品退役，脚本、策略、模板、测试与现行规范均已移除。本文仅保留历史设计与实施记录；未来若恢复 Schema 转换能力，必须重新设计并取得实施授权。
+
 **优先级**：P4.5（P4 Upgrade 的补充能力）
 **依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P4 Upgrade](../40-upgrade/README.md)
 **状态**：已完成；当前实现边界见 [Migrations 正式规范](../../design/core/migrations.md)

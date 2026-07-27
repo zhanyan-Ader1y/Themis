@@ -21,7 +21,7 @@ The check does not inspect or configure:
 - project language runtimes, test frameworks, containers, or CI tools;
 - dependencies used by normal Themis SDD workflows after installation.
 
-Upgrade must perform only the compatibility checks defined by the Upgrade design. It must not source or invoke the Init environment library.
+Current Themis supports fresh Init only. If the target already contains `.themis/`, Init fails before writing and preserves the existing Workspace. This environment contract does not provide Core updates or Workspace/Artifact Schema conversion.
 
 ## yq contract
 

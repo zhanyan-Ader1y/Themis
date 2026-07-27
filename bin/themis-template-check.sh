@@ -289,116 +289,11 @@ EOF
   return 1
 }
 
-# 校验显式迁移描述符；检查器只识别迁移，绝不执行迁移。
-themis_template_schema_has_migration() {
-  local themis_template_migration_file=$1
-  local themis_template_migration_dimension=$2
-  local themis_template_migration_schema=$3
-  local themis_template_migration_root=$4
-  local themis_template_migration_count
-  local themis_template_migration_index=0
-  local themis_template_migration_id
-  local themis_template_migration_from
-  local themis_template_migration_to
-  local themis_template_migration_script
-  local themis_template_migration_reversible
-
-  themis_template_migration_count=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations | length") || return 1
-  case "${themis_template_migration_count}" in
-    *[!0-9]*|'')
-      themis_template_error \
-        'migration list invalid' \
-        "a list for compatibility.${themis_template_migration_dimension}.migrations" \
-        "${themis_template_migration_count:-empty}" \
-        'Use a YAML list of explicit migration descriptors.'
-      return 1
-      ;;
-  esac
-
-  while [ "${themis_template_migration_index}" -lt "${themis_template_migration_count}" ]; do
-    themis_template_migration_id=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations[${themis_template_migration_index}].id // \"\"") || return 1
-    themis_template_migration_from=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations[${themis_template_migration_index}].from_schema // \"\"") || return 1
-    themis_template_migration_to=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations[${themis_template_migration_index}].to_schema // \"\"") || return 1
-    themis_template_migration_script=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations[${themis_template_migration_index}].script // \"\"") || return 1
-    themis_template_migration_reversible=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations[${themis_template_migration_index}].reversible // \"\"") || return 1
-
-    if [ -z "${themis_template_migration_id}" ] || [ -z "${themis_template_migration_from}" ] || [ -z "${themis_template_migration_to}" ] || [ -z "${themis_template_migration_script}" ] || [ -z "${themis_template_migration_reversible}" ]; then
-      themis_template_error \
-        'migration descriptor invalid' \
-        'id, from_schema, to_schema, script, and reversible' \
-        "descriptor ${themis_template_migration_index} is incomplete" \
-        'Declare a complete explicit migration descriptor.'
-      return 1
-    fi
-
-    case "${themis_template_migration_id}" in
-      *[!A-Za-z0-9._-]*)
-        themis_template_error \
-          'migration ID invalid' \
-          'an ASCII-safe identifier' \
-          "${themis_template_migration_id}" \
-          'Use letters, digits, dot, underscore, or hyphen.'
-        return 1
-        ;;
-    esac
-    case "${themis_template_migration_reversible}" in
-      true|false) ;;
-      *)
-        themis_template_error \
-          'migration reversible flag invalid' \
-          'true or false' \
-          "${themis_template_migration_reversible}" \
-          'Declare whether the migration supports backup-based rollback.'
-        return 1
-        ;;
-    esac
-
-    case "${themis_template_migration_script}" in
-      "${themis_template_migration_root}"/*) ;;
-      *)
-        themis_template_error \
-          'migration script path invalid' \
-          "a path beneath ${themis_template_migration_root}" \
-          "${themis_template_migration_script}" \
-          'Keep each migration script in its matching migration root.'
-        return 1
-        ;;
-    esac
-
-    case "${themis_template_migration_script}" in
-      *'..'*)
-        themis_template_error \
-          'migration script path unsafe' \
-          "a relative path beneath ${themis_template_migration_root}" \
-          "${themis_template_migration_script}" \
-          'Use a relative script path without parent-directory traversal.'
-        return 1
-        ;;
-    esac
-
-    if [ ! -f "${THEMIS_TEMPLATE_CORE_ROOT}/${themis_template_migration_script}" ]; then
-      themis_template_error \
-        'migration script missing' \
-        "${themis_template_migration_script}" \
-        'not found' \
-        'Add the declared migration script beneath core/migrations.'
-      return 1
-    fi
-
-    if [ "${themis_template_migration_from}" = "${themis_template_migration_schema}" ]; then
-      return 0
-    fi
-    themis_template_migration_index=$((themis_template_migration_index + 1))
-  done
-  return 1
-}
-
-# 根据独立的 Core 兼容性列表归类 manifest Schema。
+# 根据 Core 的固定 allow-list 校验 manifest Schema；不提供隐式或显式转换路径。
 themis_template_check_schema_compatibility() {
   local themis_template_compatibility_dimension=$1
   local themis_template_compatibility_schema=$2
   local themis_template_compatibility_label=$3
-  local themis_template_compatibility_root=$4
 
   if themis_template_schema_is_supported \
     "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" \
@@ -407,24 +302,11 @@ themis_template_check_schema_compatibility() {
     return 0
   fi
 
-  if themis_template_schema_has_migration \
-    "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" \
-    "${themis_template_compatibility_dimension}" \
-    "${themis_template_compatibility_schema}" \
-    "${themis_template_compatibility_root}"; then
-    themis_template_error \
-      "${themis_template_compatibility_label} schema requires explicit migration" \
-      "a supported ${themis_template_compatibility_label} schema" \
-      "${themis_template_compatibility_schema}" \
-      'Run the appropriate future Upgrade migration; this checker never migrates data.'
-    return 1
-  fi
-
   themis_template_error \
     "unsupported ${themis_template_compatibility_label} schema" \
     "a value in compatibility.${themis_template_compatibility_dimension}.supported" \
     "${themis_template_compatibility_schema}" \
-    'Declare supported compatibility or an explicit migration descriptor.'
+    'Use a supported schema; this release has no schema conversion capability.'
   return 1
 }
 
@@ -516,8 +398,6 @@ themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.yaml" 
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec-questioning.md" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec-adversarial-checklist.md" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/specification/themis-spec.sh" || exit 1
-themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/migrations/workspace/.gitkeep" || exit 1
-themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/migrations/artifacts/.gitkeep" || exit 1
 
 for themis_template_workspace_directory in policies context specs state runs evidence outcomes knowledge cache; do
   themis_template_require_path "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/${themis_template_workspace_directory}/.gitkeep" || exit 1
@@ -527,11 +407,23 @@ for themis_template_kernel_module in orchestrator specification planning context
   themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/${themis_template_kernel_module}/rules.md" || exit 1
 done
 
-themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/adapters/schema/behavior-extractor/.gitkeep" || exit 1
-
-for themis_template_context_subdir in architecture/behavior-map architecture domain engineering decisions pitfalls glossary external; do
+for themis_template_context_subdir in architecture domain engineering decisions pitfalls glossary external; do
   themis_template_require_path "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/context/${themis_template_context_subdir}/.gitkeep" || exit 1
 done
+
+if [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/migrations" ] || \
+   [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/policies/migration.yaml" ] || \
+   [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/templates/migration-execution.md" ] || \
+   [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/migrations.md" ] || \
+   [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/adapters/schema/behavior-extractor" ] || \
+   [ -e "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/context/architecture/behavior-map" ]; then
+  themis_template_error \
+    'retired capability asset present' \
+    'no Upgrade, Migration, Behavior Extractor, or Behavior Map assets' \
+    'retired template path found' \
+    'Remove retired capability assets from the current template.'
+  exit 1
+fi
 
 if [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/migations" ] || \
    [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/konwledge" ]; then
@@ -539,17 +431,16 @@ if [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/migations" ] || \
     'legacy template path present' \
     'no migations or konwledge path' \
     'legacy misspelling found' \
-    'Rename the source-template path to migrations or knowledge.'
+    'Remove the misspelled legacy template path.'
   exit 1
 fi
 
-if [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" ] || \
-   [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/migrations/artifacts/v1-to-v2.sh" ]; then
+if [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" ]; then
   themis_template_error \
-    'legacy Spec migration asset present' \
-    'no Spec v1 template or Artifact v1-to-v2 script' \
+    'legacy Spec compatibility asset present' \
+    'no Spec v1 Markdown template' \
     'obsolete Spec compatibility asset found' \
-    'Remove the pre-release Spec migration asset; Artifact v2 is the native contract.'
+    'Remove the pre-release Spec template; Artifact v2 is the native contract.'
   exit 1
 fi
 
@@ -575,16 +466,18 @@ themis_template_require_value "${THEMIS_TEMPLATE_ARTIFACT_SCHEMA}" 'themis-artif
 
 for themis_template_dimension in workspace artifact; do
   themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" ".compatibility.${themis_template_dimension}.supported" '!!seq' "${themis_template_dimension} support list invalid" || exit 1
-  themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" ".compatibility.${themis_template_dimension}.migrations" '!!seq' "${themis_template_dimension} migration list invalid" || exit 1
+  themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" ".compatibility.${themis_template_dimension}.migrations // \"absent\"")" 'absent' "${themis_template_dimension} migration metadata present" || exit 1
 done
+
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.migration_roots // "absent"')" 'absent' 'Migration roots metadata present' || exit 1
 
 themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.supported | length')" 1 'Artifact support list invalid' || exit 1
 themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.supported[]?' 'themis-artifact/v2' 'Artifact v2 support missing' || exit 1
 themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.writable // ""')" 'themis-artifact/v2' 'Artifact writable schema invalid' || exit 1
-themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.migrations | length')" 0 'Artifact migration list must be empty' || exit 1
 
-themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.migration_roots.workspace // ""')" 'migrations/workspace' 'Workspace migration root invalid' || exit 1
-themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.migration_roots.artifacts // ""')" 'migrations/artifacts' 'Artifact migration root invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.workspace.supported | length')" 1 'Workspace support list invalid' || exit 1
+themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.workspace.supported[]?' 'themis-workspace/v1' 'Workspace v1 support missing' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.workspace.writable // ""')" 'themis-workspace/v1' 'Workspace writable schema invalid' || exit 1
 
 for themis_template_manifest_map in project commands context adapters policy_overrides paths; do
   themis_template_require_type "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/manifest.yaml" ".${themis_template_manifest_map}" '!!map' "Manifest ${themis_template_manifest_map} invalid" || exit 1
@@ -605,8 +498,8 @@ for themis_template_path_name in policies context specs state runs evidence outc
     "Manifest path ${themis_template_path_name} invalid" || exit 1
 done
 
-themis_template_check_schema_compatibility workspace "${THEMIS_TEMPLATE_WORKSPACE_SCHEMA}" Workspace migrations/workspace || exit 1
-themis_template_check_schema_compatibility artifact "${THEMIS_TEMPLATE_ARTIFACT_SCHEMA}" Artifact migrations/artifacts || exit 1
+themis_template_check_schema_compatibility workspace "${THEMIS_TEMPLATE_WORKSPACE_SCHEMA}" Workspace || exit 1
+themis_template_check_schema_compatibility artifact "${THEMIS_TEMPLATE_ARTIFACT_SCHEMA}" Artifact || exit 1
 
 # 验证 P5.2 策略、协议、模板与稳定 readiness IDs 对齐。
 themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification' '!!map' 'Specification policy root invalid' || exit 1

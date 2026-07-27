@@ -36,6 +36,7 @@
 - 把未验证推断写成事实。
 - 将凭证、私钥、Token、个人数据或内部敏感内容写入候选。
 - 在候选阶段直接修改 `workspace/context/`。
+- 在 Verification 场景中，把 retry window 内的单次 transient failure 提取为候选，或 recorder 缺失时静默丢弃 escalation draft 而不在 Run 保留 `candidate_pending`。
 
 ## Knowledge Review Prompt
 
@@ -83,7 +84,7 @@
 
 | Script | Purpose | Missing fallback |
 |---|---|---|
-| `core/bin/themis-knowledge-record.sh` | 规范化并持久化 candidate/review，输出 JSON | 停止 Workspace 写入；只在对话中展示草案并报告 capability missing。 |
+| `core/bin/themis-knowledge-record.sh` | 规范化并持久化 candidate/review，输出 JSON | 停止 Workspace 写入；只在对话中展示草案并报告 capability missing。若调用方是 Verification escalation，必须把 draft evidence 和缺失原因持久化为 Run 的 `candidate_pending`，不得声称 candidate 已记录。 |
 | `core/bin/themis-knowledge-lint.sh` | 校验 policy、candidate、review、Context 索引和批准字段 | 停止，不把人工阅读替代为机器校验结果。 |
 | `core/bin/themis-knowledge-apply.sh` | 执行已批准的 promote/reject/revise/merge/retain/archive | 停止，不手工移动、删除、覆盖 Context 或更新索引。 |
 
@@ -112,7 +113,7 @@ Prompt 不得：
 
 至少审阅以下 Prompt 场景：
 
-1. Verification 工件存在且包含稳定失败模式 → 生成 pitfalls 候选。
+1. Verification 工件存在，明确表示 repair/retry 预算已耗尽或已进入 escalation，且包含稳定失败模式 → 生成 pitfalls 候选。
 2. 只提供“我记得之前失败过” → 要求证据或降为 manual 来源，不伪造 run。
 3. 候选与 Context 主题相近但作用域不同 → 标记 potential duplicate，要求人工比较。
 4. 候选与现有 Context 冲突 → 禁止 promote，直到人工裁决并记录理由。

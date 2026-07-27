@@ -68,11 +68,12 @@
 更新 `docs/design/workspace/overview.md`：
 
 - `candidates/` 保存原始追加式候选；
-- `reviews/` 保存审核和 promote/revise/merge/retain action；
-- `rejected/` 保存拒绝 action，不是移动后的唯一候选副本；
+- `reviews/` 只保存审核和人工 decision；
+- `actions/` 保存所有处置的 canonical `KAC-*` 记录；
+- `rejected/` 保存拒绝投影或引用，不是 candidate 或 action 的唯一副本；
 - `archive/` 保存废弃 Context 的历史快照/action，不构成当前正式知识；
-- 治理子目录的创建遵循 P5.4 Workspace Schema 与 Migration；Runtime 不创建或迁移 Catalog；
-- Upgrade 绝不补建或改写既有 Workspace。
+- 治理子目录必须已存在于 P5.4 的 current Workspace Schema/layout；Runtime 不创建不兼容结构、不改写 Schema 或转换旧数据；
+- fresh Init 安装新 Core 和目标 Workspace 骨架；已有 `.themis` 不由本能力覆盖或补建。
 
 ## 工作流 WIKI
 
@@ -91,7 +92,7 @@ P5.5 是新增可安装 Runtime 能力，协调提升 Core/Bundle 次版本：
 - `templates/.themis/core/core.yaml`
 - `CHANGES.md`
 
-实施时根据当前基线确定具体版本；若基线仍为 `0.2.0`，目标为 `0.3.0`。同时更新 Upgrade 测试中的候选版本和 rollback 基线，避免版本等于当前 Core 导致测试失真。
+实施时根据当前基线确定具体版本，并同步 fresh Init、Template Contract 与模块测试的版本期望。当前没有 Upgrade 测试或 rollback 基线。
 
 ## 文档一致性检查
 

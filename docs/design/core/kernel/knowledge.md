@@ -11,13 +11,15 @@ Knowledge 管理候选识别、事实核验、去重、冲突分析、审核、�
 治理过程数据: workspace/knowledge/
 ```
 
-Core 不保存项目学习结果。Behavior Map 是 Context 管理的可重建代码派生数据，不经过 Knowledge Promotion。
+Core 不保存项目学习结果。每个 candidate、review、action 和被提升的 Context 都必须绑定 target project、Workspace root、source revision 与可解析 evidence refs；Knowledge 不得跨 Workspace 搜索、核验、提升或归档。
 
 ## Candidate
 
 候选可以来自 Implementation 经验、Verification 失败与 evidence、Review finding、Outcome/Attribution 分析或人工提交。
 
-AI 可以提取和结构化 candidate，但必须保留来源、evidence、置信度和建议分类；候选、审核建议和人工批准都不能单独证明项目事实。
+Verification failure 只有在 repair/retry 预算耗尽或已持久化 escalation 后才具备候选资格；retry window 内的单次 transient failure 不得进入知识治理。
+
+AI 可以提取和结构化 candidate，但必须保留来源、evidence、置信度和建议分类；候选、审核建议和人工批准都不能单独证明项目事实。Candidate 还必须满足 [设计治理](../../governance.md#知识候选来源与准入) 的稳定性、复用性、归因、冲突和敏感信息准入合同。
 
 ## 事实核验与冲突
 
@@ -55,7 +57,13 @@ candidate → fact validation → dedup/conflict analysis → governed review
 4. read-back 校验 Context ID、path、digest 与引用；
 5. 失败时回滚或报告不确定状态，不得静默覆盖既有 Context。
 
-目标 Workspace 尚未完成 P5.4 Migration 时，不得由 Knowledge Runtime 隐式创建或转换结构。
+当前 Workspace 尚未具备目标治理结构时，不得由 Knowledge Runtime 隐式创建不兼容目录、改写 Schema 或转换既有数据。
+
+## Verification Escalation
+
+Verification exhaustion/escalation 可以请求记录 `verification_failure` candidate，但不能直接写入 Context。候选必须引用达到耗尽状态的 Run、失败 Gate、attempt、分类和 evidence，并继续经过事实核验、治理审核与人工批准。
+
+当 P5.5 recorder 尚未安装或能力自检失败时，Verification 必须在 Run 中持久化 `candidate_pending` payload 并报告 `unavailable`；不得丢失草稿、手工伪造 candidate 文件或声称已经创建。
 
 ## Deprecation
 
@@ -75,7 +83,9 @@ Context Freshness 或冲突 Signal 可以触发废弃候选，但不能自动删
   workspace/evidence/
 
 写入:
+  workspace/knowledge/candidates/
   workspace/knowledge/reviews/
+  workspace/knowledge/actions/
   workspace/knowledge/rejected/
   workspace/knowledge/archive/
   workspace/context/               # 仅经批准的 L3 写入

@@ -1,112 +1,77 @@
 # P5.5 — 人机混合知识治理
 
-**优先级**：P5.5（可独立于 P6/P8 提前实施）
+**优先级**：P5.5
 **依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P2 Top-level Guidance](../20-top-level-guidance/README.md)、[P5 Requirement Questioning](../50-requirement-questioning/README.md)、[P5.4 Context Restructure](../54-context-restructure/README.md)
-**状态**：待用户主动发起
-
-## 背景
-
-Themis 在 `docs/design/workflow.md` 和 `docs/design/core/kernel/knowledge.md` 中已定义了知识治理的完整理论模型——从候选识别、去重、冲突检查、审核、提升到废弃的闭环流程。但该模型目前仅存在于文档层面：
-
-- `core/kernel/knowledge/rules.md` 定义了模块边界，但内容为基线占位
-- 无治理策略文件（`knowledge-governance.yaml`）
-- 无知识审核模板
-- 无候选提取 Prompt 模板
-
-P5 需求追问的方法论分析揭示了一个关键设计原则——**AI 生成候选，人工确认提升**——这一原则同样适用于知识治理，但目前尚未落地为可执行的 Prompt 指令和策略配置。
+**状态**：实施设计待确认
 
 ## 目标
 
-将知识治理从文档化的理论模型落地为可执行的能力层：
+将 Knowledge Governance 落地为可安装、可审计的人机混合能力：
 
-1. 定义知识治理策略（审核标准、去重阈值、提升规则）
-2. 编写知识候选提取 Prompt 模板（从执行、验证、评审中提取教训）
-3. 编写知识审核 Prompt 模板（结构化审核候选）
-4. 更新 `knowledge/rules.md` 使其不再为占位状态
-5. 同步更新 WIKI 文档
-
-## 人机职责边界
-
-| 环节 | AI（自动或 Prompt 驱动） | 人工（门禁确认） |
-|---|---|---|
-| 候选发现 | 从执行、验证失败、评审发现、Outcome 中提取模式 | 可补充遗漏 |
-| 候选去重 | 语义相似度检索、标记潜在重复 | 决定是否合并 |
-| 冲突检查 | 标记与已有知识的潜在冲突 | 裁决哪一条有效 |
-| 审核 | 按标准逐项检查，给出推荐（promote/reject/revise） | 最终决定 |
-| 提升 | 执行文件移动、索引更新 | 确认提升 |
-| 废弃 | 根据新鲜度标记提出候选 | 确认知识确实过时 |
-
-## 核心原则
-
-1. **单一权威源**：`workspace/context/` 是唯一正式知识存储，`workspace/knowledge/` 是治理工作流数据
-2. **事实核验先于提升**：候选来源、审核或人工批准都不独立证明项目事实；Promote 前必须由受治理 Context 或当前代码核验
-3. **AI 不许直接写 Context**：未经人工审核，AI 不得将观察性结论写入 `workspace/context/`
-4. **候选可追溯**：每个知识候选必须引用其来源（哪个 Spec、哪次 Run、哪次 Review）
-5. **去重先于审核**：先检查是否已有类似知识，避免重复审核
-6. **废弃需确认**：Context Signal 标记过期 ≠ 自动废弃，需人工确认
-7. **不重复 Context 能力**：Catalog、检索索引、Freshness 和冲突检测由 P5.4 Context 拥有，P5.5 只消费结果并执行经批准处置
-
-## 知识流转流程
-
-```
-执行过程（Task / Verification / Review / Outcome）
-        │
-        ▼
-  候选识别（AI 提取）
-        │
-        ▼
-  workspace/knowledge/candidates/
-        │
-        ├── 去重（与已有 Context 和候选比较）
-        ├── 冲突检查（标记矛盾）
-        │
-        ▼
-  事实核验（现有 L3 Context / 当前代码）
-        │
-        ▼
-  结构化审核（AI 辅助 + 人工决策）
-        │
-        ├── promote → 原子写入 L3 Context Item + catalog.yaml
-        ├── reject  → workspace/knowledge/rejected/
-        └── revise  → 修改后回到 candidates
-        │
-        ▼
-  Context lint + Catalog read-back 验证
-        │
-        ▼
-  消费 Context Freshness / Conflict Signal
-        │
-        └── 过期候选 → 人工确认 → workspace/knowledge/archive/
+```text
+Candidate Extraction
+  → Review Recommendation
+  → Human Decision
+  → Deterministic Apply
 ```
 
-## 目标文件
+完整协议、Prompt、脚本、原子性和测试设计见 [impl.md](impl.md) 及 `impl-01` 至 `impl-05`。
 
-| # | 文件 | 操作 | 说明 |
-|---|---|---|---|
-| 1 | `templates/.themis/core/policies/knowledge-governance.yaml` | 新建 | 审核标准、去重阈值、提升规则 |
-| 2 | `templates/.themis/core/templates/knowledge-candidate-extraction.md` | 新建 | AI 候选提取 Prompt（从各类源头提取知识候选） |
-| 3 | `templates/.themis/core/templates/knowledge-review.md` | 新建 | AI 审核 Prompt（结构化审核候选） |
-| 4 | `templates/.themis/core/kernel/knowledge/rules.md` | 更新 | 从占位内容更新为完整的治理规则 |
-| 5 | `docs/design/core/kernel/knowledge.md` | 更新 | 同步 WIKI 文档 |
+## 职责分离
+
+| 环节 | 责任 |
+|---|---|
+| Candidate Extraction | AI 从受支持来源提取结构化候选，不建立正式知识 |
+| Review Recommendation | AI 检查来源、事实支撑、重复、冲突、敏感性和处置建议 |
+| Human Decision | 人工持久化最终批准或拒绝；v1 不允许自动批准 |
+| Deterministic Apply | Shell 校验摘要、路径、批准、锁和 Workspace 布局，原子执行处置 |
+
+`workspace/context/` 是正式项目知识的唯一存储；`workspace/knowledge/` 保存追加式候选、审核、人工 decision、canonical action 和历史投影，不是第二知识库。
+
+## 治理约束
+
+- candidate、AI recommendation 和对话都不能直接写入 Context；
+- candidate 不移动、不删除，修订通过新 candidate 的 `supersedes` 关联；
+- promote 前必须由受治理 Context 或当前代码核验，并绑定 provenance、对象摘要和人工批准；
+- stale review、越界路径、符号链接穿越、摘要漂移或不受支持 Workspace 布局必须 fail closed；
+- apply 缺失时停止，禁止用通用文件工具手工提升、拒绝、归档或更新 Catalog；
+- exact duplicate 可确定性校验；semantic similarity 只能由 Prompt/人工评估，v1 不提供 Embedding 阈值。
+
+## 处置
+
+Candidate disposition：
+
+```text
+promote | reject | revise | merge_duplicate
+```
+
+Context deprecation disposition：
+
+```text
+retain | revise | archive
+```
+
+所有处置都在 `workspace/knowledge/actions/` 生成 canonical `KAC-*` 记录。reject 可在 `rejected/` 生成投影；archive 可在 `archive/` 保存历史快照，但这些目录不替代 candidate、action 或当前正式 Context。
+
+## Workspace 与安装边界
+
+fresh Init 安装 policy、工件模板、Prompt、Runtime 脚本和 current Workspace 骨架。已有 `.themis` 不由本能力覆盖、补建或转换。
+
+Runtime 只接受当前受支持的 Catalog 与治理布局。缺失目录、Catalog 或 Schema 不受支持时返回 `unsupported_workspace_layout` 或 `unavailable`，不得创建不兼容结构、改写 manifest/schema 或转换旧数据。
 
 ## 验收条件
 
-- `knowledge-governance.yaml` 定义审核维度、去重策略、提升规则
-- `knowledge-candidate-extraction.md` 覆盖至少 4 种候选来源（Task 执行、Verification 失败、Review 发现、Outcome 分析）
-- `knowledge-review.md` 包含结构化审核框架（准确性、完整性、冲突、可操作性）
-- `knowledge/rules.md` 不再包含占位内容
-- 知识流转路径可追踪（从候选到正式 Context 或拒绝/归档）
-- AI 不能绕过人工审核直接写入 Context（硬约束嵌入 Prompt）
+1. Policy 使用稳定根 Schema，并定义来源、分类、审核维度、处置和人工批准字段。
+2. candidate/review/action 工件具有稳定 Schema、ID、摘要绑定和 provenance。
+3. record/lint/apply 使用 Bash 3.2、mikefarah/yq v4 和单一 JSON 结果。
+4. apply 具备锁、幂等、dry-run、事务提交、信号恢复与回滚。
+5. candidate 始终追加保留，任何最终处置都具有 canonical action。
+6. unsupported layout 与 unavailable capability 不修改 Workspace。
+7. Template Contract、Knowledge Governance、fresh Init 与相关回归测试全部通过。
 
 ## 非范围
 
-- 不实现 Embedding 或自动语义去重基础设施
-- 不独立实现 Context Catalog、检索索引、Freshness 或冲突检测；消费 P5.4 Context 能力
-- 不实现 Behavior Map 生成或代码 Anchor Freshness（属于 P6）
-- 不自动裁决候选与 Context/代码冲突
-
-## 风险与回滚
-
-- **风险**：知识候选过多，人工审核负担重 → **缓解**：去重先过滤；低置信度候选自动降级
-- **风险**：AI 审核判断不准确 → **缓解**：AI 只给推荐，最终决定权在人工
-- **回滚**：移除新增的 policy/template 文件，恢复 rules.md 到基线版本
+- Embedding、向量检索或自动语义去重；
+- P6 Freshness、P7.5 Outcome 分析或 P8 Agent/Command/Skill 路由；
+- Behavior Map、Anchor 或其他派生源码表示；
+- 自动批准、自动 Context 更新或 Workspace Schema 转换。
