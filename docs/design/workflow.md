@@ -1,6 +1,6 @@
 # Themis 完整工作流程
 
-> 规范状态：正式设计。实现状态：部分实现；P5 Draft Spec、Init、Upgrade 与显式 Migration 已落地，完整 lifecycle state、Planning、Implementation、Verification、Review、Attribution 和 Knowledge 执行器尚未实现。
+> 规范状态：正式设计。实现状态：部分实现；P5 Draft Spec 双视图、Init、Upgrade 与显式 Migration 框架已落地，完整 lifecycle state、Planning、Implementation、Verification、Review、Attribution 和 Knowledge 执行器尚未实现。
 
 本文定义 Themis 从需求进入到归档的唯一生命周期、阶段门禁和返工路由。事实与证据优先级见 [设计治理](governance.md)，领域所有权见 [总体架构](architecture.md)。
 
@@ -11,7 +11,7 @@ Draft → Specified → Planned → Implemented → Verified → Reviewed → Ar
 ```
 
 - 阶段顺序固定为 Verification 在前、Review 在后。
-- 用户批准、Prompt 输出和 Markdown 工件可以成为 Gate evidence，但不是 machine transition。
+- 用户批准、Prompt 输出和生成的 Human Spec 投影可以成为 Gate evidence，但不是 machine transition。
 - 只有持久状态或确定性执行器可以记录 transition。
 - 当前确定性 lifecycle executor 尚未实现；缺少执行器时必须停留在当前机器状态并明确报告。
 
@@ -25,12 +25,12 @@ Draft → Specified → Planned → Implemented → Verified → Reviewed → Ar
 
 | 阶段 | Owner | 必需输入 | 主要输出与门禁 | 实现状态 |
 |---|---|---|---|---|
-| Draft | Specification、Context | 用户目标、已确认 Context | `spec.md` Draft、稳定 AC/ADV、攻击处置、用户批准证据 | P5 已实现 |
-| Specified | Orchestrator | 完整 Draft、transition policy 与证据 | 记录 `draft → specified` | 执行器未实现 |
-| Planned | Planning | 已批准 Spec、Context、代码事实 | `plan.md`、Task DAG、AC traceability、证据要求 | 未实现 |
+| Draft | Specification、Context | 用户目标、已确认 Context | `spec.yaml` 权威 Draft、生成 `spec.md`、稳定 AC/ADV、攻击处置、用户批准证据 | P5/P5.2 已实现 |
+| Specified | Orchestrator | 完整且 current 的 Spec pair、transition policy 与 validator JSON | 记录 `draft → specified` | 状态执行器未实现 |
+| Planned | Planning | 已批准 `spec.yaml`、Context、代码事实 | `plan.md`、Task DAG、AC traceability、证据要求 | 未实现 |
 | Implemented | Implementation | 当前依赖就绪 Task、Plan scope lock | 代码/文档变更、Task evidence、全部 Task 完成 | 未实现 |
 | Verified | Verification | 实现结果、manifest commands、effective policy | runs、evidence、`pass/fail/inconclusive` verdict | 未实现 |
-| Reviewed | Review | Spec、Plan、diff、Verification evidence | `approved/changes_requested/blocked`、结构化 findings | 未实现 |
+| Reviewed | Review | Spec pair、Plan、diff、Verification evidence | `approved/changes_requested/blocked`、结构化 findings | 未实现 |
 | Archived | Orchestrator、Knowledge | Outcome、Attribution、知识处置完成 | 归档 transition 与可追溯历史 | 未实现 |
 
 ## 端到端路由
@@ -45,7 +45,8 @@ flowchart TD
     RESOLVE --> CONTEXT
     CONFLICT -- 否 --> DRAFT[创建或继续 Draft Spec]
     DRAFT --> QUESTION[P5 Step 0–4 追问与对抗验证]
-    QUESTION --> APPROVE{用户批准 Draft?}
+    QUESTION --> PUBLISH[校验、生成并发布 Spec pair]
+    PUBLISH --> APPROVE{用户批准 Draft?}
     APPROVE -- 否 --> QUESTION
     APPROVE -- 是 --> SPEC_GATE{Specified 执行器可用且 Gate 通过?}
     SPEC_GATE -- 否 --> STOP[停留当前状态并报告缺失能力]
@@ -75,7 +76,9 @@ Specification 按以下顺序收敛 Draft：
 4. Step 3 — Design Convergence：确认取舍、需求和分段 Acceptance Criteria。
 5. Step 4 — Adversarial Validation：攻击边界、并发、状态、安全、依赖和数据完整性。
 
-P5 把结果写入 `workspace/specs/<spec-id>/spec.md`，记录用户批准和攻击处置，但保持 `status: draft`。`core/policies/transitions.yaml` 声明 `draft_to_specified` 的证据条件；执行这些条件并记录 transition 的脚本尚未实现。
+P5 只修改 `workspace/cache/spec-candidates/<spec-id>.yaml`，再经 `themis-spec.sh publish` 将有效 candidate 发布为 `workspace/specs/<spec-id>/{spec.yaml,spec.md}`。YAML 是唯一机器真源；Markdown 是带 OID 的确定性审阅投影，不能反向同步或作为 transition evidence。
+
+`core/policies/transitions.yaml` 声明八个 validator-backed `draft_to_specified` 条件；P5 记录相应 evidence 并保持 `status: draft`。执行这些条件并持久化 transition 的 P8 脚本尚未实现。
 
 ## Specified → Planned
 
@@ -87,7 +90,7 @@ Planning 创建或更新 `workspace/specs/<spec-id>/plan.md`，并定义：
 - 每个 Task 的范围、完成标准和预期 evidence；
 - Plan 校验结果。
 
-Planning 不修改项目源码，不执行 Task，也不把 Task 标记为完成。Behavior Map 可以提供事实锚点；当前仅有目录占位，缺失时回退到源码检查，不得把低置信度推断写成事实。
+Planning 不修改项目源码，不执行 Task，也不把 Task 标记为完成。它只从已验证的 `spec.yaml` 与 validator JSON 读取机器输入；`spec.md` 仅供人类展示。Behavior Map 可以提供事实锚点；当前仅有目录占位，缺失时回退到源码检查，不得把低置信度推断写成事实。
 
 ## Planned → Implemented
 
@@ -125,7 +128,7 @@ Verification 保存精确命令、输出、状态、失败分类和不可用检�
 
 ## Verified → Reviewed
 
-Review 只读检查 Spec、Plan、implementation diff 和 Verification evidence。结果只使用：
+Review 只读检查已验证的 `spec.yaml`、当前 `spec.md` 投影、Plan、implementation diff 和 Verification evidence。结果只使用：
 
 ```text
 approved | changes_requested | blocked
@@ -175,8 +178,8 @@ candidate → dedup + conflict check → governed review
 | P3 Init | 已实现 |
 | P4 Upgrade | 已实现 |
 | P4.5 显式 Migration 框架 | 部分实现；分步入口已落地，安全顺序未由脚本强制，且无具体转换 descriptor/script |
-| P5 Requirement Questioning 与 Draft Spec | 已实现；Specified executor 未实现 |
-| P5.2 Spec 双视图 | 实施设计待确认；当前正式 Artifact 仍为 `themis-spec/v1` 单文件 Draft |
+| P5 Requirement Questioning 与 Draft Spec | 已实现；Specified state executor 未实现 |
+| P5.2 Spec 双视图 | 已实现；原生 `themis-artifact/v2` / `themis-spec/v2`、executor 与 pair drift 检查已落地 |
 | P5.4 Context Trust | 已确认但未实现；Catalog、L1/L2/L3、Bundle、Signal 与 Migration 尚未落地 |
 | Behavior Map | 已确认但未实现，仅目录占位 |
 | Planning / Implementation / Verification / Review 增强 | 已确认但未实现 |

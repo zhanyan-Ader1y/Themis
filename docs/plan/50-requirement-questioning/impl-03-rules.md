@@ -22,10 +22,10 @@
 
 检查器保持 Bash 3.2 兼容、只读且只检查确定性结构：
 
-1. P5 两个 policy、三个模板文件必须存在。
+1. P5 policy、两个 Prompt、`spec.yaml` 模板、v2 protocols 与 executor 必须存在。
 2. `specification.yaml` 必须含正确 policy schema、三档复杂度、三种 flow、六维攻击、五项快速检查、三种处置、4+6 项自检。
-3. `transitions.yaml` 必须含 keyed-map `draft_to_specified`，明确 `draft`/`specified`，并含七个稳定条件 ID。
-4. `spec.md` 必须保留 schema、Draft 初始状态、模板版本与十一项固定标题。
+3. `transitions.yaml` 必须含 keyed-map `draft_to_specified`，明确 `draft`/`specified`，并含八个稳定 validator check ID。
+4. `spec.yaml` 必须使用 `themis-spec/v2` 与模板版本 2；独立 `templates/spec.md`、Artifact v1 支持或对应迁移脚本必须被拒绝。
 5. 追问 Prompt 必须保留 Step 0–4；攻击库必须保留快速检查和六维标题。
 6. 所有已 import 的领域规则（包括 Specification）继续不超过 50 行。
 
@@ -35,11 +35,11 @@
 
 隔离夹具覆盖：
 
-- P5 policy 或 Prompt 文件缺失；
-- policy YAML 损坏；
+- v2 Spec schema、template 或 executor 缺失；
 - transition map 不存在、条件数错误或稳定 ID 被替换；
 - 快速检查或攻击维度数不正确；
-- `spec.md`、Step 4 或攻击标题被删除；
+- 预发布 `templates/spec.md`、Artifact v1 支持或对应迁移脚本重新出现；
+- Step 4 或攻击标题被删除；
 - Specification 常驻规则超过 50 行。
 
 每个场景断言稳定诊断片段，所有写操作限制在临时夹具内。Shell 脚本中的新函数和控制流必须保留准确中文注释。

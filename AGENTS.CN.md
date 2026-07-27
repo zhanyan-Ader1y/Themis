@@ -32,6 +32,7 @@ Themis 是一个 SDD Harness 框架，将本地 AI 编码系统安装到工程�
 - 保持实现状态和证据链接准确。保留历史计划；规则被替代时添加 superseded 注记，不改写原始决策。
 - 旧 `docs/core/`、`docs/workspace/`、`docs/workflow.md` 和 `docs/runtime-environment.md` 路径仅为兼容指针。
 - `AGENTS.md` 与 `AGENTS.CN.md` 必须在同一次变更中保持语义同步。
+- 处理 Spec 时，使用 `workspace/specs/<spec-id>/spec.yaml` 作为机器可读的语义源；`spec.md` 是生成的人类审阅投影，不得反向同步或解析为机器证据。详见 [Specification](docs/design/core/kernel/specification.md)。
 
 ## 脚本文档
 

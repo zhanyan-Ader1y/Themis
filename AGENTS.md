@@ -32,6 +32,7 @@ If implementation, templates, tests, or observed output conflict with the design
 - Keep implementation status and evidence links accurate. Preserve historical plans; add a superseded note instead of rewriting their original decisions.
 - Files under the legacy `docs/core/`, `docs/workspace/`, `docs/workflow.md`, and `docs/runtime-environment.md` paths are compatibility pointers only.
 - Keep `AGENTS.md` and `AGENTS.CN.md` semantically synchronized in the same change.
+- When handling a Spec, use `workspace/specs/<spec-id>/spec.yaml` as the machine-readable semantic source; `spec.md` is a generated human-review projection and must not be reverse-synced or parsed as machine evidence. See [Specification](docs/design/core/kernel/specification.md).
 
 ## Script Documentation
 

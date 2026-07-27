@@ -48,7 +48,7 @@ Workspace policy or a future deterministic status tool may refine this routing. 
 | Core metadata and compatibility | `.themis/core/core.yaml` |
 | Project manifest and configured gates | `.themis/workspace/manifest.yaml` |
 | Project context | `.themis/workspace/context/` |
-| Specifications and plans | `.themis/workspace/specs/` |
+| Specifications and plans | `.themis/workspace/specs/` (`spec.yaml` authoritative; `spec.md` review-only) |
 | Lifecycle state | `.themis/workspace/state/` |
 | Runs and evidence | `.themis/workspace/runs/`, `.themis/workspace/evidence/` |
 | Outcomes and knowledge governance | `.themis/workspace/outcomes/`, `.themis/workspace/knowledge/` |

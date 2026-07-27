@@ -6,6 +6,8 @@
 
 Migration 是唯一允许转换 Workspace Schema 或 Artifact Schema 的机制。它与 Upgrade 分离，必须由用户显式授权，不能在安装、加载或 Upgrade 中静默运行。
 
+当前发布的 `themis-artifact/v2` / `themis-spec/v2` 是首次使用的原生合同，不存在 Spec v1→v2 转换脚本、兼容 descriptor 或 runtime read-only 模式。通用迁移框架保留给未来经设计确认的 Schema 演进。
+
 ## 安全规则
 
 1. **显式执行**：用户选择迁移后才可执行。
@@ -33,7 +35,7 @@ Migration 是唯一允许转换 Workspace Schema 或 Artifact Schema 的机制�
 |---|---|
 | 查询 descriptor | `bin/themis-migrate.sh --check` |
 | 备份 Workspace | `bin/themis-migrate.sh --backup` |
-| 运行指定迁移 | `bin/themis-migrate.sh --run --migration-id <from→to>` |
+| 运行指定迁移 | `bin/themis-migrate.sh --run --migration-id <migration-id>` |
 | 验证迁移结果 | `bin/themis-migrate.sh --verify` |
 | 从备份恢复 | `bin/themis-migrate.sh --rollback --backup-path <path>` |
 
@@ -54,13 +56,13 @@ Migration 是唯一允许转换 Workspace Schema 或 Artifact Schema 的机制�
 当前模板状态：
 
 ```yaml
-core_version: 0.2.0
+core_version: 0.3.0
 compatibility:
   workspace:
     supported: [themis-workspace/v1]
     migrations: []
   artifact:
-    supported: [themis-artifact/v1]
+    supported: [themis-artifact/v2]
     migrations: []
 ```
 

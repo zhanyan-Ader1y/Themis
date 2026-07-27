@@ -1,5 +1,15 @@
 # Changes
 
+## 0.3.0
+
+### 2026-07-27
+
+- 完成 P5.2 Spec 双视图：新安装使用 `themis-artifact/v2` 与 `themis-spec/v2`，`spec.yaml` 成为唯一权威语义源，`spec.md` 成为带 source/body OID 的确定性 Human 审阅投影
+- 新增 Bash 3.2 兼容的 `themis-spec.sh`，提供 Draft/readiness 校验、稳定 ID/引用检查、确定性渲染、漂移检测和事务性 Spec pair 发布
+- Specification、Planning 与 `draft_to_specified` 改为消费结构化真源和八个稳定 validator check ID，不再从 Markdown 标题或正文提取机器证据
+- Artifact v2 与 Spec v2 作为首次投入使用的原生契约；不安装预发布 Spec 模板、Artifact v1 兼容层或对应迁移描述符
+- 扩展 Template Contract、Init、Upgrade 与 Spec Artifact 隔离回归；Upgrade 继续保持 Workspace 字节不变
+
 ## 0.2.0
 
 ### 2026-07-27
@@ -12,7 +22,7 @@
 ### 2026-07-25
 
 - 完成 P5 Requirement Questioning：新增 Step 0–4 的自适应追问 Prompt、Five Whys、Pre-mortem、Option Zero、AC 分段确认和对抗验证场景库
-- 新增 `themis-spec/v1` Draft Spec 模板，持久记录复杂度、假设、证据、攻击处置、限制、回滚与用户批准；P5 不伪造机器生命周期迁移，确定性执行器留待 P8
+- 新增 Draft Spec 模板，持久记录复杂度、假设、证据、攻击处置、限制、回滚与用户批准；P5 不伪造机器生命周期迁移，确定性状态执行器留待 P8
 - 新增 Specification 与 `draft_to_specified` 声明式策略，扩展模板契约和隔离 TAP 回归，验证 P5 Core 资产、稳定门禁 ID、模板标题及常驻规则篇幅边界
 
 ## 0.1.0

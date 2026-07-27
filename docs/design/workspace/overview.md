@@ -1,6 +1,6 @@
 # Workspace — 项目空间
 
-> 规范状态：正式设计。实现状态：当前目录骨架与 manifest 已实现；P5.4 目标 Context/Catalog/Signal/Bundle 结构、Spec 双视图、通用 lifecycle state、Run、Evidence、Outcome 和知识治理执行器均尚未实现。
+> 规范状态：正式设计。实现状态：当前目录骨架、manifest 与 Spec v2 双视图已实现；P5.4 目标 Context/Catalog/Signal/Bundle 结构、通用 lifecycle state、Run、Evidence、Outcome 和知识治理执行器均尚未实现。
 
 ## 职责边界
 
@@ -17,7 +17,7 @@ Manifest 是项目与 Core 之间的配置入口，由项目持有。当前模�
 
 ```yaml
 workspace_schema: themis-workspace/v1
-artifact_schema: themis-artifact/v1
+artifact_schema: themis-artifact/v2
 project:
   name: ""
   root: "."
@@ -53,7 +53,7 @@ Adapter、Gate 与 policy override 的具体字段在对应 Protocol 和执行�
 |---|---|---|
 | `policies/` | 项目允许的 policy override | 目录骨架 |
 | `context/` | 正式项目知识与派生代码 Context | 目录骨架；P5.4 目标结构未迁移 |
-| `specs/` | Spec、Plan、Review、Verify 等 SDD 工件 | 目录骨架；`themis-spec/v1` Draft 模板已实现 |
+| `specs/` | Spec、Plan、Review、Verify 等 SDD 工件 | Spec v2 双视图已实现；其余目录骨架 |
 | `state/` | transition、Task、retry、lock、session、Context Signal 等机器状态 | 目录骨架 |
 | `runs/` | 一次执行的输入、Gate、verdict 与摘要 | 目录骨架 |
 | `evidence/` | 命令、构建、测试、Review、漂移与部署证据 | 目录骨架 |
@@ -107,20 +107,20 @@ workspace/
 
 ## specs/ — SDD 工件
 
-当前已实现结构为：
+当前已实现的 Spec 结构为：
 
 ```text
 workspace/specs/<spec-id>/
-├── spec.md
+├── spec.yaml       # themis-spec/v2；Agent-readable 唯一语义源
+├── spec.md         # 由 executor 生成的 Human 审阅投影
 ├── plan.md
 ├── review.md
-├── verify.md
-└── artifacts/
+└── verify.md
 ```
 
-当前已实现的是 `themis-spec/v1` Draft Spec 模板与 P5 批准证据合同。Plan、Review 和 Verify 模板及执行器尚未落地。
+P5 通过 `workspace/cache/spec-candidates/<spec-id>.yaml` 写入 candidate；`themis-spec.sh publish` 在验证、渲染、配对校验与可恢复发布后写入 canonical pair。`spec.md` 不能被独立维护、反向同步或作为机器输入；source/body OID 或内容漂移须从 YAML 重新生成。
 
-P5.2 提出的 `spec.yaml` Agent 权威源与 `spec.md` Human 投影仍是待确认实施设计，不是当前正式 Artifact 合同；在其获批并同步本目录前，本页继续以 `themis-spec/v1` 为准。
+当前 Spec Artifact 是首次发布的 `themis-artifact/v2` / `themis-spec/v2` 原生合同。没有 v1 单文件 Spec 兼容、转换脚本或迁移状态。Plan、Review 和 Verify 模板及执行器尚未落地。
 
 生命周期统一为：
 

@@ -18,7 +18,7 @@ P5 将需求追问落地为可安装的 Core 能力。它以 YAML 声明门禁�
 
 | 段落 | 文件 | 覆盖内容 |
 |---|---|---|
-| 策略与工件契约 | [impl-01-policies.md](impl-01-policies.md) | `specification.yaml`、`transitions.yaml` 与 `spec.md` 的稳定数据结构。 |
+| 策略与工件契约 | [impl-01-policies.md](impl-01-policies.md) | `specification.yaml`、`transitions.yaml` 与 P5.2 `spec.yaml` 双视图稳定数据结构。 |
 | 追问与攻击 Prompt | [impl-02-templates.md](impl-02-templates.md) | Step 0–4 流程、复杂度路由、Red Flags、快速检查与攻击场景库。 |
 | 常驻规则与契约检查 | [impl-03-rules.md](impl-03-rules.md) | 50 行 Specification rules、Orchestrator 边界、模板检查器和 TAP 回归。 |
 | 文档与发布同步 | [impl-04-docs.md](impl-04-docs.md) | WIKI、工作流、计划状态、变更记录及版本同步。 |
@@ -29,7 +29,9 @@ P5 将需求追问落地为可安装的 Core 能力。它以 YAML 声明门禁�
 |---|---|---|
 | `templates/.themis/core/policies/specification.yaml` | 新建 | impl-01 |
 | `templates/.themis/core/policies/transitions.yaml` | 新建 | impl-01 |
-| `templates/.themis/core/templates/spec.md` | 新建 | impl-01 |
+| `templates/.themis/core/templates/spec.yaml` | 新建 | impl-01 / P5.2 |
+| `templates/.themis/core/protocols/artifact/v2/` | 新建 | P5.2 |
+| `templates/.themis/core/kernel/specification/themis-spec.sh` | 新建 | P5.2 |
 | `templates/.themis/core/templates/spec-questioning.md` | 新建 | impl-02 |
 | `templates/.themis/core/templates/spec-adversarial-checklist.md` | 新建 | impl-02 |
 | `templates/.themis/core/kernel/specification/rules.md` | 更新 | impl-03 |
@@ -59,7 +61,7 @@ P5 将需求追问落地为可安装的 Core 能力。它以 YAML 声明门禁�
 | 验证项 | 方法 | 预期 |
 |---|---|---|
 | P5 policy YAML | `yq eval '.'` | 均可解析，具备稳定 map/list 结构。 |
-| Policy 内容 | `yq` 查询 | 三档复杂度、六维攻击、五项快速检查、七项迁移条件完整。 |
+| Policy 内容 | `yq` 查询 | 三档复杂度、六维攻击、五项快速检查、八项 readiness 条件完整。 |
 | 模板契约 | `bash bin/themis-template-check.sh` | 成功且静默。 |
 | 隔离失败场景 | `bash tests/template-contract/test.sh` | 缺失、损坏、错误 ID/数量/标题和超长 rules 均失败。 |
 | 安装与升级 | Init/Upgrade/Migrate suites | 新 Core 资产可安装、升级且 Workspace 不变。 |
@@ -67,4 +69,4 @@ P5 将需求追问落地为可安装的 Core 能力。它以 YAML 声明门禁�
 
 ## 边界
 
-P5 不实现确定性 Spec lint、状态迁移记录、会话持久化、命令/Skill/Agent、既有 Spec 改写或 Schema 迁移。这些需求保留给 P8 或显式迁移能力。
+P5 不实现机器状态迁移记录、会话持久化或命令/Skill/Agent。P5.2 已补充确定性 Spec lint/render/publish；P8 仍负责持久生命周期状态。Artifact v2 与 Spec v2 是首次发布契约，不存在历史 Spec 兼容或转换范围。

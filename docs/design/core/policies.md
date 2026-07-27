@@ -27,11 +27,11 @@ Effective Policy = Core Default Policy + Allowed Workspace Override
 
 | 文件 | 当前用途 | 状态 |
 |---|---|---|
-| `specification.yaml` | P5 复杂度分流、Step 0–4 和对抗验证要求 | 已实现 |
-| `transitions.yaml` | 声明 `draft_to_specified` 的稳定证据条件 | 已实现声明；执行器未实现 |
+| `specification.yaml` | P5 复杂度分流、Step 0–4、双视图发布与对抗验证要求 | 已实现 |
+| `transitions.yaml` | 声明 `draft_to_specified` 的八个 validator-backed readiness 条件 | 已实现声明；状态执行器未实现 |
 | `migration.yaml` | P4.5 的备份、验证、回滚与显式确认安全约束 | 已实现 |
 
-P5 只把 `draft_to_specified` 所需证据写入 Draft Spec，并保持 `status: draft`。只有未来的确定性状态执行器可以加载条件、判定 Gate 并写入迁移记录。
+P5 只将结构化证据写入 `spec.yaml` candidate，并通过 publisher 发布 canonical pair，仍保持 `status: draft`。`draft_to_specified` 只认可 `themis-spec.sh validate` 的稳定 JSON check ID；Markdown 标题或正文不是 transition evidence。当前原生 Artifact v2 / Spec v2 不声明任何 Spec migration 或兼容路径。
 
 ## 已确认但未实现的策略
 

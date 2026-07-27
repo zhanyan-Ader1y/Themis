@@ -16,7 +16,8 @@ Planning 将已批准 Spec 转化为有边界的 Plan、Task、依赖和 evidenc
 
 Planning 读取：
 
-- 已批准 Spec，用于目标、范围和 Acceptance Criteria；
+- 已验证且已批准的 `workspace/specs/<spec-id>/spec.yaml`，用于目标、范围、稳定 Requirement/AC/Contract/Invariant ID 与 validator readiness JSON；
+- `spec.md` 仅用于人类展示，绝不解析其标题或正文作为 Planning 输入；
 - P5.4 Context Bundle 及其引用的 L3 Context，用于项目“应当是什么”；
 - 当前代码、配置和 Schema，用于项目“现在是什么”；
 - 可选的 `current` Behavior Map，用于候选位置导航。
@@ -33,7 +34,7 @@ workspace/specs/<spec-id>/plan.md
 
 Plan 至少定义：
 
-- 关联 Spec 与版本信息；
+- 关联 Spec 及其 YAML revision；
 - 稳定 Task ID；
 - 每个 Task 的类型、范围、覆盖 AC、依赖和完成标准；
 - Task dependency DAG；
@@ -71,7 +72,8 @@ Localization 不是实现授权，不能自动创建或完成 Task、修改代�
 
 ```text
 读取:
-  workspace/specs/<spec-id>/spec.md
+  workspace/specs/<spec-id>/spec.yaml
+  workspace/specs/<spec-id>/spec.md       # 仅展示，不作机器输入
   workspace/specs/<spec-id>/plan.md
   workspace/cache/resolved-context/
   workspace/context/

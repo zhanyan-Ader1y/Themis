@@ -114,7 +114,7 @@ make_project() {
     exit 2
   fi
   mkdir -p "${project}/.themis/workspace/specs/demo/empty" "${project}/.themis/workspace/evidence"
-  printf '%s\n' 'project-owned specification' >"${project}/.themis/workspace/specs/demo/spec.md"
+  printf '%s\n' 'project-owned plan' >"${project}/.themis/workspace/specs/demo/plan.md"
   printf '%s\n' 'project-owned evidence' >"${project}/.themis/workspace/evidence/result.txt"
   printf '%s\n' 'unknown project data' >"${project}/.themis/workspace/custom.txt"
   printf '%s\n' '# Project agents' >"${project}/AGENTS.md"
@@ -158,7 +158,7 @@ case "$("${YQ_EXECUTABLE}" --version 2>&1)" in
     ;;
 esac
 
-printf '1..33\n'
+printf '1..37\n'
 
 NOOP_PROJECT=$(make_project noop)
 NOOP_REPO=$(make_candidate_repo noop)
@@ -175,7 +175,7 @@ assert_file_absent "${NOOP_PROJECT}/.themis-upgrade-backup.000000" 'no-op does n
 
 UPGRADE_PROJECT=$(make_project compatible)
 UPGRADE_REPO=$(make_candidate_repo compatible)
-bump_candidate_version "${UPGRADE_REPO}" 0.3.0
+bump_candidate_version "${UPGRADE_REPO}" 0.4.0
 printf '%s\n' 'candidate managed guidance' >>"${UPGRADE_REPO}/templates/.themis/CLAUDE.themis.md"
 printf '%s\n' 'candidate core marker' >"${UPGRADE_REPO}/templates/.themis/core/upgrade-marker.txt"
 printf '%s\n' 'candidate workspace must not copy' >"${UPGRADE_REPO}/templates/.themis/workspace/candidate-only.txt"
@@ -196,12 +196,34 @@ fi
 assert_same_file "${TEST_TMP}/compatible-manifest-before.yaml" "${UPGRADE_PROJECT}/.themis/workspace/manifest.yaml" 'upgrade preserves manifest bytes'
 assert_same_file "${TEST_TMP}/compatible-claude-before.md" "${UPGRADE_PROJECT}/CLAUDE.md" 'upgrade preserves CLAUDE.md bytes'
 assert_same_file "${TEST_TMP}/compatible-agents-before.md" "${UPGRADE_PROJECT}/AGENTS.md" 'upgrade preserves AGENTS.md bytes'
+if [ "$("${YQ_EXECUTABLE}" eval -r '.artifact_schema' "${UPGRADE_PROJECT}/.themis/workspace/manifest.yaml")" = 'themis-artifact/v2' ]; then
+  pass 'upgrade preserves native Artifact v2 schema'
+else
+  fail 'upgrade preserves native Artifact v2 schema' 'Upgrade mutated Workspace manifest'
+fi
+if [ ! -e "${UPGRADE_PROJECT}/.themis/core/templates/spec.md" ] && \
+   [ ! -e "${UPGRADE_PROJECT}/.themis/core/migrations/artifacts/v1-to-v2.sh" ]; then
+  pass 'upgrade installs no legacy Spec compatibility assets'
+else
+  fail 'upgrade installs no legacy Spec compatibility assets' 'Obsolete Spec template or migration script was installed'
+fi
+if [ "$("${YQ_EXECUTABLE}" eval '.compatibility.artifact.supported | length' "${UPGRADE_PROJECT}/.themis/core/core.yaml")" -eq 1 ] && \
+   [ "$("${YQ_EXECUTABLE}" eval -r '.compatibility.artifact.supported[0]' "${UPGRADE_PROJECT}/.themis/core/core.yaml")" = 'themis-artifact/v2' ]; then
+  pass 'upgrade installs Artifact v2 as the sole supported schema'
+else
+  fail 'upgrade installs Artifact v2 as the sole supported schema' 'Artifact compatibility list contains another schema'
+fi
+if [ "$("${YQ_EXECUTABLE}" eval '.compatibility.artifact.migrations | length' "${UPGRADE_PROJECT}/.themis/core/core.yaml")" -eq 0 ]; then
+  pass 'upgrade installs no Artifact migration descriptor'
+else
+  fail 'upgrade installs no Artifact migration descriptor' 'Artifact migration list is not empty'
+fi
 if ls "${UPGRADE_PROJECT}"/.themis-upgrade-backup.* >/dev/null 2>&1; then
   pass 'successful upgrade retains persistent backup'
 else
   fail 'successful upgrade retains persistent backup' 'backup directory missing'
 fi
-if [ "$(cat "${UPGRADE_PROJECT}/.themis/VERSION")" = 0.3.0 ]; then
+if [ "$(cat "${UPGRADE_PROJECT}/.themis/VERSION")" = 0.4.0 ]; then
   pass 'upgrade refreshes Bundle version'
 else
   fail 'upgrade refreshes Bundle version' 'Bundle version did not change'
@@ -209,7 +231,7 @@ fi
 
 DRY_PROJECT=$(make_project dry-run)
 DRY_REPO=$(make_candidate_repo dry-run)
-bump_candidate_version "${DRY_REPO}" 0.3.0
+bump_candidate_version "${DRY_REPO}" 0.4.0
 DRY_BEFORE=$(tree_fingerprint "${DRY_PROJECT}")
 run_upgrade "${DRY_REPO}" "${DRY_PROJECT}" --dry-run
 assert_status 0 'compatible dry-run succeeds'
@@ -227,7 +249,7 @@ fi
 
 INCOMPATIBLE_PROJECT=$(make_project incompatible)
 INCOMPATIBLE_REPO=$(make_candidate_repo incompatible)
-bump_candidate_version "${INCOMPATIBLE_REPO}" 0.3.0
+bump_candidate_version "${INCOMPATIBLE_REPO}" 0.4.0
 "${YQ_EXECUTABLE}" eval -i '.compatibility.workspace.supported = ["themis-workspace/v9"]' "${INCOMPATIBLE_REPO}/templates/.themis/core/core.yaml"
 INCOMPATIBLE_BEFORE=$(tree_fingerprint "${INCOMPATIBLE_PROJECT}")
 run_upgrade "${INCOMPATIBLE_REPO}" "${INCOMPATIBLE_PROJECT}"
@@ -246,7 +268,7 @@ fi
 
 LEGACY_PROJECT=$(make_project legacy)
 LEGACY_REPO=$(make_candidate_repo legacy)
-bump_candidate_version "${LEGACY_REPO}" 0.3.0
+bump_candidate_version "${LEGACY_REPO}" 0.4.0
 printf '%s\n' '# obsolete companion' >"${LEGACY_PROJECT}/CLAUDE.themis.md"
 LEGACY_BEFORE=$(tree_fingerprint "${LEGACY_PROJECT}")
 run_upgrade "${LEGACY_REPO}" "${LEGACY_PROJECT}"
@@ -260,7 +282,7 @@ fi
 
 MODIFIED_PROJECT=$(make_project modified-block)
 MODIFIED_REPO=$(make_candidate_repo modified-block)
-bump_candidate_version "${MODIFIED_REPO}" 0.3.0
+bump_candidate_version "${MODIFIED_REPO}" 0.4.0
 printf '%s\n' '<!-- themis:guidance:start -->' '@import modified.md' '<!-- themis:guidance:end -->' >"${MODIFIED_PROJECT}/CLAUDE.md"
 MODIFIED_BEFORE=$(tree_fingerprint "${MODIFIED_PROJECT}")
 run_upgrade "${MODIFIED_REPO}" "${MODIFIED_PROJECT}"
@@ -274,7 +296,7 @@ fi
 
 ROLLBACK_PROJECT=$(make_project rollback)
 ROLLBACK_REPO=$(make_candidate_repo rollback)
-bump_candidate_version "${ROLLBACK_REPO}" 0.3.0
+bump_candidate_version "${ROLLBACK_REPO}" 0.4.0
 printf '%s\n' 'candidate marker before simulated failure' >"${ROLLBACK_REPO}/templates/.themis/core/rollback-marker.txt"
 ROLLBACK_WORKSPACE_BEFORE=$(tree_fingerprint "${ROLLBACK_PROJECT}/.themis/workspace")
 cp "${ROLLBACK_PROJECT}/CLAUDE.md" "${TEST_TMP}/rollback-claude-before.md"
@@ -288,7 +310,7 @@ else
   fail 'rollback preserves Workspace fingerprint' 'Workspace changed during rollback'
 fi
 assert_same_file "${TEST_TMP}/rollback-claude-before.md" "${ROLLBACK_PROJECT}/CLAUDE.md" 'rollback preserves CLAUDE.md bytes'
-if [ "$(cat "${ROLLBACK_PROJECT}/.themis/VERSION")" = 0.2.0 ] && [ ! -e "${ROLLBACK_PROJECT}/.themis/core/rollback-marker.txt" ] && [ -f "${ROLLBACK_PROJECT}/.themis/core/kernel/orchestrator/rules.md" ]; then
+if [ "$(cat "${ROLLBACK_PROJECT}/.themis/VERSION")" = 0.3.0 ] && [ ! -e "${ROLLBACK_PROJECT}/.themis/core/rollback-marker.txt" ] && [ -f "${ROLLBACK_PROJECT}/.themis/core/kernel/orchestrator/rules.md" ]; then
   pass 'rollback restores original managed Core and Bundle content'
 else
   fail 'rollback restores original managed Core and Bundle content' 'managed content differs after rollback'

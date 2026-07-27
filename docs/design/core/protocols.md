@@ -1,6 +1,6 @@
 # Protocols — 协议层
 
-> 规范状态：正式设计。实现状态：部分实现；版本字段和部分 Markdown/YAML 合同已存在，`core/protocols/` 中尚无独立机器可读协议实现，P5.4/P6 协议均未落地。
+> 规范状态：正式设计。实现状态：部分实现；Artifact v2 Spec Schema 与 Human projection protocol 已以机器可读 YAML 落地；其余主要协议及 P5.4/P6 协议尚未落地。
 
 ## 职责边界
 
@@ -15,12 +15,36 @@ Protocol 定义 Core 与 Workspace、Core 与外部工具之间的数据格式�
 
 | 协议 | 目标合同 | 当前状态 |
 |---|---|---|
-| Artifact | Spec、Plan、Review、Verify 的字段、版本、引用和状态 | 部分实现：`themis-spec/v1` 模板已落地，其余主要为设计合同 |
+| Artifact | Spec、Plan、Review、Verify 的字段、版本、引用和状态 | Spec v2 已实现；其他 Artifact 仍为设计合同 |
 | Gate | Gate 输入、执行状态、证据和失败原因 | 已确认但未实现 |
 | Evidence | 证据类型、来源、时间、关联 Gate/Spec 与存储引用 | 已确认但未实现 |
 | Context | Item、Catalog、Bundle、Signal 与 Behavior Map | 已确认但未实现 |
 | Outcome | success、rework、defect、incident、rollback 及其关联 | 已确认但未实现 |
 | Adapter | 命令、参数、环境、退出码、stdout/stderr 和结构化结果 | 已确认但未实现 |
+
+## Spec Artifact v2
+
+新安装使用 `themis-artifact/v2`，其中 `themis-spec/v2` 是唯一可读写的 Spec 协议。机器可读的权威合同位于：
+
+- `core/protocols/artifact/v2/spec-schema.yaml`：严格顶层字段、对象类型、稳定 ID、引用完整性与八项 readiness check；
+- `core/protocols/artifact/v2/spec-projection.yaml`：从 `spec.yaml` 到 `spec.md` 的固定章节、主视图限制、LF/终止换行与 OID 漂移合同。
+
+`workspace/specs/<spec-id>/spec.yaml` 是唯一语义源；`spec.md` 是确定性生成的审阅投影。任何机器消费者只解析 YAML 和 validator JSON，绝不将 Markdown 标题或正文当作证据。当前 v2 是首次发布的原生合同：不支持 Artifact v1、Spec v1 或其迁移描述符。
+
+validator 将结构有效性与 lifecycle readiness 分离，并稳定输出：
+
+```text
+spec_intent_complete
+spec_scope_complexity_confirmed
+spec_context_complete
+spec_design_acceptance_complete
+spec_adversarial_resolved
+spec_self_check_passed
+spec_user_approval_recorded
+spec_projection_current
+```
+
+未来 P8 必须消费这些输出，而非重建另一个 Spec parser。
 
 ## Context Protocol
 
@@ -75,4 +99,4 @@ Core Kernel / Adapter 按合同读取与输出
 Workspace 保存符合合同的项目数据和证据
 ```
 
-当前 `templates/.themis/core/protocols/` 只有目录骨架；在机器可读 Schema 落地前，Markdown、模板和 YAML policy 提供的是部分合同，不得声称存在完整协议运行时。
+当前 `templates/.themis/core/protocols/` 已包含 Spec v2 与 projection YAML；其他机器可读协议尚未落地，相关设计不得被表述为完整运行时。

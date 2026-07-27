@@ -98,7 +98,7 @@ case "$("${YQ_EXECUTABLE}" --version 2>&1)" in
     ;;
 esac
 
-printf '1..24\n'
+printf '1..31\n'
 
 FRESH_PROJECT="${TEST_TMP}/fresh"
 mkdir -p "${FRESH_PROJECT}"
@@ -107,6 +107,17 @@ assert_status 0 'fresh non-interactive installation succeeds'
 assert_file_exists "${FRESH_PROJECT}/.themis/CLAUDE.themis.md" 'contained guidance is installed'
 assert_file_exists "${FRESH_PROJECT}/.themis/core/policies/specification.yaml" 'P5 Specification policy is installed'
 assert_file_exists "${FRESH_PROJECT}/.themis/core/templates/spec-questioning.md" 'P5 questioning Prompt is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/templates/spec.yaml" 'Spec v2 authoritative template is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/protocols/artifact/v2/spec-schema.yaml" 'Spec v2 protocol is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/kernel/specification/themis-spec.sh" 'Spec deterministic executor is installed'
+assert_file_absent "${FRESH_PROJECT}/.themis/core/templates/spec.md" 'Legacy Spec Markdown template is not installed'
+assert_file_absent "${FRESH_PROJECT}/.themis/core/migrations/artifacts/v1-to-v2.sh" 'Legacy Artifact migration is not installed'
+if [ "$("${YQ_EXECUTABLE}" eval -r '.artifact_schema' "${FRESH_PROJECT}/.themis/workspace/manifest.yaml")" = 'themis-artifact/v2' ]; then
+  pass 'new installation uses Artifact v2'
+else
+  fail 'new installation uses Artifact v2' 'manifest artifact_schema did not match'
+fi
+assert_file_absent "${FRESH_PROJECT}/.themis/workspace/specs/spec.yaml" 'Init creates no project Spec artifact'
 assert_file_absent "${FRESH_PROJECT}/CLAUDE.themis.md" 'root-level guidance is not installed'
 if [ "$(cat "${FRESH_PROJECT}/CLAUDE.md")" = "${EXPECTED_BLOCK}" ]; then
   pass 'new CLAUDE.md contains the exact direct-import block'

@@ -163,7 +163,7 @@ Step 3 — Design Convergence（设计收敛）【保留 + 增强】
   ├── 提出 2-3 种方案 + 取舍 + 推荐
   ├── AC 分段确认（每段 1-3 个 AC）
   ├── 【新增】对每个方案进行首轮对抗：最可能失败的场景是什么？
-  ├── 写入 workspace/specs/<spec-id>/spec.md
+  ├── 写入临时 `spec.yaml` candidate，并由 executor 发布 `workspace/specs/<spec-id>/{spec.yaml,spec.md}`
   ├── Spec 自检（占位符、矛盾、歧义、范围）
 
 Step 4 — Adversarial Validation（对抗验证）【全新】

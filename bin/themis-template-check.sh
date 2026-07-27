@@ -297,9 +297,11 @@ themis_template_schema_has_migration() {
   local themis_template_migration_root=$4
   local themis_template_migration_count
   local themis_template_migration_index=0
+  local themis_template_migration_id
   local themis_template_migration_from
   local themis_template_migration_to
   local themis_template_migration_script
+  local themis_template_migration_reversible
 
   themis_template_migration_count=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations | length") || return 1
   case "${themis_template_migration_count}" in
@@ -314,18 +316,42 @@ themis_template_schema_has_migration() {
   esac
 
   while [ "${themis_template_migration_index}" -lt "${themis_template_migration_count}" ]; do
+    themis_template_migration_id=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations[${themis_template_migration_index}].id // \"\"") || return 1
     themis_template_migration_from=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations[${themis_template_migration_index}].from_schema // \"\"") || return 1
     themis_template_migration_to=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations[${themis_template_migration_index}].to_schema // \"\"") || return 1
     themis_template_migration_script=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations[${themis_template_migration_index}].script // \"\"") || return 1
+    themis_template_migration_reversible=$(themis_template_yq_read "${themis_template_migration_file}" ".compatibility.${themis_template_migration_dimension}.migrations[${themis_template_migration_index}].reversible // \"\"") || return 1
 
-    if [ -z "${themis_template_migration_from}" ] || [ -z "${themis_template_migration_to}" ] || [ -z "${themis_template_migration_script}" ]; then
+    if [ -z "${themis_template_migration_id}" ] || [ -z "${themis_template_migration_from}" ] || [ -z "${themis_template_migration_to}" ] || [ -z "${themis_template_migration_script}" ] || [ -z "${themis_template_migration_reversible}" ]; then
       themis_template_error \
         'migration descriptor invalid' \
-        'from_schema, to_schema, and script' \
+        'id, from_schema, to_schema, script, and reversible' \
         "descriptor ${themis_template_migration_index} is incomplete" \
         'Declare a complete explicit migration descriptor.'
       return 1
     fi
+
+    case "${themis_template_migration_id}" in
+      *[!A-Za-z0-9._-]*)
+        themis_template_error \
+          'migration ID invalid' \
+          'an ASCII-safe identifier' \
+          "${themis_template_migration_id}" \
+          'Use letters, digits, dot, underscore, or hyphen.'
+        return 1
+        ;;
+    esac
+    case "${themis_template_migration_reversible}" in
+      true|false) ;;
+      *)
+        themis_template_error \
+          'migration reversible flag invalid' \
+          'true or false' \
+          "${themis_template_migration_reversible}" \
+          'Declare whether the migration supports backup-based rollback.'
+        return 1
+        ;;
+    esac
 
     case "${themis_template_migration_script}" in
       "${themis_template_migration_root}"/*) ;;
@@ -484,9 +510,12 @@ themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/manifest.yaml" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" || exit 1
-themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" || exit 1
+themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-schema.yaml" || exit 1
+themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-projection.yaml" || exit 1
+themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.yaml" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec-questioning.md" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec-adversarial-checklist.md" || exit 1
+themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/specification/themis-spec.sh" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/migrations/workspace/.gitkeep" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/migrations/artifacts/.gitkeep" || exit 1
 
@@ -504,12 +533,23 @@ for themis_template_context_subdir in architecture/behavior-map architecture dom
   themis_template_require_path "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/context/${themis_template_context_subdir}/.gitkeep" || exit 1
 done
 
-if [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/migations" ] || [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/konwledge" ]; then
+if [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/migations" ] || \
+   [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/konwledge" ]; then
   themis_template_error \
     'legacy template path present' \
     'no migations or konwledge path' \
     'legacy misspelling found' \
     'Rename the source-template path to migrations or knowledge.'
+  exit 1
+fi
+
+if [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" ] || \
+   [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/migrations/artifacts/v1-to-v2.sh" ]; then
+  themis_template_error \
+    'legacy Spec migration asset present' \
+    'no Spec v1 template or Artifact v1-to-v2 script' \
+    'obsolete Spec compatibility asset found' \
+    'Remove the pre-release Spec migration asset; Artifact v2 is the native contract.'
   exit 1
 fi
 
@@ -531,12 +571,17 @@ THEMIS_TEMPLATE_ARTIFACT_SCHEMA=$(themis_template_yq_read "${THEMIS_TEMPLATE_WOR
 themis_template_require_value "${THEMIS_TEMPLATE_CORE_SCHEMA}" 'themis-core/v1' 'Core schema invalid' || exit 1
 themis_template_require_value "${THEMIS_TEMPLATE_CORE_VERSION}" "${THEMIS_TEMPLATE_BUNDLE_VERSION}" 'Bundle/Core version mismatch' || exit 1
 themis_template_require_schema_identifier "${THEMIS_TEMPLATE_WORKSPACE_SCHEMA}" 'themis-workspace/' 'Workspace schema invalid' || exit 1
-themis_template_require_schema_identifier "${THEMIS_TEMPLATE_ARTIFACT_SCHEMA}" 'themis-artifact/' 'Artifact schema invalid' || exit 1
+themis_template_require_value "${THEMIS_TEMPLATE_ARTIFACT_SCHEMA}" 'themis-artifact/v2' 'Artifact schema invalid' || exit 1
 
 for themis_template_dimension in workspace artifact; do
   themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" ".compatibility.${themis_template_dimension}.supported" '!!seq' "${themis_template_dimension} support list invalid" || exit 1
   themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" ".compatibility.${themis_template_dimension}.migrations" '!!seq' "${themis_template_dimension} migration list invalid" || exit 1
 done
+
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.supported | length')" 1 'Artifact support list invalid' || exit 1
+themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.supported[]?' 'themis-artifact/v2' 'Artifact v2 support missing' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.writable // ""')" 'themis-artifact/v2' 'Artifact writable schema invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.migrations | length')" 0 'Artifact migration list must be empty' || exit 1
 
 themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.migration_roots.workspace // ""')" 'migrations/workspace' 'Workspace migration root invalid' || exit 1
 themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.migration_roots.artifacts // ""')" 'migrations/artifacts' 'Artifact migration root invalid' || exit 1
@@ -563,9 +608,12 @@ done
 themis_template_check_schema_compatibility workspace "${THEMIS_TEMPLATE_WORKSPACE_SCHEMA}" Workspace migrations/workspace || exit 1
 themis_template_check_schema_compatibility artifact "${THEMIS_TEMPLATE_ARTIFACT_SCHEMA}" Artifact migrations/artifacts || exit 1
 
-# 验证 P5 的策略、Prompt 和 Spec 模板具有可由未来执行器读取的稳定结构。
+# 验证 P5.2 策略、协议、模板与稳定 readiness IDs 对齐。
 themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification' '!!map' 'Specification policy root invalid' || exit 1
-themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.schema // ""')" 'themis-specification-policy/v1' 'Specification policy schema invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.schema // ""')" 'themis-specification-policy/v2' 'Specification policy schema invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.artifact.authoritative_source // ""')" 'spec.yaml' 'Specification authority invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.artifact.human_projection // ""')" 'spec.md' 'Specification projection invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.artifact.reverse_sync // ""')" forbidden 'Specification reverse sync invalid' || exit 1
 themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.questioning.complexity' '!!map' 'Specification complexity policy invalid' || exit 1
 themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.questioning.complexity.precedence | length')" 3 'Specification complexity precedence invalid' || exit 1
 for themis_template_complexity_level in low medium high; do
@@ -584,21 +632,28 @@ for themis_template_quick_check in empty_input failure_state concurrency backwar
   themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.adversarial_validation.quick_checklist[]?' "${themis_template_quick_check}" 'Specification quick-check item missing' || exit 1
 done
 
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-schema.yaml" '.schema // ""')" 'themis-spec-schema/v2' 'Spec schema protocol invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-schema.yaml" '.spec_schema // ""')" 'themis-spec/v2' 'Spec source schema invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-projection.yaml" '.schema // ""')" 'themis-spec-projection/v1' 'Spec projection protocol invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-projection.yaml" '.drift.reverse_sync // ""')" forbidden 'Spec projection reverse sync invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-schema.yaml" '.readiness_checks | length')" 8 'Spec readiness check count invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-projection.yaml" '.sections | length')" 8 'Spec projection section count invalid' || exit 1
+
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.yaml" '.spec_schema // ""')" 'themis-spec/v2' 'Spec template schema invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.yaml" '.status // ""')" draft 'Spec template status invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.yaml" '.template_version // ""')" 2 'Spec template version invalid' || exit 1
+
 themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions' '!!map' 'Transition policy root invalid' || exit 1
 themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified' '!!map' 'Draft-to-specified transition missing' || exit 1
 themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.from // ""')" draft 'Draft transition source invalid' || exit 1
 themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.to // ""')" specified 'Specified transition target invalid' || exit 1
-themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.conditions | length')" 7 'Draft-to-specified condition count invalid' || exit 1
-for themis_template_transition_condition in intent_documented scope_and_complexity_confirmed context_documented design_and_ac_documented adversarial_validation_resolved spec_self_check_completed user_approval_recorded; do
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.conditions | length')" 8 'Draft-to-specified condition count invalid' || exit 1
+for themis_template_transition_condition in spec_intent_complete spec_scope_complexity_confirmed spec_context_complete spec_design_acceptance_complete spec_adversarial_resolved spec_self_check_passed spec_user_approval_recorded spec_projection_current; do
+  themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-schema.yaml" '.readiness_checks[]?' "${themis_template_transition_condition}" 'Spec readiness check missing' || exit 1
+  themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.readiness.specified[]?' "${themis_template_transition_condition}" 'Specification readiness policy missing check' || exit 1
   themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.conditions[].id' "${themis_template_transition_condition}" 'Draft-to-specified condition missing' || exit 1
 done
 
-themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" 'spec_schema: themis-spec/v1' 'Spec template schema missing' || exit 1
-themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" 'status: draft' 'Spec template Draft status missing' || exit 1
-themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" 'template_version: 1' 'Spec template version missing' || exit 1
-for themis_template_spec_heading in '## Intent and Root Cause' '## Scope' '## Context, Constraints, and Evidence' '## Options and Decision' '## Requirements' '## Acceptance Criteria' '## Assumptions' '## Adversarial Validation' '## Limitations and Deferred Work' '## Rollback' '## Approval'; do
-  themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" "${themis_template_spec_heading}" 'Spec template heading missing' || exit 1
-done
 for themis_template_step_heading in '## Step 0 — Intent Discovery（意图发现）' '## Step 1 — Scope Assessment（范围评估）' '## Step 2 — Context Gathering（上下文收集）' '## Step 3 — Design Convergence（设计收敛）' '## Step 4 — Adversarial Validation（对抗验证）'; do
   themis_template_require_markdown_line "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec-questioning.md" "${themis_template_step_heading}" 'Specification questioning step missing' || exit 1
 done
@@ -649,6 +704,7 @@ for themis_template_markdown_file in \
     case "${themis_template_import_line}" in
       @import\ *)
         themis_template_import_path=${themis_template_import_line#@import }
+        themis_template_import_path=${themis_template_import_path%$'\r'}
         themis_template_check_import "${themis_template_markdown_file}" "${themis_template_import_path}" || exit 1
         ;;
     esac

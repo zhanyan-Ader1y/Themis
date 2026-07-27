@@ -32,6 +32,7 @@ approved | changes_requested | blocked
 - Review 不能把 unavailable、error 或 inconclusive Gate 解释为成功。
 - 涉及项目意图的 finding 必须引用 Context ID；涉及当前实现的 finding 必须引用当前代码位置及可复核 revision/digest。Spec/Plan 只用于范围与符合性判断，不能替代项目事实来源。
 - Context Bundle 为 conflict/unavailable，或 Behavior Map Anchor 非 `current` 时，Review 必须回退源文件核验；无法核验则返回 `blocked`。
+- Review 将已验证的 `spec.yaml` 作为批准语义与稳定追踪的权威来源；仅在投影 currency 已确认后才将生成的 `spec.md` 用作人类导向审阅。不得解析 Markdown 作为机器证据，也不得让其覆盖 YAML。
 
 未来若需要允许 major waiver，必须先设计独立、持久、可审计的 disposition 合同；当前不得以“已知债务”绕过普通 approval 条件。
 
@@ -41,7 +42,8 @@ approved | changes_requested | blocked
 
 ```text
 读取:
-  workspace/specs/<spec-id>/spec.md
+  workspace/specs/<spec-id>/spec.yaml
+  workspace/specs/<spec-id>/spec.md       # 当前生成投影，仅供人类审阅
   workspace/specs/<spec-id>/plan.md
   workspace/specs/<spec-id>/verify.md
   workspace/runs/ 与 evidence/

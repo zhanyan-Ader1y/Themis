@@ -25,7 +25,7 @@
 1. **每个领域唯一 Agent**：7 个 Agent，各对应一个 Kernel 模块，定义唯一、不可替代
 2. **上下文隔离**：每个 Agent 只加载其领域 rules.md，只读写其领域 workspace 文件
 3. **确定性操作走 Shell**：状态迁移、任务路由、Gate 执行、证据检查全部由 shell 脚本执行
-4. **Agent 通过工件通信**：Agent 之间不直接对话，通过 spec.md → plan.md → review.md 等结构化工件交接
+4. **Agent 通过工件通信**：Agent 之间不直接对话，通过 `spec.yaml` 稳定对象、validator JSON、`plan.md`、`review.md` 等持久工件交接；`spec.md` 仅供人类审阅
 
 ---
 
@@ -43,8 +43,8 @@
   - 具体代码实现
   - 测试结果
   - Gate 状态
-产出: workspace/specs/<spec-id>/spec.md
-确定性操作: themis-spec-lint.sh（校验 Spec 结构完整性）
+产出: workspace/specs/<spec-id>/spec.yaml + spec.md（通过 themis-spec.sh publish）
+确定性操作: themis-spec.sh validate/render/publish（复用 P5.2，不另建 lint 实现）
 ```
 
 职责边界：只定义"要做什么"和"怎样算做完"，不涉及"如何实现"。
@@ -55,7 +55,7 @@
 触发条件: Spec 批准后、/themis-plan
 加载规则: planning/rules.md
 可读上下文:
-  - workspace/specs/<spec-id>/spec.md（完整 Spec）
+  - workspace/specs/<spec-id>/spec.yaml（已验证的完整 Spec；spec.md 仅展示）
   - workspace/context/architecture/behavior-map/（行为地图）
   - workspace/context/architecture/（架构约束）
 不可访问:
@@ -97,7 +97,8 @@
 触发条件: 实现完成、/themis-review
 加载规则: review/rules.md
 可读上下文:
-  - workspace/specs/<spec-id>/spec.md
+  - workspace/specs/<spec-id>/spec.yaml（权威语义）
+  - workspace/specs/<spec-id>/spec.md（人类审阅投影）
   - workspace/specs/<spec-id>/plan.md
   - 代码 diff
   - task evidence
@@ -176,10 +177,10 @@
 
 | Agent | 加载 rules | 读取 workspace | 写入 workspace | 确定性脚本 |
 |---|---|---|---|---|
-| Themis-Spec | specification/rules.md | context/, existing specs/ | specs/<id>/spec.md | themis-spec-lint.sh |
-| Themis-Plan | planning/rules.md | spec.md, behavior-map/, architecture/ | specs/<id>/plan.md | themis-plan-lint.sh, themis-task-next.sh |
+| Themis-Spec | specification/rules.md | context/, existing specs/ | specs/<id>/spec.yaml + spec.md | themis-spec.sh |
+| Themis-Plan | planning/rules.md | spec.yaml + validator JSON, behavior-map/, architecture/ | specs/<id>/plan.md | themis-plan-lint.sh, themis-task-next.sh |
 | Themis-Implement | （轻量 task-driven） | plan.md (current task), source files | code, task evidence | themis-task-complete.sh, themis-task-evidence-lint.sh |
-| Themis-Review | review/rules.md | spec.md, plan.md, diff, evidence | specs/<id>/review.md | themis-review-summary.sh |
+| Themis-Review | review/rules.md | spec.yaml + current spec.md, plan.md, diff, evidence | specs/<id>/review.md | themis-review-summary.sh |
 | Themis-Verify | verification/rules.md | Gate config, failure categories | runs/<id>/, evidence/ | **themis-pipeline.sh**（全量） |
 | Themis-Knowledge | knowledge/rules.md | outcomes/, candidates/, context/ | context/, knowledge/reviews/ | themis-knowledge-lint.sh, themis-learn-draft.sh |
 | Themis-Context | context/rules.md | source files, context/ | context/, behavior-map/ | themis-loader.sh, themis-sync.sh, themis-behavior-extractor |
@@ -234,7 +235,7 @@ bash .themis/core/kernel/orchestrator/themis-orchestrate.sh <spec-id>
 
 | 脚本 | 所属模块 | 输入 | 输出 | 幂等 |
 |---|---|---|---|---|
-| `themis-spec-lint.sh` | Specification | spec.md | pass/fail + 缺失项 | 是 |
+| `themis-spec.sh validate/render/publish` | Specification | spec.yaml candidate / canonical pair | validator JSON + spec.md / pair publication | 是 |
 | `themis-plan-lint.sh` | Planning | plan.md | pass/fail + AC 覆盖报告 | 是 |
 | `themis-task-next.sh` | Planning | plan.md | 下一 task JSON | 是 |
 | `themis-task-complete.sh` | Planning/Verification | task-id + evidence path | pass/fail | 是 |
@@ -255,7 +256,7 @@ bash .themis/core/kernel/orchestrator/themis-orchestrate.sh <spec-id>
 - `core/kernel/orchestrator/agents.yaml` — Agent 定义与上下文隔离配置
 - `core/kernel/orchestrator/flow.yaml` — 阶段与 Agent 的路由映射
 - `core/kernel/*/rules.md` — 各 Agent 的领域规则（精简到只含该领域需要的）
-- `bin/` 下的确定性 shell 脚本集合（themis-spec-lint.sh, themis-plan-lint.sh, themis-task-next.sh, themis-task-complete.sh, themis-task-evidence-lint.sh, themis-review-summary.sh, themis-pipeline.sh, themis-knowledge-lint.sh, themis-knowledge-review.sh, themis-learn-draft.sh, themis-loader.sh, themis-sync.sh, themis-spec-status.sh）
+- `bin/` 与已安装 Core 下的确定性 shell 脚本集合（复用 P5.2 `themis-spec.sh`，并新增 themis-plan-lint.sh, themis-task-next.sh, themis-task-complete.sh, themis-task-evidence-lint.sh, themis-review-summary.sh, themis-pipeline.sh, themis-knowledge-lint.sh, themis-knowledge-review.sh, themis-learn-draft.sh, themis-loader.sh, themis-sync.sh, themis-spec-status.sh）
 - `.claude/commands/` 下的斜杠命令（themis-clarify/themis-spec/themis-plan/themis-implement/themis-review/themis-verify/themis-capture/themis-context）
 
 ## 执行前置步骤
