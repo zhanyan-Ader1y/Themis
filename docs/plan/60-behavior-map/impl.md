@@ -6,11 +6,11 @@
 
 | 段落 | 文件 | 覆盖任务 | 说明 |
 |---|---|---|---|
-| 三层模型 | [impl-01-model.md](impl-01-model.md) | Schema 定义、存储结构 | L1/L2/L3 的精确字段、关联关系和 Facts-First 规则 |
-| 静态分析 | [impl-02-extractor.md](impl-02-extractor.md) | tree-sitter Adapter 接口 | 支持语言、解析器选择、function inventory + call graph 格式 |
-| 变更定位 | [impl-03-localization.md](impl-03-localization.md) | Planner 模式、AC → Code 映射 | 只读定位、按需读源码、Traceability 集成 |
-| 策略与规则 | [impl-04-policies.md](impl-04-policies.md) | context.yaml、rules.md 更新 | Behavior Map 生成策略、新鲜度规则 |
-| 文档同步 | [impl-05-docs.md](impl-05-docs.md) | WIKI 更新 | context.md、planning.md 文档同步 |
+| 三层模型 | `impl-01-model.md` | Schema 定义、存储结构 | L1/L2/L3 的精确字段、关联关系和 Facts-First 规则 |
+| 静态分析 | `impl-02-extractor.md` | tree-sitter Adapter 接口 | 支持语言、解析器选择、function inventory + call graph 格式 |
+| 变更定位 | `impl-03-localization.md` | Planner 模式、AC → Code 映射 | 只读定位、按需读源码、Traceability 集成 |
+| 策略与规则 | `impl-04-policies.md` | context.yaml、rules.md 更新 | Behavior Map 生成策略、新鲜度规则 |
+| 文档同步 | `impl-05-docs.md` | WIKI 更新 | context.md、planning.md 文档同步 |
 
 ## 目标文件清单
 
@@ -21,8 +21,8 @@
 | 3 | `templates/.themis/core/policies/context.yaml` | 新建 | impl-04 |
 | 4 | `templates/.themis/core/kernel/context/rules.md` | 更新 | impl-04 |
 | 5 | `templates/.themis/core/kernel/planning/rules.md` | 更新 | impl-03 |
-| 6 | `docs/core/kernel/context.md` | 更新 | impl-05 |
-| 7 | `docs/core/kernel/planning.md` | 更新 | impl-05 |
+| 6 | `docs/design/core/kernel/context.md` | 更新 | impl-05 |
+| 7 | `docs/design/core/kernel/planning.md` | 更新 | impl-05 |
 
 ## 执行顺序
 
@@ -46,5 +46,5 @@
 ## 相关文档
 
 - [模块概述](README.md)
-- [Themis 完整工作流程](../../workflow.md)
+- [Themis 完整工作流程](../../design/workflow.md)
 - [P5 需求追问](../50-requirement-questioning/README.md)

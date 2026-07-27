@@ -18,7 +18,7 @@
 | 1 | `templates/.themis/core/policies/verification.yaml` | 新建 | impl-01 |
 | 2 | `templates/.themis/core/templates/failure-classification.md` | 新建 | impl-02 |
 | 3 | `templates/.themis/core/kernel/verification/rules.md` | 更新 | impl-03 |
-| 4 | `docs/core/kernel/verification.md` | 更新 | impl-04 |
+| 4 | `docs/design/core/kernel/verification.md` | 更新 | impl-04 |
 
 ## 执行顺序
 

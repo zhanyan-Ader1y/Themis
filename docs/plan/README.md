@@ -1,6 +1,6 @@
 # Themis 实施计划
 
-本目录以模块为单位管理 Themis 的**待执行计划**。计划按优先级编号排序，编号同时表达依赖顺序。
+本目录以模块为单位管理 Themis 的提案、实施设计、任务和执行历史，属于非规范文档。已确认的长期设计以 [Themis 设计规范](../design/README.md) 为准；计划内容与正式设计冲突时，不得覆盖正式设计。
 
 > **执行协议**：计划文档不是实现授权。只有用户主动发起某个计划后才可开始执行。执行的第一步必须在该计划自身目录创建或更新 `impl.md`（即 `docs/plan/<priority>-<slug>/impl.md`），将设计决策、任务拆分、目标文件和验证矩阵落地。`impl.md` 完成后必须等待用户确认，确认前不得修改该计划所涉及的实现文件。
 
@@ -13,7 +13,7 @@
 | P2 | [Top-level Guidance](20-top-level-guidance/) | Themis 顶层 SDD 指引与路由 | P1 | 已完成（运行时 import 探针待认证环境复核） |
 | P3 | [Init](30-init/) | 交互式安装流程 | P0、P1、P2 | 已完成 |
 | P4 | [Upgrade](40-upgrade/) | 无损升级 | P1、P3 | 已完成 |
-| P4.5 | [Explicit Migration](45-explicit-migration/) | 显式 Workspace/Artifact Schema 迁移执行器 | P1、P4 | 待发起 |
+| P4.5 | [Explicit Migration](45-explicit-migration/) | 显式 Workspace/Artifact Schema 迁移执行器 | P1、P4 | 已完成 |
 | P5 | [Requirement Questioning](50-requirement-questioning/) | Spec 创建前的追问与需求澄清 | P1、P2 | 已完成（P8 状态执行器待实施） |
 | P5.5 | [Knowledge Governance](55-knowledge-governance/) | 人机混合知识治理（候选→审核→提升→废弃） | P1、P2、P5 | 待发起 |
 | P5.8 | [Planning Enhancement](58-planning-enhancement/) | 计划增强（Task 模型、依赖 DAG、Traceability、Plan 校验） | P1、P5 | 待发起 |

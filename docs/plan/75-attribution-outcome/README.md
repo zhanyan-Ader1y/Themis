@@ -8,7 +8,7 @@
 
 Attribution 是 SDD 流程的"观察者"——它不参与执行，而是在事后关联 Spec、Task、代码变更、验证结果、部署和最终 Outcome，用于长期质量分析和改进。当前基线：
 
-- `attribution/rules.md` 定义了模块边界，但**不在 Orchestrator import 图中**
+- `attribution/rules.md` 已定义模块边界并已纳入 Orchestrator import 图，但内容仍为基线占位
 - 无 Outcome 分类策略
 - 无 Attribution 分析 Prompt
 - Workflow 文档已定义完整的 Outcome 模型（success/rework/defect/incident/rollback），但无落地方案
@@ -20,7 +20,7 @@ Themis 区分"单次验证通过"和"实际交付结果成功"——这是 Verif
 1. 定义 Outcome 分类策略和记录模板
 2. 定义 Attribution 关联模型（Spec → Task → Commit → Run → Deploy → Outcome）
 3. 编写 Attribution 分析 Prompt（返工率、缺陷逃逸率、验证薄弱点）
-4. 更新 `attribution/rules.md` 使其不再为占位状态，并纳入 import 图
+4. 更新 `attribution/rules.md` 使其不再为占位状态
 5. 同步更新 WIKI 文档
 
 ## 核心设计
@@ -63,15 +63,14 @@ Spec (spec.md)
 | 1 | `templates/.themis/core/policies/outcome.yaml` | 新建 | Outcome 分类、记录规则、观察期配置 |
 | 2 | `templates/.themis/core/templates/attribution-analysis.md` | 新建 | Attribution 分析 Prompt（输入→关联→分析→建议） |
 | 3 | `templates/.themis/core/kernel/attribution/rules.md` | 更新 | 从占位内容更新为完整归因规则 |
-| 4 | `templates/.themis/core/kernel/orchestrator/rules.md` | 更新 | 将 Attribution 纳入 import 图 |
-| 5 | `docs/core/kernel/attribution.md` | 更新 | 同步 WIKI |
+| 4 | `docs/design/core/kernel/attribution.md` | 更新 | 同步 WIKI |
 
 ## 验收条件
 
 - `outcome.yaml` 定义 5 种 Outcome 类型及记录规则
 - `attribution-analysis.md` 含完整的关联模型和分析维度 Prompt
 - `attribution/rules.md` 不再包含占位内容
-- `orchestrator/rules.md` 的 import 图中包含 `../attribution/rules.md`
+- Orchestrator 现有 `../attribution/rules.md` import 保持不变
 - Outcome 与 Verification Verdict 的区别有明确文档
 
 ## 非范围
@@ -83,4 +82,4 @@ Spec (spec.md)
 ## 风险与回滚
 
 - **风险**：Outcome 数据不足导致分析无意义 → **缓解**：初期仅做手动记录，不做自动分析
-- **回滚**：移除新增文件，恢复 rules.md 到基线，从 import 图中移除 attribution
+- **回滚**：移除新增文件，恢复 `attribution/rules.md` 到基线

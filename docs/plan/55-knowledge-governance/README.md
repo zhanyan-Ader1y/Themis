@@ -6,7 +6,7 @@
 
 ## 背景
 
-Themis 在 `docs/workflow.md` 和 `docs/core/kernel/knowledge.md` 中已定义了知识治理的完整理论模型——从候选识别、去重、冲突检查、审核、提升到废弃的闭环流程。但该模型目前仅存在于文档层面：
+Themis 在 `docs/design/workflow.md` 和 `docs/design/core/kernel/knowledge.md` 中已定义了知识治理的完整理论模型——从候选识别、去重、冲突检查、审核、提升到废弃的闭环流程。但该模型目前仅存在于文档层面：
 
 - `core/kernel/knowledge/rules.md` 定义了模块边界，但内容为基线占位
 - 无治理策略文件（`knowledge-governance.yaml`）
@@ -82,7 +82,7 @@ P5 需求追问的方法论分析揭示了一个关键设计原则——**AI 生
 | 2 | `templates/.themis/core/templates/knowledge-candidate-extraction.md` | 新建 | AI 候选提取 Prompt（从各类源头提取知识候选） |
 | 3 | `templates/.themis/core/templates/knowledge-review.md` | 新建 | AI 审核 Prompt（结构化审核候选） |
 | 4 | `templates/.themis/core/kernel/knowledge/rules.md` | 更新 | 从占位内容更新为完整的治理规则 |
-| 5 | `docs/core/kernel/knowledge.md` | 更新 | 同步 WIKI 文档 |
+| 5 | `docs/design/core/kernel/knowledge.md` | 更新 | 同步 WIKI 文档 |
 
 ## 验收条件
 

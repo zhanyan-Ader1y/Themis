@@ -18,7 +18,7 @@
 | 1 | `templates/.themis/core/policies/review.yaml` | 新建 | impl-01 |
 | 2 | `templates/.themis/core/templates/review-execution.md` | 新建 | impl-02 |
 | 3 | `templates/.themis/core/kernel/review/rules.md` | 更新 | impl-03 |
-| 4 | `docs/core/kernel/review.md` | 更新 | impl-04 |
+| 4 | `docs/design/core/kernel/review.md` | 更新 | impl-04 |
 
 ## 执行顺序
 

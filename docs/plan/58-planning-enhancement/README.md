@@ -64,7 +64,7 @@ AC → Task → 代码位置 (Behavior Map) → 代码变更
 | 2 | `templates/.themis/core/templates/plan-generation.md` | 新建 | Plan 生成 Prompt（Spec → Task 拆分 → 依赖 DAG） |
 | 3 | `templates/.themis/core/templates/plan-validation.md` | 新建 | Plan 校验 Prompt（AC 覆盖、依赖、粒度、可行性） |
 | 4 | `templates/.themis/core/kernel/planning/rules.md` | 更新 | 从占位内容更新为完整计划规则 |
-| 5 | `docs/core/kernel/planning.md` | 更新 | 同步 WIKI |
+| 5 | `docs/design/core/kernel/planning.md` | 更新 | 同步 WIKI |
 
 ## 验收条件
 

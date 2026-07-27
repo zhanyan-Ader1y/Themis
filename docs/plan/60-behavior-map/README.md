@@ -128,8 +128,8 @@ Verification 模块:
 
 ## 目标文件
 
-- `docs/core/kernel/context.md`（更新：增加行为地图生成管线说明）
-- `docs/core/kernel/planning.md`（更新：增加变更定位说明）
+- `docs/design/core/kernel/context.md`（更新：增加行为地图生成管线说明）
+- `docs/design/core/kernel/planning.md`（更新：增加变更定位说明）
 - `core/adapters/schema/behavior-extractor/`（新增：tree-sitter 静态分析 Adapter）
 - `workspace/context/architecture/behavior-map/`（模板中的行为地图存储结构）
 - `core/policies/context.yaml`（新增：行为地图生成策略）

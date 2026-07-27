@@ -20,7 +20,7 @@
 | 2 | `templates/.themis/core/templates/plan-generation.md` | 新建 | impl-02 |
 | 3 | `templates/.themis/core/templates/plan-validation.md` | 新建 | impl-03 |
 | 4 | `templates/.themis/core/kernel/planning/rules.md` | 更新 | impl-04 |
-| 5 | `docs/core/kernel/planning.md` | 更新 | impl-05 |
+| 5 | `docs/design/core/kernel/planning.md` | 更新 | impl-05 |
 
 ## 执行顺序
 
