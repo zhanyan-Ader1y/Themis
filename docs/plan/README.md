@@ -15,6 +15,7 @@
 | P4 | [Upgrade](40-upgrade/) | 无损升级 | P1、P3 | 已完成 |
 | P4.5 | [Explicit Migration](45-explicit-migration/) | 显式 Workspace/Artifact Schema 迁移执行器 | P1、P4 | 已完成 |
 | P5 | [Requirement Questioning](50-requirement-questioning/) | Spec 创建前的追问与需求澄清 | P1、P2 | 已完成（P8 状态执行器待实施） |
+| P5.2 | [Spec Dual View](52-spec-dual-view/) | `spec.yaml` Agent 权威源 + `spec.md` Human 审阅投影 | P4.5、P5 | 实施设计待确认 |
 | P5.4 | [Context Restructure](54-context-restructure/) | 双轴可信源、L1/L2/L3 Context、Catalog、检索装配与 Signal | P1、P2、P4.5、P5 | 设计完成，待发起 |
 | P5.5 | [Knowledge Governance](55-knowledge-governance/) | 人机混合知识治理（候选→审核→提升→废弃） | P1、P2、P5、P5.4 | 待发起 |
 | P5.8 | [Planning Enhancement](58-planning-enhancement/) | 计划增强（Task 模型、依赖 DAG、Traceability、Plan 校验） | P1、P5 | 待发起 |
@@ -35,9 +36,10 @@ P0 Init Environment Validation
       │    ├── P3 Init ── P4 Upgrade
       │    │    └── P4.5 Explicit Migration      ← 迁移执行器
       │    └── P5 Requirement Questioning
-      │         └── P5.4 Context Restructure        ← 可信源、分层 Context 与装配
-      │              ├── P5.5 Knowledge Governance ← 知识治理
-      │              └── P6 Behavior Map           ← 行为地图
+      │         ├── P5.2 Spec Dual View             ← Agent/Human 双视图
+      │         ├── P5.4 Context Restructure        ← 可信源、分层 Context 与装配
+      │         │    ├── P5.5 Knowledge Governance ← 知识治理
+      │         │    └── P6 Behavior Map           ← 行为地图
       │         ├── P5.8 Planning Enhancement      ← 计划增强
       │         │    └── P5.9 Implementation Enhancement ← 实施增强
       │         ├── P6.5 Verification Enhancement ← Gate 策略
@@ -47,7 +49,8 @@ P0 Init Environment Validation
            └── P8 Multi-Agent Architecture       ← Agent 层
 
 P0 仅由 Init 调用。
-P4.5 是 P4 的补充能力，可独立实施；P5.4 的 Workspace Schema 变化必须消费其迁移机制。
+P4.5 是 P4 的补充能力，可独立实施；P5.2 与 P5.4 的 Artifact/Workspace Schema 变化必须消费其迁移机制。
+P5.2 为后续 Planning 与 P8 提供结构化 Spec 契约。
 P5.4 是 P5.5 与 P6 的共同前置，统一项目事实可信源、Context Catalog、L1/L2/L3、Bundle、Signal 与 B1/B2/B3 命名。
 P5.5/P5.8/P6/P6.5/P6.8/P7.5/P8 属于 SDD 运行时能力。
 P7 是跨模块分析性审计。
