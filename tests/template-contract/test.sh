@@ -106,12 +106,28 @@ case "$("${YQ_EXECUTABLE}" --version 2>&1)" in
     ;;
 esac
 
-printf '1..58\n'
+printf '1..60\n'
 
 CLEAN_FIXTURE=$(make_fixture clean)
 run_checker "${CLEAN_FIXTURE}"
 assert_status 0 'clean template passes the contract check'
 assert_output_empty 'clean template check is silent'
+
+# 构造仅 @import 行使用 CRLF 的隔离夹具，验证 Windows 检出不会污染目标路径。
+CRLF_IMPORT_FIXTURE=$(make_fixture crlf-import)
+CRLF_IMPORT_FILE="${CRLF_IMPORT_FIXTURE}/core/kernel/orchestrator/rules.md"
+CRLF_IMPORT_CARRIAGE_RETURN=$(printf '\r')
+while IFS= read -r CRLF_IMPORT_LINE; do
+  CRLF_IMPORT_LINE=${CRLF_IMPORT_LINE%"${CRLF_IMPORT_CARRIAGE_RETURN}"}
+  case "${CRLF_IMPORT_LINE}" in
+    @import\ *) printf '%s\r\n' "${CRLF_IMPORT_LINE}" ;;
+    *) printf '%s\n' "${CRLF_IMPORT_LINE}" ;;
+  esac
+done < "${CRLF_IMPORT_FILE}" > "${CRLF_IMPORT_FILE}.tmp"
+mv "${CRLF_IMPORT_FILE}.tmp" "${CRLF_IMPORT_FILE}"
+run_checker "${CRLF_IMPORT_FIXTURE}"
+assert_status 0 'CRLF Core import lines resolve existing targets'
+assert_output_empty 'CRLF Core import check is silent'
 
 MALFORMED_CORE_FIXTURE=$(make_fixture malformed-core)
 printf '%s\n' 'core_schema: [broken' >"${MALFORMED_CORE_FIXTURE}/core/core.yaml"
