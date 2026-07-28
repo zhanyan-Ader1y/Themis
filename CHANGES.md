@@ -4,9 +4,9 @@
 
 ### 2026-07-28
 
-- 将 Requirement Questioning 落地为 Project Skill `Themis-Q`，仅维护聚焦、渐进式提问方法、需求覆盖、Acceptance Criteria 与对抗问题
-- Specification 主动调用 `Themis-Q`，并独立负责 Context grounding、复杂度、收敛、规范化摘要、用户确认、candidate 创建与发布；Skill 不定义流程或 handoff
-- Fresh Init 安全合并安装 `.claude/skills/Themis-Q/`，保留既有 `.claude` 设置与无关 Skills；同名路径冲突在写入前拒绝，后续失败仅回滚本次创建路径
+- 将 Requirement Questioning 落地为 Project Skill `themis-q`，仅维护聚焦、渐进式提问方法、需求覆盖、Acceptance Criteria 与对抗问题
+- Specification 主动调用 `themis-q`，并独立负责 Context grounding、复杂度、收敛、规范化摘要、用户确认、candidate 创建与发布；Skill 不定义流程或 handoff
+- Fresh Init 安全合并安装 `.claude/skills/themis-q/`，保留既有 `.claude` 设置与无关 Skills；同名路径冲突在写入前拒绝，后续失败仅回滚本次创建路径
 - 退役 Core questioning Prompt 与攻击 checklist；详细攻击库改为 Skill sibling reference，并由模板契约保护提问方式、覆盖范围与收敛指导
 - Spec 在正式发布前收敛为唯一无版本合同，移除 `spec_schema`、`template_version`、`questioning` 和 Agent 自报 self-check，保留 Artifact v2 与 Workspace v1 独立版本合同
 - 新增最终 `context_basis`，并由确定性 executor 从最终语义计算 Context readiness 与 semantic consistency；八个稳定 readiness ID 及双视图事务发布保持不变

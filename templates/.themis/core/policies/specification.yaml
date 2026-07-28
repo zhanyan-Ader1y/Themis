@@ -43,7 +43,7 @@ specification:
       - spec_projection_current
 
   questioning:
-    method_skill: Themis-Q
+    method_skill: themis-q
     complexity:
       precedence: [low, medium, high]
       low:

@@ -43,4 +43,4 @@ Review 在 Implementation 前；Verification 在 Implementation 后；Summary �
 
 ## 当前实现状态
 
-`rules.md`、部分 YAML policy/protocol/template、Workspace scaffold 和 `Themis-Q` 方法存在。Implementation 与 Delivery 尚无运行资产；生产 installer、Spec/Context executors、state recorder、Gate runner 和回归套件不存在。任何能力声明都必须以当前文件和实际观察为准。
+`rules.md`、部分 YAML policy/protocol/template、Workspace scaffold 和 `themis-q` 方法存在。Implementation 与 Delivery 尚无运行资产；生产 installer、Spec/Context executors、state recorder、Gate runner 和回归套件不存在。任何能力声明都必须以当前文件和实际观察为准。

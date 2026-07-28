@@ -19,15 +19,8 @@ Themis自Loop
 
 ### 未MVP前
 
-- 通过Themis-Q追问
-- 将追问结果整理分析后得出spec.md
-- 在确定计划未plan.md前追问用户spec.md中的未确认项
-- 确认完毕后再spec.md中记录决策
-- 根据spec.md生成plan.md，记录任务、依赖、范围（不需要考虑恢复位置，可以通过工作树+提交实现）
-- 根据plan.md生成符合产品身份的review.md。
-- 每个计划拥有自己的目录和实施记录。大型工作应在该目录中拆分为聚焦段落。
-- 用户确认后生成verify.md，记录待确认项、证据等
-- 完成所有任务后生成summary.md，记录项目运行结果摘要
+- 通过themis-q追问
+- 将追问结果整理分析后通过superpower skill完成后续规划流程
 
 
 ## 限制

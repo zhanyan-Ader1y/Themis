@@ -13,9 +13,9 @@ Define what a project change must achieve, why it is needed, its approved scope,
 
 ## Requirement Questioning
 
-Before creating or modifying a Spec source, invoke the `Themis-Q` Skill with the Skill tool when material uncertainty remains and its method has not already clarified the current request.
+Before creating or modifying a Spec source, invoke the `themis-q` Skill with the Skill tool when material uncertainty remains and its method has not already clarified the current request.
 
-- `Themis-Q` supplies questioning methods and coverage only. It does not own routing, persistence, confirmation, candidate creation, or handoff.
+- `themis-q` supplies questioning methods and coverage only. It does not own routing, persistence, confirmation, candidate creation, or handoff.
 - Specification owns policy/Context reads, complexity classification, convergence, normalized summary, explicit Draft confirmation, persistence, projection, review, approval, and Planning handoff.
 - If the Skill is missing or invocation fails, remain in Specification and report the blocker; do not substitute a legacy Prompt.
 

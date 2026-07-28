@@ -29,7 +29,7 @@
 实施开始时必须重新核验 checkout；本计划编写时可见的相关基线包括：
 
 - Orchestrator、Specification、Context、Planning、Review、Verification、Knowledge 与 Attribution 的领域 `rules.md` 骨架或部分规则。
-- 已存在的 Themis-Q Project Skill、Draft Spec 发布能力和 Context 检索/装配脚本。
+- 已存在的 themis-q Project Skill、Draft Spec 发布能力和 Context 检索/装配脚本。
 - Planning、Review、Implementation、完整 Verification、Delivery 与 Knowledge 的端到端执行能力尚不完整。
 - 当前缺少能够可靠记录完整 lifecycle transition 的通用生产执行器。
 
@@ -60,7 +60,7 @@
 
 #### Specification
 
-- 在需要澄清时使用实际存在的 Themis-Q 方法，但由 Specification 拥有流程、收敛、确认和工件。
+- 在需要澄清时使用实际存在的 themis-q 方法，但由 Specification 拥有流程、收敛、确认和工件。
 - 形成 intent、scope、constraints、assumptions、Acceptance Criteria、adversarial cases、risks 与 approval evidence。
 - 只有用户明确同意生成 Draft Spec 后才调用真实存在的发布能力。
 - 不把 Draft Spec 发布冒充 `draft → specified` transition。
@@ -172,7 +172,7 @@ Plan 35 不实现或承诺以下基线能力：
 
 ### T35-03 Context 与 Specification
 
-- 串联 Context resolution、漂移处理、Themis-Q、规范化摘要、Draft 确认和现有 Spec 发布能力。
+- 串联 Context resolution、漂移处理、themis-q、规范化摘要、Draft 确认和现有 Spec 发布能力。
 - 为缺失 executor 与 transition 提供 fail-closed 输出。
 
 完成标准：可以人工演练从请求到 Draft Spec；输出不会声称不存在的 `specified` transition。
