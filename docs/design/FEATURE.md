@@ -103,7 +103,7 @@ Themis失败 draft模板：
 
 ## 实施顺序
 
-1. P5.4 Context：在当前 `themis-workspace/v1` 内实现 Catalog、L1/L2/L3、Search、Bundle 与 Signal，不引入 Behavior Map 或 schema 转换。
+1. P5.4 Context：在当前 `themis-workspace` 内实现 Catalog、L1/L2/L3、Search、Bundle 与 Signal，不引入 Behavior Map 或 schema 转换。
 2. 在 P5.4 之上实现 Spec Context 引用校验和 P5.5 Knowledge Governance。
 3. 实现 Planning，并由 P6.8 Review 对 Spec、Plan、设计、风险、scope lock 与验收方案作前置批准。
 4. Implementation 只执行 approved Review 绑定的范围。

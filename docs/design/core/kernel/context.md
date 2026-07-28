@@ -96,4 +96,4 @@ Signal 只记录问题和处置状态，不自动裁决。Freshness 只标记来
   workspace/knowledge/candidates/
 ```
 
-正式 L3 与 Catalog 的治理写入只发生在人工维护或经批准的 Knowledge Governance 处置中；P5.4 已提供显式 Catalog bind/register/remove、检索、装配、Freshness/Signal 和 Navigation 执行能力，但不批准或生成 L3。全部能力保持当前 `themis-workspace/v1` 合同，任何需要 schema 转换的结构变化延期到未来重新设计的更新能力。
+正式 L3 与 Catalog 的治理写入只发生在人工维护或经批准的 Knowledge Governance 处置中；P5.4 已提供显式 Catalog bind/register/remove、检索、装配、Freshness/Signal 和 Navigation 执行能力，但不批准或生成 L3。全部能力保持当前 `themis-workspace` 合同，任何需要 schema 转换的结构变化延期到未来重新设计的更新能力。

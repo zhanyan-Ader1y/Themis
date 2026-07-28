@@ -1,6 +1,6 @@
 # Workspace — 项目空间
 
-> 规范状态：正式设计。实现状态：当前 `themis-workspace/v1` 目录骨架、manifest、无版本 Spec 双视图与 P5.4 Context Catalog/Signal/Bundle/Navigation 基础设施已实现；通用 lifecycle state、Review、Verification、Acceptance、Summary、Outcome 和知识治理执行器尚未实现。
+> 规范状态：正式设计。实现状态：当前 `themis-workspace` 目录骨架、manifest、无版本 Spec 双视图与 P5.4 Context Catalog/Signal/Bundle/Navigation 基础设施已实现；通用 lifecycle state、Review、Verification、Acceptance、Summary、Outcome 和知识治理执行器尚未实现。
 
 ## 职责边界
 
@@ -17,8 +17,8 @@ Workspace 完全属于当前项目，保存项目特有内容和运行数据；C
 当前模板结构：
 
 ```yaml
-workspace_schema: themis-workspace/v1
-artifact_schema: themis-artifact/v2
+workspace_schema: themis-workspace
+artifact_schema: themis-artifact
 project:
   name: ""
   root: "."
@@ -64,7 +64,7 @@ paths:
 
 ## P5.4 Context 结构
 
-P5.4 在当前 `themis-workspace/v1` 可表达的目录内实现：
+P5.4 在当前 `themis-workspace` 可表达的目录内实现：
 
 ```text
 workspace/

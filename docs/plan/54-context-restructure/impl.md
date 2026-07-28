@@ -1,6 +1,6 @@
 # P5.4 Context Restructure 实施设计
 
-P5.4 在现有 `themis-workspace/v1` 内实现受治理 Context 与当前代码事实的双轴可信模型。正式知识仅位于 `workspace/context/`；Catalog 是唯一持久注册表；L1/L2、索引和 Bundle 可重建；Signal 持久记录 missing、stale、Context 冲突和 Context/code drift。P5.4 不改变 Workspace/Artifact schema，不转换既有安装，不实现 Knowledge Promotion、生命周期编排、Behavior Map、Upgrade 或 Migration。
+P5.4 在现有 `themis-workspace` 内实现受治理 Context 与当前代码事实的双轴可信模型。正式知识仅位于 `workspace/context/`；Catalog 是唯一持久注册表；L1/L2、索引和 Bundle 可重建；Signal 持久记录 missing、stale、Context 冲突和 Context/code drift。P5.4 不改变 Workspace/Artifact schema，不转换既有安装，不实现 Knowledge Promotion、生命周期编排、Behavior Map、Upgrade 或 Migration。
 
 **状态**：已实施（2026-07-28）。
 

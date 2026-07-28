@@ -573,7 +573,7 @@ themis_context_open_workspace() {
 ${manifest_values}
 EOF
   IFS=${old_ifs}
-  if [ "${workspace_schema}" != 'themis-workspace/v1' ] || [ "${artifact_schema}" != 'themis-artifact/v2' ] || \
+  if [ "${workspace_schema}" != 'themis-workspace' ] || [ "${artifact_schema}" != 'themis-artifact' ] || \
      [ "${project_root}" != '.' ] || [ "${context_path}" != 'workspace/context' ] || \
      [ "${state_path}" != 'workspace/state' ] || [ "${cache_path}" != 'workspace/cache' ]; then
     themis_context_add_error unsupported_workspace_layout manifest.yaml

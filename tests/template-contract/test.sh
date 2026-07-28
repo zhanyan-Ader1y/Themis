@@ -134,10 +134,10 @@ assert_status 1 'bundle and Core version mismatch fails validation'
 assert_output_contains 'Bundle/Core version mismatch' 'version mismatch reports version diagnostic'
 
 UNSUPPORTED_WORKSPACE_FIXTURE=$(make_fixture unsupported-workspace)
-set_yaml '.workspace_schema = "themis-workspace/v9"' "${UNSUPPORTED_WORKSPACE_FIXTURE}/workspace/manifest.yaml"
+set_yaml '.workspace_schema = "themis-workspace/v1"' "${UNSUPPORTED_WORKSPACE_FIXTURE}/workspace/manifest.yaml"
 run_checker "${UNSUPPORTED_WORKSPACE_FIXTURE}"
-assert_status 1 'unsupported Workspace schema fails validation'
-assert_output_contains 'unsupported Workspace schema' 'unsupported Workspace schema reports compatibility diagnostic'
+assert_status 1 'versioned Workspace schema fails validation'
+assert_output_contains 'module version identifier forbidden' 'versioned Workspace schema reports module version diagnostic'
 
 WORKSPACE_MIGRATION_METADATA_FIXTURE=$(make_fixture workspace-migration-metadata)
 set_yaml '.compatibility.workspace.migrations = []' "${WORKSPACE_MIGRATION_METADATA_FIXTURE}/core/core.yaml"
@@ -169,11 +169,11 @@ run_checker "${RETIRED_CAPABILITY_ASSET_FIXTURE}"
 assert_status 1 'retired capability namespace fails validation'
 assert_output_contains 'retired capability asset present' 'retired capability namespace reports contract diagnostic'
 
-ARTIFACT_V1_SUPPORT_FIXTURE=$(make_fixture artifact-v1-support)
-set_yaml '.compatibility.artifact.supported = ["themis-artifact/v1", "themis-artifact/v2"]' "${ARTIFACT_V1_SUPPORT_FIXTURE}/core/core.yaml"
+ARTIFACT_V1_SUPPORT_FIXTURE=$(make_fixture artifact-version-support)
+set_yaml '.compatibility.artifact.supported = ["themis-artifact/v2", "themis-artifact"]' "${ARTIFACT_V1_SUPPORT_FIXTURE}/core/core.yaml"
 run_checker "${ARTIFACT_V1_SUPPORT_FIXTURE}"
-assert_status 1 'Artifact v1 compatibility fails validation'
-assert_output_contains 'Artifact support list invalid' 'Artifact v1 compatibility reports support-list diagnostic'
+assert_status 1 'versioned Artifact identifier fails validation'
+assert_output_contains 'module version identifier forbidden' 'versioned Artifact identifier reports module version diagnostic'
 
 MISSING_IMPORT_FIXTURE=$(make_fixture missing-import)
 rm "${MISSING_IMPORT_FIXTURE}/core/kernel/planning/rules.md"

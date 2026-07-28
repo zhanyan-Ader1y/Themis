@@ -26,6 +26,9 @@ THEMIS_SPEC_PUBLISH_STAGE=
 THEMIS_SPEC_PUBLISH_HAD_SOURCE=0
 THEMIS_SPEC_PUBLISH_HAD_PROJECTION=0
 THEMIS_SPEC_PUBLISH_REPLACEMENT_STARTED=0
+THEMIS_SPEC_READINESS_FIELDS_CACHE_SOURCE=
+THEMIS_SPEC_READINESS_FIELDS_CACHE_SET=0
+THEMIS_SPEC_READINESS_FIELDS_CACHE_COMPLETE=0
 
 # 输出稳定帮助，不依赖安装位置。
 themis_spec_usage() {
@@ -186,29 +189,53 @@ themis_spec_expect_nullable_string() {
   return 1
 }
 
-# 校验固定对象的必需键与未知键；字段类型由对应专用校验继续负责。
+# 批量校验固定对象的必需键与未知键；字段类型仍由对应专用校验负责。
 themis_spec_validate_fixed_map() {
   local themis_spec_fixed_source=$1
   local themis_spec_fixed_contract=$2
   local themis_spec_fixed_expression=$3
-  local themis_spec_fixed_field
+  local themis_spec_fixed_type
+  local themis_spec_fixed_error
 
-  if ! yq eval -e "${themis_spec_fixed_expression} | type == \"!!map\"" "${themis_spec_fixed_source}" >/dev/null 2>&1; then
-    return 1
-  fi
+  # 固定表达式来自 executor 调用点；同次 yq 同时读取受信 Schema，避免逐字段重启解析器。
+  while IFS= read -r themis_spec_fixed_type; do
+    break
+  done < <(
+    THEMIS_SPEC_FIXED_MAP=${themis_spec_fixed_contract} yq eval -r "
+      . as \$source |
+      load(strenv(THEMIS_SPEC_SCHEMA)) as \$schema |
+      strenv(THEMIS_SPEC_FIXED_MAP) as \$name |
+      \$schema.fixed_maps[\$name] as \$contract |
+      (\$source | ${themis_spec_fixed_expression} | type) as \$node_type |
+      \$node_type,
+      select(\$node_type == \"!!map\") |
+      ((\$contract.required - (\$source | ${themis_spec_fixed_expression} | keys))[] |
+        \"fixed_map.\" + \$name + \".required.\" + .),
+      (((\$source | ${themis_spec_fixed_expression} | keys) - \$contract.allowed)[] |
+        \"fixed_map.\" + \$name + \".unknown.\" + .)
+    " "${themis_spec_fixed_source}"
+  )
+  [ "${themis_spec_fixed_type}" = '!!map' ] || return 1
 
-  while IFS= read -r themis_spec_fixed_field; do
-    if ! THEMIS_SPEC_FIELD=${themis_spec_fixed_field} yq eval -e "${themis_spec_fixed_expression} | has(strenv(THEMIS_SPEC_FIELD))" "${themis_spec_fixed_source}" >/dev/null 2>&1; then
-      themis_spec_add_error "fixed_map.${themis_spec_fixed_contract}.required.${themis_spec_fixed_field}"
-    fi
-  done < <(THEMIS_SPEC_FIXED_MAP=${themis_spec_fixed_contract} yq eval -r '.fixed_maps[strenv(THEMIS_SPEC_FIXED_MAP)].required[]' "${THEMIS_SPEC_SCHEMA}")
-
-  while IFS= read -r themis_spec_fixed_field; do
-    if ! THEMIS_SPEC_FIXED_MAP=${themis_spec_fixed_contract} THEMIS_SPEC_FIELD=${themis_spec_fixed_field} \
-      yq eval -e '.fixed_maps[strenv(THEMIS_SPEC_FIXED_MAP)].allowed | contains([strenv(THEMIS_SPEC_FIELD)])' "${THEMIS_SPEC_SCHEMA}" >/dev/null 2>&1; then
-      themis_spec_add_error "fixed_map.${themis_spec_fixed_contract}.unknown.${themis_spec_fixed_field}"
-    fi
-  done < <(yq eval -r "${themis_spec_fixed_expression} | keys | .[]" "${themis_spec_fixed_source}")
+  # 第一行是类型 sentinel；其余记录已经按既有 required、unknown 顺序给出稳定 ID。
+  while IFS= read -r themis_spec_fixed_error; do
+    [ -n "${themis_spec_fixed_error}" ] || continue
+    themis_spec_add_error "${themis_spec_fixed_error}"
+  done < <(
+    THEMIS_SPEC_FIXED_MAP=${themis_spec_fixed_contract} yq eval -r "
+      . as \$source |
+      load(strenv(THEMIS_SPEC_SCHEMA)) as \$schema |
+      strenv(THEMIS_SPEC_FIXED_MAP) as \$name |
+      \$schema.fixed_maps[\$name] as \$contract |
+      (\$source | ${themis_spec_fixed_expression} | type) as \$node_type |
+      \$node_type,
+      select(\$node_type == \"!!map\") |
+      ((\$contract.required - (\$source | ${themis_spec_fixed_expression} | keys))[] |
+        \"fixed_map.\" + \$name + \".required.\" + .),
+      (((\$source | ${themis_spec_fixed_expression} | keys) - \$contract.allowed)[] |
+        \"fixed_map.\" + \$name + \".unknown.\" + .)
+    " "${themis_spec_fixed_source}" | sed '1d'
+  )
   return 0
 }
 
@@ -417,6 +444,9 @@ themis_spec_check_projection() {
   themis_spec_projection_body_oid=${themis_spec_projection_marker#* body_oid=}
   themis_spec_projection_body_oid=${themis_spec_projection_body_oid% -->}
   themis_spec_projection_expected_source_oid=$(git hash-object -- "${themis_spec_projection_source}" 2>/dev/null) || return 1
+  if [ "${themis_spec_projection_source_oid}" != "${themis_spec_projection_expected_source_oid}" ]; then
+    return 1
+  fi
   themis_spec_projection_body_file="${THEMIS_SPEC_TEMP_ROOT}/projection-body-$$"
   themis_spec_projection_expected_body_file="${THEMIS_SPEC_TEMP_ROOT}/projection-expected-body-$$"
   sed '1d' "${themis_spec_projection_file}" >"${themis_spec_projection_body_file}" || return 1
@@ -424,6 +454,10 @@ themis_spec_check_projection() {
     rm -f "${themis_spec_projection_body_file}" "${themis_spec_projection_expected_body_file}"
     return 1
   }
+  if [ "${themis_spec_projection_body_oid}" != "${themis_spec_projection_actual_body_oid}" ]; then
+    rm -f "${themis_spec_projection_body_file}" "${themis_spec_projection_expected_body_file}"
+    return 1
+  fi
   themis_spec_render_body "${themis_spec_projection_source}" "${themis_spec_projection_expected_body_file}" || {
     rm -f "${themis_spec_projection_body_file}" "${themis_spec_projection_expected_body_file}"
     return 1
@@ -434,16 +468,14 @@ themis_spec_check_projection() {
   }
   rm -f "${themis_spec_projection_body_file}" "${themis_spec_projection_expected_body_file}"
 
-  if [ "${themis_spec_projection_source_oid}" = "${themis_spec_projection_expected_source_oid}" ] && \
-     [ "${themis_spec_projection_body_oid}" = "${themis_spec_projection_actual_body_oid}" ] && \
-     [ "${themis_spec_projection_body_oid}" = "${themis_spec_projection_expected_body_oid}" ]; then
+  if [ "${themis_spec_projection_body_oid}" = "${themis_spec_projection_expected_body_oid}" ]; then
     THEMIS_SPEC_PROJECTION_CURRENT=1
     return 0
   fi
   return 1
 }
 
-# 检查协议声明为 readiness 必填的集合字符串。
+# 检查协议声明为 readiness 必填的集合字符串；同一校验轮次只遍历一次。
 themis_spec_readiness_fields_complete() {
   local themis_spec_readiness_field_source=$1
   local themis_spec_readiness_field_collection
@@ -451,6 +483,15 @@ themis_spec_readiness_fields_complete() {
   local themis_spec_readiness_field_id
   local themis_spec_readiness_field_value
 
+  if [ "${THEMIS_SPEC_READINESS_FIELDS_CACHE_SET}" -eq 1 ] && \
+     [ "${THEMIS_SPEC_READINESS_FIELDS_CACHE_SOURCE}" = "${themis_spec_readiness_field_source}" ]; then
+    [ "${THEMIS_SPEC_READINESS_FIELDS_CACHE_COMPLETE}" -eq 1 ]
+    return $?
+  fi
+
+  THEMIS_SPEC_READINESS_FIELDS_CACHE_SOURCE=${themis_spec_readiness_field_source}
+  THEMIS_SPEC_READINESS_FIELDS_CACHE_SET=1
+  THEMIS_SPEC_READINESS_FIELDS_CACHE_COMPLETE=0
   while IFS= read -r themis_spec_readiness_field_collection; do
     while IFS= read -r themis_spec_readiness_field_name; do
       while IFS= read -r themis_spec_readiness_field_id; do
@@ -459,6 +500,7 @@ themis_spec_readiness_fields_complete() {
       done < <(THEMIS_SPEC_COLLECTION=${themis_spec_readiness_field_collection} yq eval -r '.[strenv(THEMIS_SPEC_COLLECTION)] | keys | .[]' "${themis_spec_readiness_field_source}")
     done < <(THEMIS_SPEC_COLLECTION=${themis_spec_readiness_field_collection} yq eval -r '.collections[strenv(THEMIS_SPEC_COLLECTION)].readiness_non_empty[]?' "${THEMIS_SPEC_SCHEMA}")
   done < <(yq eval -r '.collections | keys | .[]' "${THEMIS_SPEC_SCHEMA}")
+  THEMIS_SPEC_READINESS_FIELDS_CACHE_COMPLETE=1
   return 0
 }
 
@@ -730,6 +772,9 @@ themis_spec_validate_internal() {
   THEMIS_SPEC_VALID=1
   THEMIS_SPEC_READY=0
   THEMIS_SPEC_PROJECTION_CURRENT=0
+  THEMIS_SPEC_READINESS_FIELDS_CACHE_SOURCE=
+  THEMIS_SPEC_READINESS_FIELDS_CACHE_SET=0
+  THEMIS_SPEC_READINESS_FIELDS_CACHE_COMPLETE=0
 
   if [ ! -f "${themis_spec_validate_source}" ]; then
     themis_spec_add_error 'source.missing'
@@ -995,10 +1040,11 @@ themis_spec_render_body() {
   } >>"${themis_spec_render_body}"
 }
 
-# 写出带 OID marker 的完整 Human 投影，临时文件与目标位于同一目录。
+# 写出带 OID marker 的完整 Human 投影，已验证的 staging 可跳过重复结构校验。
 themis_spec_render_internal() {
   local themis_spec_render_source=$1
   local themis_spec_render_output=$2
+  local themis_spec_render_validated=${3:-0}
   local themis_spec_render_output_directory
   local themis_spec_render_temp
   local themis_spec_render_body
@@ -1020,7 +1066,9 @@ themis_spec_render_internal() {
   fi
 
   themis_spec_require_git || return 1
-  themis_spec_validate_internal "${themis_spec_render_source_path}" "" || return 1
+  if [ "${themis_spec_render_validated}" -ne 1 ]; then
+    themis_spec_validate_internal "${themis_spec_render_source_path}" "" || return 1
+  fi
   themis_spec_render_body="${THEMIS_SPEC_TEMP_ROOT}/render-body-$$"
   themis_spec_render_temp=$(mktemp "${themis_spec_render_output_directory}/.themis-spec-render.XXXXXX") || return 1
   themis_spec_render_body "${themis_spec_render_source}" "${themis_spec_render_body}" || {
@@ -1172,7 +1220,7 @@ themis_spec_publish() {
     themis_spec_publish_abort_before_replace "${themis_spec_publish_stage}"
     return 1
   fi
-  themis_spec_render_internal "${themis_spec_publish_stage}/spec.yaml" "${themis_spec_publish_stage}/spec.md" || themis_spec_publish_abort_before_replace "${themis_spec_publish_stage}" || return 1
+  themis_spec_render_internal "${themis_spec_publish_stage}/spec.yaml" "${themis_spec_publish_stage}/spec.md" 1 || themis_spec_publish_abort_before_replace "${themis_spec_publish_stage}" || return 1
   themis_spec_validate_internal "${themis_spec_publish_stage}/spec.yaml" "${themis_spec_publish_stage}/spec.md" || themis_spec_publish_abort_before_replace "${themis_spec_publish_stage}" || return 1
   [ "${THEMIS_SPEC_PROJECTION_CURRENT}" -eq 1 ] || themis_spec_publish_abort_before_replace "${themis_spec_publish_stage}" || return 1
 
@@ -1246,8 +1294,8 @@ themis_spec_publish() {
 # 从脚本位置定位只读 Core 协议与策略。
 THEMIS_SPEC_SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd) || exit 1
 THEMIS_SPEC_CORE_ROOT=$(CDPATH='' cd -- "${THEMIS_SPEC_SCRIPT_DIR}/../.." && pwd) || exit 1
-THEMIS_SPEC_SCHEMA="${THEMIS_SPEC_CORE_ROOT}/protocols/artifact/v2/spec-schema.yaml"
-THEMIS_SPEC_PROJECTION_PROTOCOL="${THEMIS_SPEC_CORE_ROOT}/protocols/artifact/v2/spec-projection.yaml"
+THEMIS_SPEC_SCHEMA="${THEMIS_SPEC_CORE_ROOT}/protocols/artifact/spec-schema.yaml"
+THEMIS_SPEC_PROJECTION_PROTOCOL="${THEMIS_SPEC_CORE_ROOT}/protocols/artifact/spec-projection.yaml"
 THEMIS_SPEC_POLICY="${THEMIS_SPEC_CORE_ROOT}/policies/specification.yaml"
 THEMIS_SPEC_TEMPLATE="${THEMIS_SPEC_CORE_ROOT}/templates/spec.yaml"
 

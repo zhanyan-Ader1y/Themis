@@ -223,20 +223,20 @@ themis_template_require_value() {
   return 0
 }
 
-# 校验非空、带命名空间的 Schema 标识符。
+# 校验非空、带命名空间的 Schema 标识符，不要求版本后缀。
 themis_template_require_schema_identifier() {
   local themis_template_schema_identifier=$1
   local themis_template_schema_prefix=$2
   local themis_template_schema_subject=$3
 
   case "${themis_template_schema_identifier}" in
-    "${themis_template_schema_prefix}"v[0-9]*) return 0 ;;
+    "${themis_template_schema_prefix}"*) return 0 ;;
     *)
       themis_template_error \
         "${themis_template_schema_subject}" \
-        "${themis_template_schema_prefix}v<number>" \
+        "expected prefix: ${themis_template_schema_prefix}" \
         "${themis_template_schema_identifier:-empty}" \
-        'Use a namespaced schema identifier before declaring compatibility.'
+        'Use the correct namespace prefix for this schema.'
       return 1
       ;;
   esac
@@ -425,8 +425,8 @@ themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/manifest.yaml" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" || exit 1
-themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-schema.yaml" || exit 1
-themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-projection.yaml" || exit 1
+themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/spec-schema.yaml" || exit 1
+themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/spec-projection.yaml" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.yaml" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_CORE_ROOT}/kernel/specification/themis-spec.sh" || exit 1
 for themis_template_context_protocol in common-schema context-item-schema catalog-schema bundle-schema signal-schema; do
@@ -455,23 +455,18 @@ themis_template_require_path "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/state/transactio
 themis_template_require_path "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/cache/context-index/.gitkeep" || exit 1
 themis_template_require_path "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/cache/resolved-context/.gitkeep" || exit 1
 
-# 业务模块只维护唯一当前合同；版本仅允许出现在 Core、Workspace、Artifact 顶层兼容边界。
+# Themis 模块不设功能版本；任何 themis-*/vN 模式一律拒绝。
 THEMIS_TEMPLATE_VERSIONED_IDENTIFIERS=$(
   LC_ALL=C grep -R -h -E -o 'themis-[a-z0-9-]+/v[0-9]+' "${THEMIS_TEMPLATE_ROOT}" 2>/dev/null || true
 )
 while IFS= read -r themis_template_versioned_identifier; do
   [ -n "${themis_template_versioned_identifier}" ] || continue
-  case "${themis_template_versioned_identifier}" in
-    themis-core/v[0-9]*|themis-workspace/v[0-9]*|themis-artifact/v[0-9]*) ;;
-    *)
-      themis_template_error \
-        'module version identifier forbidden' \
-        'only Core, Workspace, and Artifact compatibility identifiers may be versioned' \
-        "${themis_template_versioned_identifier}" \
-        'Remove the module-level version and keep one current contract.'
-      exit 1
-      ;;
-  esac
+  themis_template_error \
+    'module version identifier forbidden' \
+    'Themis modules do not carry functional version suffixes' \
+    "${themis_template_versioned_identifier}" \
+    'Remove the /vN suffix and keep one current contract.'
+  exit 1
 done <<EOF
 ${THEMIS_TEMPLATE_VERSIONED_IDENTIFIERS}
 EOF
@@ -528,7 +523,7 @@ if [ -e "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.md" ]; then
     'legacy Spec compatibility asset present' \
     'no legacy Spec Markdown template' \
     'obsolete Spec compatibility asset found' \
-    'Remove the pre-release Spec template; Artifact v2 is the native contract.'
+    'Remove the pre-release Spec template; the Artifact Spec is the native contract.'
   exit 1
 fi
 
@@ -557,10 +552,10 @@ THEMIS_TEMPLATE_CORE_VERSION=$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_R
 THEMIS_TEMPLATE_WORKSPACE_SCHEMA=$(themis_template_yq_read "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/manifest.yaml" '.workspace_schema // ""') || exit 1
 THEMIS_TEMPLATE_ARTIFACT_SCHEMA=$(themis_template_yq_read "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/manifest.yaml" '.artifact_schema // ""') || exit 1
 
-themis_template_require_value "${THEMIS_TEMPLATE_CORE_SCHEMA}" 'themis-core/v1' 'Core schema invalid' || exit 1
+themis_template_require_value "${THEMIS_TEMPLATE_CORE_SCHEMA}" 'themis-core' 'Core schema invalid' || exit 1
 themis_template_require_value "${THEMIS_TEMPLATE_CORE_VERSION}" "${THEMIS_TEMPLATE_BUNDLE_VERSION}" 'Bundle/Core version mismatch' || exit 1
-themis_template_require_schema_identifier "${THEMIS_TEMPLATE_WORKSPACE_SCHEMA}" 'themis-workspace/' 'Workspace schema invalid' || exit 1
-themis_template_require_value "${THEMIS_TEMPLATE_ARTIFACT_SCHEMA}" 'themis-artifact/v2' 'Artifact schema invalid' || exit 1
+themis_template_require_schema_identifier "${THEMIS_TEMPLATE_WORKSPACE_SCHEMA}" 'themis-workspace' 'Workspace schema invalid' || exit 1
+themis_template_require_value "${THEMIS_TEMPLATE_ARTIFACT_SCHEMA}" 'themis-artifact' 'Artifact schema invalid' || exit 1
 
 for themis_template_dimension in workspace artifact; do
   themis_template_require_type "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" ".compatibility.${themis_template_dimension}.supported" '!!seq' "${themis_template_dimension} support list invalid" || exit 1
@@ -570,12 +565,12 @@ done
 themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.migration_roots // "absent"')" 'absent' 'Migration roots metadata present' || exit 1
 
 themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.supported | length')" 1 'Artifact support list invalid' || exit 1
-themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.supported[]?' 'themis-artifact/v2' 'Artifact v2 support missing' || exit 1
-themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.writable // ""')" 'themis-artifact/v2' 'Artifact writable schema invalid' || exit 1
+themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.supported[]?' 'themis-artifact' 'Artifact support missing' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.artifact.writable // ""')" 'themis-artifact' 'Artifact writable schema invalid' || exit 1
 
 themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.workspace.supported | length')" 1 'Workspace support list invalid' || exit 1
-themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.workspace.supported[]?' 'themis-workspace/v1' 'Workspace v1 support missing' || exit 1
-themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.workspace.writable // ""')" 'themis-workspace/v1' 'Workspace writable schema invalid' || exit 1
+themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.workspace.supported[]?' 'themis-workspace' 'Workspace support missing' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/core.yaml" '.compatibility.workspace.writable // ""')" 'themis-workspace' 'Workspace writable schema invalid' || exit 1
 
 for themis_template_manifest_map in project commands context adapters policy_overrides paths; do
   themis_template_require_type "${THEMIS_TEMPLATE_WORKSPACE_ROOT}/manifest.yaml" ".${themis_template_manifest_map}" '!!map' "Manifest ${themis_template_manifest_map} invalid" || exit 1
@@ -666,12 +661,12 @@ for themis_template_quick_check in empty_input failure_state concurrency backwar
   themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.adversarial_validation.quick_checklist[]?' "${themis_template_quick_check}" 'Specification quick-check item missing' || exit 1
 done
 
-themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-schema.yaml" '.schema // ""')" 'themis-spec-schema' 'Spec schema protocol invalid' || exit 1
-themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-schema.yaml" '.artifact_schema // ""')" 'themis-artifact/v2' 'Spec Artifact schema invalid' || exit 1
-themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-projection.yaml" '.schema // ""')" 'themis-spec-projection' 'Spec projection protocol invalid' || exit 1
-themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-projection.yaml" '.drift.reverse_sync // ""')" forbidden 'Spec projection reverse sync invalid' || exit 1
-themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-schema.yaml" '.readiness_checks | length')" 8 'Spec readiness check count invalid' || exit 1
-themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-projection.yaml" '.sections | length')" 8 'Spec projection section count invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/spec-schema.yaml" '.schema // ""')" 'themis-spec-schema' 'Spec schema protocol invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/spec-schema.yaml" '.artifact_schema // ""')" 'themis-artifact' 'Spec Artifact schema invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/spec-projection.yaml" '.schema // ""')" 'themis-spec-projection' 'Spec projection protocol invalid' || exit 1
+themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/spec-projection.yaml" '.drift.reverse_sync // ""')" forbidden 'Spec projection reverse sync invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/spec-schema.yaml" '.readiness_checks | length')" 8 'Spec readiness check count invalid' || exit 1
+themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/spec-projection.yaml" '.sections | length')" 8 'Spec projection section count invalid' || exit 1
 
 themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.yaml" '.status // ""')" draft 'Spec template status invalid' || exit 1
 themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/templates/spec.yaml" '.context_basis.disposition // ""')" pending 'Spec template Context disposition invalid' || exit 1
@@ -688,7 +683,7 @@ themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE
 themis_template_require_value "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.to // ""')" specified 'Specified transition target invalid' || exit 1
 themis_template_require_count "$(themis_template_yq_read "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.conditions | length')" 8 'Draft-to-specified condition count invalid' || exit 1
 for themis_template_transition_condition in spec_intent_complete spec_scope_complexity_confirmed spec_context_complete spec_design_acceptance_complete spec_adversarial_resolved spec_self_check_passed spec_user_approval_recorded spec_projection_current; do
-  themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/v2/spec-schema.yaml" '.readiness_checks[]?' "${themis_template_transition_condition}" 'Spec readiness check missing' || exit 1
+  themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/protocols/artifact/spec-schema.yaml" '.readiness_checks[]?' "${themis_template_transition_condition}" 'Spec readiness check missing' || exit 1
   themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/policies/specification.yaml" '.specification.readiness.specified[]?' "${themis_template_transition_condition}" 'Specification readiness policy missing check' || exit 1
   themis_template_require_sequence_item "${THEMIS_TEMPLATE_CORE_ROOT}/policies/transitions.yaml" '.transitions.draft_to_specified.conditions[].id' "${themis_template_transition_condition}" 'Draft-to-specified condition missing' || exit 1
 done

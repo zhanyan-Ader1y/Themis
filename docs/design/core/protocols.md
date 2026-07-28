@@ -1,13 +1,13 @@
 # Protocols — 协议层
 
-> 规范状态：正式设计。实现状态：部分实现；Artifact v2 的当前唯一 Spec Schema/Human projection protocol 与 P5.4 Context 的五项无版本机器协议已落地，其余主要协议尚未落地。
+> 规范状态：正式设计。实现状态：部分实现；Artifact 的当前唯一 Spec Schema/Human projection protocol 与 P5.4 Context 的五项无版本机器协议已落地，其余主要协议尚未落地。
 
 ## 职责边界
 
 Protocol 定义 Core 与 Workspace、Core 与外部工具之间的数据格式和稳定语义。Protocol 是接口合同，不是处理实现。
 
 - Spec、Context、Planning、Review、Verification、Knowledge 等业务模块只维护唯一当前合同；其 policy、protocol、result、projection、executor 标识和协议目录不得携带 `v1`、`v2` 等模块版本语义。
-- 只有 `themis-core/v1`、`themis-workspace/v1`、`themis-artifact/v2` 这类顶层安装与工件兼容边界可以版本化；不支持的兼容 Schema 必须明确诊断并 fail closed。
+- Core、Workspace、Artifact 等顶层 Schema 同样是当前唯一合同，不使用版本后缀。
 - 业务模块合同在预发布阶段直接收敛和替换，不保留旧模块兼容、并存 Schema、转换路径或版本目录。
 - 兼容性只由 `core.yaml` 中的 fixed supported/writable allow-list 决定，不由版本字符串相等、目录猜测或 Prompt 决定。
 - 当前版本没有 Workspace/Artifact Schema 转换能力；不兼容演进必须延期到未来重新设计并确认的更新机制。
@@ -17,7 +17,7 @@ Protocol 定义 Core 与 Workspace、Core 与外部工具之间的数据格式�
 
 | 协议 | 目标合同 | 当前状态 |
 |---|---|---|
-| Artifact | Spec、Plan、Review、Verify、Summary 的字段、版本、引用和状态 | Artifact v2 下当前唯一 Spec 合同已实现；其他 Artifact 仍为设计合同 |
+| Artifact | Spec、Plan、Review、Verify、Summary 的字段、引用和状态 | Artifact 下当前唯一 Spec 合同已实现；其他 Artifact 仍为设计合同 |
 | Gate | Gate 输入、执行状态、证据和失败原因 | 已确认但未实现 |
 | Review | 前置 finding、result、设计/evidence gap 与 Human projection 绑定 | 已确认但未实现 |
 | Verification | Run、Gate attempt、repair state/handoff、escalation 与 verdict 引用 | 已确认但未实现 |
@@ -28,14 +28,14 @@ Protocol 定义 Core 与 Workspace、Core 与外部工具之间的数据格式�
 | Outcome | success、rework、defect、incident、rollback 及其关联 | 已确认但未实现 |
 | Adapter | 命令、参数、环境、退出码、stdout/stderr 和结构化结果 | 已确认但未实现 |
 
-## Spec Artifact v2
+## Spec Artifact
 
-新安装使用 `themis-artifact/v2`。Themis 尚未正式发布，因此该 Artifact 下只维护当前唯一 Spec 合同，不在 `spec.yaml` 中保存独立 `spec_schema` 或 `template_version`：
+新安装使用 `themis-artifact`。Themis 尚未正式发布，因此该 Artifact 下只维护当前唯一 Spec 合同，不在 `spec.yaml` 中保存独立 `spec_schema` 或 `template_version`：
 
-- `core/protocols/artifact/v2/spec-schema.yaml`：严格字段、最终 `context_basis`、对象类型、稳定 ID、引用完整性与八项 readiness check；
-- `core/protocols/artifact/v2/spec-projection.yaml`：从 `spec.yaml` 到 `spec.md` 的固定章节、LF/终止换行与 OID 漂移合同。
+- `core/protocols/artifact/spec-schema.yaml`：严格字段、最终 `context_basis`、对象类型、稳定 ID、引用完整性与八项 readiness check；
+- `core/protocols/artifact/spec-projection.yaml`：从 `spec.yaml` 到 `spec.md` 的固定章节、LF/终止换行与 OID 漂移合同。
 
-`workspace/specs/<spec-id>/spec.yaml` 是唯一语义源；`spec.md` 是确定性 Human projection。机器消费者只解析 YAML 和 validator JSON。当前合同直接替换预发布旧结构，不提供 Spec schema 转换描述符；Artifact/Workspace/Core 自身仍按各自版本与 allow-list fail closed。
+`workspace/specs/<spec-id>/spec.yaml` 是唯一语义源；`spec.md` 是确定性 Human projection。机器消费者只解析 YAML 和 validator JSON。当前合同直接替换预发布旧结构，不提供 Spec schema 转换描述符；Artifact/Workspace/Core 自身仍按固定 allow-list fail closed。
 
 validator 稳定输出：
 

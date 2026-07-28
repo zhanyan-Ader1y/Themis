@@ -49,7 +49,7 @@ P0 Init Environment Validation
            └── P8 Multi-Agent Architecture
 
 P4 Upgrade、P4.5 Explicit Migration 与 P6 Behavior Map 已从当前产品退役，不再是活动计划的依赖。
-P5.4 必须在当前 `themis-workspace/v1` 内实施，不得隐式转换既有安装或引入 Behavior Map。
+P5.4 必须在当前 `themis-workspace` 内实施，不得隐式转换既有安装或引入 Behavior Map。
 P5.8 产出 Plan；P6.8 在 Implementation 前批准 current Spec/Plan；P5.9 只执行 approved Review 范围；P6.5 在实现后运行 Verification。
 Verification `pass` 后进入 Human Acceptance；`accepted` 后生成 `summary.md`，再完成 Outcome、Attribution、知识处置与归档。
 P7 是跨模块分析性审计；P8 是最终执行层。

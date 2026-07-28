@@ -69,7 +69,7 @@ flowchart TD
     SUMMARY{"用户确认 Specification 的规范化摘要?"}
     STOP["停留 Specification<br/>不创建 candidate"]
     CANDIDATE["workspace/cache/spec-candidates/spec-id.yaml<br/>唯一 candidate"]
-    PROTOCOL["core/protocols/artifact/v2/<br/>无版本 Spec schema + projection"]
+    PROTOCOL["core/protocols/artifact/<br/>无版本 Spec schema + projection"]
     EXECUTOR["specification/themis-spec.sh<br/>validate · render · publish · pair rollback"]
     TRANSITIONS["core/policies/transitions.yaml<br/>draft_to_specified · 8 个 validator check ID"]
 
@@ -434,8 +434,8 @@ flowchart LR
 | `templates/.claude/skills/Themis-Q/SKILL.md` | 一次一问、适应性深度、需求覆盖、对抗问题与收敛摘要 |
 | `templates/.claude/skills/Themis-Q/references/adversarial-checklist.md` | quick/focused/comprehensive 攻击场景库 |
 | `templates/.themis/core/templates/spec.yaml` | 无版本 Spec authoritative candidate 模板 |
-| `templates/.themis/core/protocols/artifact/v2/spec-schema.yaml` | Artifact v2 下当前唯一 Spec 结构、ID、引用和 readiness 契约 |
-| `templates/.themis/core/protocols/artifact/v2/spec-projection.yaml` | Human 投影顺序与漂移契约 |
+| `templates/.themis/core/protocols/artifact/spec-schema.yaml` | Artifact 下当前唯一 Spec 结构、ID、引用和 readiness 契约 |
+| `templates/.themis/core/protocols/artifact/spec-projection.yaml` | Human 投影顺序与漂移契约 |
 | `templates/.themis/core/kernel/specification/themis-spec.sh` | validate/render/publish 确定性执行器 |
 | `templates/.themis/core/core.yaml` | Core 版本与兼容性元数据 |
 | `templates/.themis/workspace/manifest.yaml` | 项目配置与 Gate 命令 |

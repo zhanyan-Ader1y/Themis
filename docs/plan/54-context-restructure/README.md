@@ -6,7 +6,7 @@
 
 ## 目标
 
-在当前 `themis-workspace/v1` 可表达的布局内，将 `workspace/context/` 落地为正式项目知识的唯一存储，并提供：
+在当前 `themis-workspace` 可表达的布局内，将 `workspace/context/` 落地为正式项目知识的唯一存储，并提供：
 
 - L1 Abstract、L2 Overview、L3 Detail 渐进披露；
 - 唯一持久 `catalog.yaml`；

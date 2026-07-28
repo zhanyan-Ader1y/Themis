@@ -1,9 +1,9 @@
-core_schema: themis-core/v1
+core_schema: themis-core
 core_version: 0.4.0
 compatibility:
   workspace:
-    supported: [themis-workspace/v1]
-    writable: themis-workspace/v1
+    supported: [themis-workspace]
+    writable: themis-workspace
   artifact:
-    supported: [themis-artifact/v2]
-    writable: themis-artifact/v2
+    supported: [themis-artifact]
+    writable: themis-artifact

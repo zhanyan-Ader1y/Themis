@@ -20,7 +20,7 @@ spec.md    # 确定性生成的 Human-readable 审阅投影
 - Canonical pair 仅可由 `core/kernel/specification/themis-spec.sh publish` 写入。P5 仅修改 `workspace/cache/spec-candidates/<spec-id>.yaml` candidate。
 - `validate`、`render` 与 `publish` 均 fail closed；`publish` 在 staging 中验证、渲染和校验配对后，以备份与恢复避免留下半套活动工件。
 
-`spec.yaml` 使用 map key 作为稳定对象身份，并以 `SCP-`、`EVD-`、`ASM-`、`OPT-`、`DEC-`、`REQ-`、`IFC-`、`CTR-`、`INV-`、`AC-`、`ADV-`、`RSK-`、`DGM-` 等 ID 表达引用。其语义包含 intent、scope、context basis、evidence、assumptions、options、decisions、requirements、interfaces、contracts、invariants、AC、对抗发现、风险、回滚与批准。Artifact 合同仍为 `themis-artifact/v2`；Themis 尚未正式发布，当前唯一 Spec 合同不保存独立 `spec_schema` 或 `template_version`，也不提供历史转换能力。
+`spec.yaml` 使用 map key 作为稳定对象身份，并以 `SCP-`、`EVD-`、`ASM-`、`OPT-`、`DEC-`、`REQ-`、`IFC-`、`CTR-`、`INV-`、`AC-`、`ADV-`、`RSK-`、`DGM-` 等 ID 表达引用。其语义包含 intent、scope、context basis、evidence、assumptions、options、decisions、requirements、interfaces、contracts、invariants、AC、对抗发现、风险、回滚与批准。Artifact 合同仍为 `themis-artifact`；Themis 尚未正式发布，当前唯一 Spec 合同不保存独立 `spec_schema` 或 `template_version`，也不提供历史转换能力。
 
 Human 投影固定展示 Review Summary、Architecture at a Glance、Key Decisions、Contracts and Invariants、Acceptance Criteria、Risks/Limitations/Rollback、Approval 与 Appendix。摘要、主决策、主风险和图选择由 YAML 明确提供；渲染器只排版，不推断语义。
 

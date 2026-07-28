@@ -23,7 +23,7 @@ Template 提供新工件的初始结构或按需 Prompt，不是运行中的项�
 
 `spec.yaml` 使用稳定对象 ID 保存 intent、scope、evidence、方案、需求、AC、假设、攻击处置、风险、回滚和批准。P5 只更新 cache candidate，随后由 `themis-spec.sh publish` 校验、渲染并发布 canonical `spec.yaml` / `spec.md` pair。`spec.md` 没有独立模板：它是带 OID 的确定性 Human 审阅投影，手改或反向同步均被禁止。
 
-P5 记录批准证据但保持 `status: draft`；批准不是机器 lifecycle transition。Artifact 继续使用 `themis-artifact/v2`，当前预发布 Spec 是该 Artifact 下唯一、无独立版本字段的原生合同，不提供旧 Spec 模板或转换路径。
+P5 记录批准证据但保持 `status: draft`；批准不是机器 lifecycle transition。Artifact 继续使用 `themis-artifact`，当前预发布 Spec 是该 Artifact 下唯一、无独立版本字段的原生合同，不提供旧 Spec 模板或转换路径。
 
 ### Skill 读取规则
 

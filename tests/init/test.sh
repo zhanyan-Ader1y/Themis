@@ -126,7 +126,7 @@ assert_file_exists "${FRESH_PROJECT}/.claude/skills/Themis-Q/references/adversar
 assert_file_absent "${FRESH_PROJECT}/.themis/core/templates/spec-questioning.md" 'retired questioning Prompt is not installed'
 assert_file_absent "${FRESH_PROJECT}/.themis/core/templates/spec-adversarial-checklist.md" 'retired adversarial Prompt is not installed'
 assert_file_exists "${FRESH_PROJECT}/.themis/core/templates/spec.yaml" 'unversioned Spec authoritative template is installed'
-assert_file_exists "${FRESH_PROJECT}/.themis/core/protocols/artifact/v2/spec-schema.yaml" 'Artifact v2 Spec protocol is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/protocols/artifact/spec-schema.yaml" 'Artifact Spec protocol is installed'
 assert_file_exists "${FRESH_PROJECT}/.themis/core/kernel/specification/themis-spec.sh" 'Spec deterministic executor is installed'
 assert_file_exists "${FRESH_PROJECT}/.themis/core/templates/context-resolution.md" 'Context resolution Prompt is installed'
 assert_file_exists "${FRESH_PROJECT}/.themis/core/templates/context-summary.md" 'Context summary Prompt is installed'
@@ -140,10 +140,10 @@ for context_executor in lint catalog search assemble freshness navigation; do
 done
 assert_file_absent "${FRESH_PROJECT}/.themis/core/templates/spec.md" 'Legacy Spec Markdown template is not installed'
 assert_file_absent "${FRESH_PROJECT}/.themis/core/migrations/artifacts/v1-to-v2.sh" 'Legacy Artifact migration is not installed'
-if [ "$("${YQ_EXECUTABLE}" eval -r '.artifact_schema' "${FRESH_PROJECT}/.themis/workspace/manifest.yaml")" = 'themis-artifact/v2' ]; then
-  pass 'new installation uses Artifact v2'
+if [ "$("${YQ_EXECUTABLE}" eval -r '.artifact_schema' "${FRESH_PROJECT}/.themis/workspace/manifest.yaml")" = 'themis-artifact' ]; then
+  pass 'new installation uses Artifact Schema'
 else
-  fail 'new installation uses Artifact v2' 'manifest artifact_schema did not match'
+  fail 'new installation uses Artifact Schema' 'manifest artifact_schema did not match'
 fi
 if [ "$("${YQ_EXECUTABLE}" eval -r '[.catalog_schema, .binding, .project.name, .workspace_identity_digest, .revision.kind, (.items | length)] | @tsv' "${FRESH_PROJECT}/.themis/workspace/context/catalog.yaml")" = $'themis-context-catalog\tunbound\tnull\tnull\tunavailable\t0' ] &&
    grep -F -x 'projection_schema: themis-context-navigation' "${FRESH_PROJECT}/.themis/workspace/context/.abstract.md" >/dev/null 2>&1 &&

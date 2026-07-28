@@ -45,6 +45,12 @@ Themis 是一个 SDD Harness 框架，将本地 AI 编码系统安装到工程�
 - `AGENTS.md` 与 `AGENTS.CN.md` 必须在同一次变更中保持语义同步。
 - 处理 Spec 时，使用 `workspace/specs/<spec-id>/spec.yaml` 作为机器可读的语义源；`spec.md` 是生成的人类审阅投影，不得反向同步或解析为机器证据。详见 [Specification](docs/design/core/kernel/specification.md)。
 
+## 无功能版本
+
+- Themis 各模块（Core、Workspace、Artifact、Spec、Context、Planning、Review、Verification、Knowledge 及所有后续领域）只维护唯一当前合同。模块标识符和协议目录不得携带 `v1`、`v2` 等功能版本后缀。
+- 不存在旧模块兼容、并存版本化 Schema 或转换路径。收敛直接替换当前合同。
+- 外部工具版本（Bash 3.2、mikefarah/yq v4）是运行时依赖，不是 Themis 模块版本。
+
 ## 脚本文档
 
 - 每个 Shell 脚本必须包含中文注释，解释用途、操作边界和非显而易见的行为。

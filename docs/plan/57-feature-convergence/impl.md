@@ -40,7 +40,7 @@
 
 ```text
 P5.4 Context
-  ├─ 在 themis-workspace/v1 内提供 Catalog/Search/Bundle/Signal/Freshness
+  ├─ 在 themis-workspace 内提供 Catalog/Search/Bundle/Signal/Freshness
   ├─ 被 Spec 引用校验和 Planning/Review 消费
   └─ 被 P5.5 fact validation 消费
 

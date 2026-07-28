@@ -45,6 +45,12 @@ If implementation, templates, tests, or observed output conflict with the design
 - Keep `AGENTS.md` and `AGENTS.CN.md` semantically synchronized in the same change.
 - When handling a Spec, use `workspace/specs/<spec-id>/spec.yaml` as the machine-readable semantic source; `spec.md` is a generated human-review projection and must not be reverse-synced or parsed as machine evidence. See [Specification](docs/design/core/kernel/specification.md).
 
+## No Functional Versions
+
+- Themis modules (Core, Workspace, Artifact, Spec, Context, Planning, Review, Verification, Knowledge, and all future domains) maintain one current contract. Module identifiers and protocol directories must not carry `v1`, `v2`, or any functional version suffix.
+- There is no old-module compatibility, no side-by-side versioned schemas, and no conversion path. Convergence replaces the current contract directly.
+- External tool versions (Bash 3.2, mikefarah/yq v4) are runtime requirements, not Themis module versions.
+
 ## Script Documentation
 
 - Every shell script must include Chinese comments explaining its purpose, operating boundary, and non-obvious behavior.
