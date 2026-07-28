@@ -27,10 +27,10 @@ Effective Policy = Core Default Policy + Allowed Workspace Override
 
 | 文件 | 当前用途 | 状态 |
 |---|---|---|
-| `specification.yaml` | P5 复杂度分流、Step 0–4、双视图发布与对抗验证要求 | 已实现 |
+| `specification.yaml` | Specification 复杂度分流、对抗验证深度、最终语义一致性与 Spec 双视图发布约束 | 已实现 |
 | `transitions.yaml` | 声明 `draft_to_specified` 的八个 validator-backed readiness 条件 | 已实现声明；状态执行器未实现 |
 
-P5 只将结构化证据写入 `spec.yaml` candidate，并通过 publisher 发布 canonical pair，仍保持 `status: draft`。`draft_to_specified` 只认可 `themis-spec.sh validate` 的稳定 JSON check ID；Markdown 标题或正文不是 transition evidence。当前原生 Artifact v2 / Spec v2 不声明历史兼容或转换路径。
+Specification 读取 questioning/adversarial policy，使用 `Themis-Q` 提供的提问方法澄清需求，并独立负责复杂度、Context grounding、收敛、确认和 candidate 映射。Skill 不读取或执行 policy，也不定义 handoff。`semantic_consistency` policy 声明 executor 可确定核验的占位符、摘要/意图、scope、option、traceability 与 rollback 规则；Spec 不保存 Agent 自报 self-check。`draft_to_specified` 只认可 `themis-spec.sh validate` 的稳定 JSON check ID；Markdown 标题或 Skill 对话本身不是 transition evidence。Artifact 继续使用 v2，当前预发布 Spec 无独立版本字段或历史转换路径。
 
 ## 已确认但未实现的策略
 

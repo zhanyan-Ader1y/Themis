@@ -1,5 +1,7 @@
 # P5 — Requirement Questioning（需求追问）
 
+> **2026-07-28 后续替代说明**：本文保留原始 P5 设计与历史。当前流程以 [P5.3 Themis-Q Skill 实施设计](../53-requirement-questioning-skill/impl.md) 为准：Themis-Q 只提供提问方法与内容，Specification 负责收敛、确认和 candidate；旧 Prompt 和 Spec 中的过程字段已退役。
+
 **优先级**：P5
 **依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P2 Top-level Guidance](../20-top-level-guidance/README.md)
 **状态**：已完成；P8 确定性状态执行器待实施

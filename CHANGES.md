@@ -1,5 +1,21 @@
 # Changes
 
+## 0.4.0
+
+### 2026-07-28
+
+- 将 Requirement Questioning 落地为 Project Skill `Themis-Q`，仅维护聚焦、渐进式提问方法、需求覆盖、Acceptance Criteria 与对抗问题
+- Specification 主动调用 `Themis-Q`，并独立负责 Context grounding、复杂度、收敛、规范化摘要、用户确认、candidate 创建与发布；Skill 不定义流程或 handoff
+- Fresh Init 安全合并安装 `.claude/skills/Themis-Q/`，保留既有 `.claude` 设置与无关 Skills；同名路径冲突在写入前拒绝，后续失败仅回滚本次创建路径
+- 退役 Core questioning Prompt 与攻击 checklist；详细攻击库改为 Skill sibling reference，并由模板契约保护提问方式、覆盖范围与收敛指导
+- Spec 在正式发布前收敛为唯一无版本合同，移除 `spec_schema`、`template_version`、`questioning` 和 Agent 自报 self-check，保留 Artifact v2 与 Workspace v1 独立版本合同
+- 新增最终 `context_basis`，并由确定性 executor 从最终语义计算 Context readiness 与 semantic consistency；八个稳定 readiness ID 及双视图事务发布保持不变
+- 完成 P5.4 Context Restructure：新增 Item、Catalog、Bundle、Signal 与共享 result/revision/digest 五项 v1 Protocol，以及 lint、catalog、search、assemble、freshness、navigation 六个确定性执行器和共享运行时
+- Fresh Init 安装 unbound 空 Catalog、七类 L1/L2 Navigation、Context Signal、owner-token lock、可恢复 transaction、可重建 index 与 resolved Bundle Cache；既有 `.themis` 仍在写入前拒绝
+- Context 解析采用“受治理 Context 描述应当是什么、当前代码/配置/Schema 描述现在是什么”的双轴可信模型；Prompt 只能选择 Search/Prepare 冻结的候选，冲突、漂移与缺失通过持久 Signal 显式处置
+- 新增 Context resolution/summary Prompt 与按需 rules 路由；summary 只生成待治理候选，不直接发布 L3、Catalog 或 L1/L2
+- Behavior Map、Upgrade 与 Migration 继续保持退役；P5.4 不增加 Workspace/Artifact Schema 转换、Knowledge Promotion、生命周期编排或 Claude API/SDK 运行时依赖
+
 ## 0.3.0
 
 ### 2026-07-28

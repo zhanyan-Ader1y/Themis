@@ -42,6 +42,12 @@ run_init() {
   LAST_STATUS=$?
 }
 
+# 使用受控环境变量运行 Init，以验证安装事务的失败回滚。
+run_init_after_skill_failure() {
+  LAST_OUTPUT=$(THEMIS_INIT_TEST_FAIL_AFTER_SKILL=1 bash "${INIT_PATH}" "$@" 2>&1)
+  LAST_STATUS=$?
+}
+
 # 断言最近一次受控调用的退出状态。
 assert_status() {
   if [ "${LAST_STATUS}" -eq "$1" ]; then
@@ -86,6 +92,15 @@ assert_file_exists() {
   fi
 }
 
+# 断言确定性执行器已安装且保留可执行权限。
+assert_file_executable() {
+  if [ -f "$1" ] && [ -x "$1" ]; then
+    pass "$2"
+  else
+    fail "$2" "missing or non-executable path: $1"
+  fi
+}
+
 if ! command -v "${YQ_EXECUTABLE}" >/dev/null 2>&1; then
   printf '%s\n' 'Init tests require mikefarah/yq v4.' >&2
   exit 2
@@ -98,7 +113,7 @@ case "$("${YQ_EXECUTABLE}" --version 2>&1)" in
     ;;
 esac
 
-printf '1..31\n'
+printf '1..61\n'
 
 FRESH_PROJECT="${TEST_TMP}/fresh"
 mkdir -p "${FRESH_PROJECT}"
@@ -106,16 +121,36 @@ run_init "${FRESH_PROJECT}" --yes --project-name demo --lint 'npm run lint' --bu
 assert_status 0 'fresh non-interactive installation succeeds'
 assert_file_exists "${FRESH_PROJECT}/.themis/CLAUDE.themis.md" 'contained guidance is installed'
 assert_file_exists "${FRESH_PROJECT}/.themis/core/policies/specification.yaml" 'P5 Specification policy is installed'
-assert_file_exists "${FRESH_PROJECT}/.themis/core/templates/spec-questioning.md" 'P5 questioning Prompt is installed'
-assert_file_exists "${FRESH_PROJECT}/.themis/core/templates/spec.yaml" 'Spec v2 authoritative template is installed'
-assert_file_exists "${FRESH_PROJECT}/.themis/core/protocols/artifact/v2/spec-schema.yaml" 'Spec v2 protocol is installed'
+assert_file_exists "${FRESH_PROJECT}/.claude/skills/Themis-Q/SKILL.md" 'Themis-Q project Skill is installed'
+assert_file_exists "${FRESH_PROJECT}/.claude/skills/Themis-Q/references/adversarial-checklist.md" 'Themis-Q adversarial reference is installed'
+assert_file_absent "${FRESH_PROJECT}/.themis/core/templates/spec-questioning.md" 'retired questioning Prompt is not installed'
+assert_file_absent "${FRESH_PROJECT}/.themis/core/templates/spec-adversarial-checklist.md" 'retired adversarial Prompt is not installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/templates/spec.yaml" 'unversioned Spec authoritative template is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/protocols/artifact/v2/spec-schema.yaml" 'Artifact v2 Spec protocol is installed'
 assert_file_exists "${FRESH_PROJECT}/.themis/core/kernel/specification/themis-spec.sh" 'Spec deterministic executor is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/templates/context-resolution.md" 'Context resolution Prompt is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/templates/context-summary.md" 'Context summary Prompt is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/protocols/context/common-schema.yaml" 'Context common Protocol is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/protocols/context/context-item-schema.yaml" 'Context Item Protocol is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/protocols/context/catalog-schema.yaml" 'Context Catalog Protocol is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/protocols/context/bundle-schema.yaml" 'Context Bundle Protocol is installed'
+assert_file_exists "${FRESH_PROJECT}/.themis/core/protocols/context/signal-schema.yaml" 'Context Signal Protocol is installed'
+for context_executor in lint catalog search assemble freshness navigation; do
+  assert_file_executable "${FRESH_PROJECT}/.themis/core/bin/themis-context-${context_executor}.sh" "Context ${context_executor} executor is installed and executable"
+done
 assert_file_absent "${FRESH_PROJECT}/.themis/core/templates/spec.md" 'Legacy Spec Markdown template is not installed'
 assert_file_absent "${FRESH_PROJECT}/.themis/core/migrations/artifacts/v1-to-v2.sh" 'Legacy Artifact migration is not installed'
 if [ "$("${YQ_EXECUTABLE}" eval -r '.artifact_schema' "${FRESH_PROJECT}/.themis/workspace/manifest.yaml")" = 'themis-artifact/v2' ]; then
   pass 'new installation uses Artifact v2'
 else
   fail 'new installation uses Artifact v2' 'manifest artifact_schema did not match'
+fi
+if [ "$("${YQ_EXECUTABLE}" eval -r '[.catalog_schema, .binding, .project.name, .workspace_identity_digest, .revision.kind, (.items | length)] | @tsv' "${FRESH_PROJECT}/.themis/workspace/context/catalog.yaml")" = $'themis-context-catalog\tunbound\tnull\tnull\tunavailable\t0' ] &&
+   grep -F -x 'projection_schema: themis-context-navigation' "${FRESH_PROJECT}/.themis/workspace/context/.abstract.md" >/dev/null 2>&1 &&
+   grep -F -x 'projection_schema: themis-context-navigation' "${FRESH_PROJECT}/.themis/workspace/context/external/.overview.md" >/dev/null 2>&1; then
+  pass 'new installation bootstraps empty Context Catalog and navigation'
+else
+  fail 'new installation bootstraps empty Context Catalog and navigation' 'bootstrap Context assets were missing or pre-bound'
 fi
 assert_file_absent "${FRESH_PROJECT}/.themis/workspace/specs/spec.yaml" 'Init creates no project Spec artifact'
 assert_file_absent "${FRESH_PROJECT}/CLAUDE.themis.md" 'root-level guidance is not installed'
@@ -136,6 +171,35 @@ if [ "$("${YQ_EXECUTABLE}" eval '.commands.lint' "${FRESH_PROJECT}/.themis/works
 else
   fail 'manifest lint command is configured' 'lint command did not match'
 fi
+
+EXISTING_CLAUDE_PROJECT="${TEST_TMP}/existing-claude"
+mkdir -p "${EXISTING_CLAUDE_PROJECT}/.claude/skills/other-skill"
+printf '%s\n' 'preserve settings' >"${EXISTING_CLAUDE_PROJECT}/.claude/settings.json"
+printf '%s\n' 'preserve skill' >"${EXISTING_CLAUDE_PROJECT}/.claude/skills/other-skill/SKILL.md"
+run_init "${EXISTING_CLAUDE_PROJECT}" --yes
+assert_status 0 'installation merges into an existing .claude directory'
+assert_file_contains 'preserve settings' "${EXISTING_CLAUDE_PROJECT}/.claude/settings.json" 'existing .claude settings remain unchanged'
+assert_file_contains 'preserve skill' "${EXISTING_CLAUDE_PROJECT}/.claude/skills/other-skill/SKILL.md" 'existing unrelated Skill remains unchanged'
+assert_file_exists "${EXISTING_CLAUDE_PROJECT}/.claude/skills/Themis-Q/SKILL.md" 'Themis-Q is added beside existing project content'
+
+SKILL_CONFLICT_PROJECT="${TEST_TMP}/skill-conflict"
+mkdir -p "${SKILL_CONFLICT_PROJECT}/.claude/skills/Themis-Q"
+printf '%s\n' 'preserve conflict' >"${SKILL_CONFLICT_PROJECT}/.claude/skills/Themis-Q/SKILL.md"
+run_init "${SKILL_CONFLICT_PROJECT}" --yes
+assert_status 1 'existing Themis-Q path rejects installation'
+assert_output_contains 'existing Themis-Q Skill path' 'Themis-Q conflict reports preflight diagnostic'
+assert_file_contains 'preserve conflict' "${SKILL_CONFLICT_PROJECT}/.claude/skills/Themis-Q/SKILL.md" 'conflicting Skill remains unchanged'
+assert_file_absent "${SKILL_CONFLICT_PROJECT}/.themis" 'Skill conflict fails before template copy'
+
+SKILL_ROLLBACK_PROJECT="${TEST_TMP}/skill-rollback"
+mkdir -p "${SKILL_ROLLBACK_PROJECT}/.claude/skills/other-skill"
+printf '%s\n' 'preserve rollback content' >"${SKILL_ROLLBACK_PROJECT}/.claude/skills/other-skill/SKILL.md"
+run_init_after_skill_failure "${SKILL_ROLLBACK_PROJECT}" --yes
+assert_status 1 'failure after Skill copy rejects installation'
+assert_output_contains 'injected failure after Skill copy' 'failure injection reports stable diagnostic'
+assert_file_absent "${SKILL_ROLLBACK_PROJECT}/.themis" 'rollback removes the copied template'
+assert_file_absent "${SKILL_ROLLBACK_PROJECT}/.claude/skills/Themis-Q" 'rollback removes only the copied Themis-Q Skill'
+assert_file_contains 'preserve rollback content' "${SKILL_ROLLBACK_PROJECT}/.claude/skills/other-skill/SKILL.md" 'rollback preserves unrelated project Skill'
 
 EXISTING_GUIDANCE_PROJECT="${TEST_TMP}/existing-guidance"
 mkdir -p "${EXISTING_GUIDANCE_PROJECT}"

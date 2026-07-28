@@ -37,9 +37,9 @@ Orchestrator 已 import Knowledge rules，无需新增 import 或扩大 import �
 `bin/themis-template-check.sh` 增加静态、只读检查：
 
 1. 要求 policy、三个工件模板、两个 Prompt、三个 Runtime 脚本存在。
-2. 校验 policy 根 map 和 `themis-knowledge-governance-policy/v1`。
+2. 校验 policy 根 map 和 `themis-knowledge-governance-policy`。
 3. 校验 5 个来源、7 个分类、6 个审核维度、4 个 candidate dispositions、3 个 deprecation dispositions。
-4. 校验 `approval.mode` 的 v1 默认值和 required fields 声明。
+4. 校验 `approval.mode` 的当前默认值和 required fields 声明。
 5. 校验 candidate/review/action 模板 Schema 行和固定标题。
 6. 校验两个 Prompt 的核心阶段标题及 `## Available Scripts`。
 7. 校验三个脚本通过 `bash -n`。

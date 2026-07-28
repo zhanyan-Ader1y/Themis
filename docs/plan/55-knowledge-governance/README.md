@@ -23,7 +23,7 @@ Candidate Extraction
 |---|---|
 | Candidate Extraction | AI 从受支持来源提取结构化候选，不建立正式知识 |
 | Review Recommendation | AI 检查来源、事实支撑、重复、冲突、敏感性和处置建议 |
-| Human Decision | 人工持久化最终批准或拒绝；v1 不允许自动批准 |
+| Human Decision | 人工持久化最终批准或拒绝；当前合同不允许自动批准 |
 | Deterministic Apply | Shell 校验摘要、路径、批准、锁和 Workspace 布局，原子执行处置 |
 
 `workspace/context/` 是正式项目知识的唯一存储；`workspace/knowledge/` 保存追加式候选、审核、人工 decision、canonical action 和历史投影，不是第二知识库。
@@ -35,7 +35,7 @@ Candidate Extraction
 - promote 前必须由受治理 Context 或当前代码核验，并绑定 provenance、对象摘要和人工批准；
 - stale review、越界路径、符号链接穿越、摘要漂移或不受支持 Workspace 布局必须 fail closed；
 - apply 缺失时停止，禁止用通用文件工具手工提升、拒绝、归档或更新 Catalog；
-- exact duplicate 可确定性校验；semantic similarity 只能由 Prompt/人工评估，v1 不提供 Embedding 阈值。
+- exact duplicate 可确定性校验；semantic similarity 只能由 Prompt/人工评估，当前合同不提供 Embedding 阈值。
 
 ## 处置
 

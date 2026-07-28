@@ -1,6 +1,6 @@
 # Context — 上下文
 
-> 规范状态：正式设计。实现状态：领域 rules 与 Workspace 目录骨架已落地；P5.4 的机器可读 Protocol、Catalog、L1/L2 投影、检索、Bundle、Signal 与 Freshness 执行器尚未实现。
+> 规范状态：正式设计。实现状态：P5.4 的五项无版本 Protocol、Catalog、Search、Bundle、Freshness、Signal、L1/L2 Navigation、共享运行时与确定性执行器已落地；L3 内容创建与 Knowledge Promotion 仍属于 P5.5。
 
 ## 职责边界
 
@@ -96,4 +96,4 @@ Signal 只记录问题和处置状态，不自动裁决。Freshness 只标记来
   workspace/knowledge/candidates/
 ```
 
-正式 L3 与 Catalog 的写入只发生在人工维护或经批准的 Knowledge Governance 处置中。P5.4 目标路径与执行器尚未全部存在；其实现必须保持当前 `themis-workspace/v1` 合同，任何需要 schema 转换的结构变化延期到未来重新设计的更新能力。
+正式 L3 与 Catalog 的治理写入只发生在人工维护或经批准的 Knowledge Governance 处置中；P5.4 已提供显式 Catalog bind/register/remove、检索、装配、Freshness/Signal 和 Navigation 执行能力，但不批准或生成 L3。全部能力保持当前 `themis-workspace/v1` 合同，任何需要 schema 转换的结构变化延期到未来重新设计的更新能力。

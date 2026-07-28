@@ -1,6 +1,6 @@
 # Themis 总体架构
 
-> 规范状态：正式设计。实现状态：部分实现；模板所有权、加载基线、Specification 与 fresh Init 已落地，P5.4 Context Trust、完整状态机、领域 Agent 和多数运行时执行器尚未实现。
+> 规范状态：正式设计。实现状态：部分实现；模板所有权、加载基线、Specification、Themis-Q Project Skill、P5.4 Context Trust 与 fresh Init 已落地，完整状态机、领域 Agent 和多数生命周期执行器尚未实现。
 
 ## Core 与 Workspace
 
@@ -10,6 +10,7 @@
 - Workspace 保存项目内容，不实现控制逻辑。
 - 当前版本只支持 fresh Init，不提供 Core 原地更新或 Workspace/Artifact Schema 转换能力。
 - `core.yaml` 只声明固定 supported/writable allow-list；不支持的 Schema 必须 fail closed，不能由 Prompt、脚本或目录复制隐式转换。
+- Spec、Context、Planning、Review、Verification、Knowledge 等业务模块只维护唯一当前合同，不使用模块级版本标识或版本目录；只有 Core、Workspace、Artifact 顶层兼容边界可版本化，完整规则见 [Protocols](core/protocols.md#职责边界)。
 
 Workspace 的目录与数据合同见 [Workspace](workspace/overview.md)。项目事实的双轴可信模型见 [设计治理](governance.md#项目事实可信模型)。
 
@@ -85,9 +86,11 @@ Workspace 的目录与数据合同见 [Workspace](workspace/overview.md)。项�
 
 Adapter 是 Core 与项目工具之间的接口层。当前模板中的 Adapter 目录主要是接口和目录骨架；Git、Command、Testing、Schema、CI 与 Agent Adapter 的完整执行实现尚不存在。任何设计页中的接口示例都不得被解释为当前已安装能力。详见 [Adapters](core/adapters.md) 与 [Protocols](core/protocols.md)。
 
-## 专用 Agent 与命名
+## Skill 与专用 Agent 命名
 
-- 每个领域使用唯一专用 Agent，避免单一 god Agent 携带无关上下文。
-- 专用 Agent 必须遵守领域所有权；确定性操作即使由 Agent 调用，仍由脚本实现。
 - Commands、Skills 和专用 Agents 使用 `Themis-` 能力前缀。
-- 专用 Agent、Command 与 Skill 执行层属于已确认但未实现的设计；文件不存在时不得假定可用。
+- 已实现的 `Themis-Q` 是 Specification 使用的 Project Skill：只提供聚焦、渐进式追问的方法、覆盖范围与对抗问题，不定义流程、执行上下文、持久化、确认、handoff 或 artifact。
+- Project Skill 安装在 `.claude/skills/<name>/`；目录名是用户命令和 Skill 工具的调用名称，frontmatter `name` 只提供显示元数据。
+- Skill 是否需要主会话、fork 或专用 Agent 由调用能力的执行设计决定，不应写入只负责领域方法的 Skill 内容。
+- 每个专用 Agent 必须遵守领域所有权；确定性操作即使由 Agent 调用，仍由脚本实现。
+- 除 `Themis-Q` 外，其他专用 Agent、Command 与 Skill 执行层仍属于已确认但未实现的设计；文件不存在时不得假定可用。

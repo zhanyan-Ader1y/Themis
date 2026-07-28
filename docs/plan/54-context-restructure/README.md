@@ -2,7 +2,7 @@
 
 **优先级**：P5.4
 **依赖**：[P1 Template Contract](../10-template-contract/README.md)、[P2 Top-level Guidance](../20-top-level-guidance/README.md)、[P5 Requirement Questioning](../50-requirement-questioning/README.md)
-**状态**：实施设计待确认
+**状态**：已实施（2026-07-28）
 
 ## 目标
 

@@ -1,0 +1,51 @@
+schema: themis-context-bundle-schema
+bundle_schema: themis-context-bundle
+identity:
+  bundle_id_pattern: '^CBL-[0-9a-f]{64}$'
+  context_id_pattern: '^CTX-[0-9]{3,}$'
+  signal_id_pattern: '^CSG-[0-9a-f]{64}$'
+  digest_pattern: '^sha256:[0-9a-f]{64}$'
+top_level:
+  required:
+    - bundle_schema
+    - id
+    - request
+    - catalog_digest
+    - revision
+    - candidates
+    - selected
+    - excluded
+    - code_refs
+    - signal_refs
+    - token_budget
+    - content_budget_bytes
+    - content_bytes
+    - status
+  allowed:
+    - bundle_schema
+    - id
+    - request
+    - catalog_digest
+    - revision
+    - candidates
+    - selected
+    - excluded
+    - code_refs
+    - signal_refs
+    - token_budget
+    - content_budget_bytes
+    - content_bytes
+    - status
+enums:
+  status: [complete, partial, conflict, unavailable]
+request:
+  required: [intent, spec_ref, task_ref, scope, filters]
+  allowed: [intent, spec_ref, task_ref, scope, filters]
+context_ref:
+  required: [id, path, digest, freshness]
+  allowed: [id, path, digest, freshness, reason]
+constraints:
+  selected_subset_of_candidates: true
+  excluded_subset_of_candidates: true
+  selected_excluded_disjoint: true
+  content_bytes_within_budget: true

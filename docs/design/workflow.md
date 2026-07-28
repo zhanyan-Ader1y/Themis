@@ -1,6 +1,6 @@
 # Themis 完整工作流程
 
-> 规范状态：正式设计。实现状态：部分实现；P5 Draft Spec 双视图与 fresh Init 已落地，完整 lifecycle state、Planning、Review、Implementation、Verification、Acceptance、Summary、Attribution 和 Knowledge 执行器尚未实现。
+> 规范状态：正式设计。实现状态：部分实现；Themis-Q Spec 前追问、P5 Draft Spec 双视图、P5.4 Context Trust 与 fresh Init 已落地，完整 lifecycle state、Planning、Review、Implementation、Verification、Acceptance、Summary、Attribution 和 Knowledge 执行器尚未实现。
 
 本文定义 Themis 从需求进入到归档的唯一生命周期、阶段门禁和返工路由。事实与证据优先级见 [设计治理](governance.md)，领域所有权见 [总体架构](architecture.md)。
 
@@ -55,9 +55,11 @@ flowchart TD
     CONTEXT --> CONFLICT{Context 缺失、冲突或过期?}
     CONFLICT -- 是 --> RESOLVE[补充证据或请求人工裁决]
     RESOLVE --> CONTEXT
-    CONFLICT -- 否 --> DRAFT[创建或继续 Draft Spec]
-    DRAFT --> QUESTION[P5 Step 0–4]
-    QUESTION --> PUBLISH[验证并发布 Spec pair]
+    CONFLICT -- 否 --> QUESTION[调用 Themis-Q]
+    QUESTION --> CONFIRM{确认生成 Draft Spec?}
+    CONFIRM -- 否 --> QUESTION
+    CONFIRM -- 是 --> DRAFT[Specification 创建唯一 candidate]
+    DRAFT --> PUBLISH[验证并发布 Spec pair]
     PUBLISH --> SPECIFIED{Specified Gate 通过?}
     SPECIFIED -- 否 --> STOP[停留当前状态并报告]
     SPECIFIED -- 是 --> PLAN[创建并校验 Plan]
@@ -85,7 +87,7 @@ Acceptance rejection 的实际返工必须回到所属阶段；只要实现发�
 
 ## Draft → Specified
 
-Specification 依次完成 Intent Discovery、Scope Assessment、Context Gathering、Design Convergence 与 Adversarial Validation。P5 只修改 `workspace/cache/spec-candidates/<spec-id>.yaml`，再经 `themis-spec.sh publish` 发布 canonical `spec.yaml`/`spec.md` pair。
+Specification 在需要澄清当前请求时调用 Project Skill `Themis-Q`，使用其聚焦、渐进式提问方法覆盖 intent、scope、context、options、acceptance 与风险。Specification 自己读取 policy 与项目依据、判断复杂度和收敛、展示规范化摘要并请求是否生成 Draft Spec 的明确确认。确认后，Specification 创建唯一 `workspace/cache/spec-candidates/<spec-id>.yaml`，再经 `themis-spec.sh publish` 发布 canonical `spec.yaml`/`spec.md` pair；Skill 不定义流程、确认 gate、handoff 或 artifact。
 
 `core/policies/transitions.yaml` 声明八个 validator-backed `draft_to_specified` 条件；P5 保持 `status: draft`。执行 transition 的通用脚本尚未实现。
 
@@ -183,7 +185,7 @@ Verification verdict 描述一次 Run；Acceptance 描述用户是否接受当�
 
 ## Init 与当前更新边界
 
-- Init 校验 Bash、Git 和 mikefarah/yq v4，只安装全新的 `.themis/`，写入 manifest 并追加可逆 guidance import；失败时回滚。
+- Init 校验 Bash、Git 和 mikefarah/yq v4，安装全新的 `.themis/`，安全合并 `.claude/skills/Themis-Q/`，写入 manifest 并追加可逆 guidance import；任一步失败都回滚本次创建内容。
 - 已存在 `.themis/` 时 Init 在写入前失败并保留 Workspace。
 - 当前版本不提供 Core 原地更新或 Workspace/Artifact Schema 转换能力；unsupported schema fail closed。
 
@@ -196,13 +198,14 @@ Verification verdict 描述一次 Run；Acceptance 描述用户是否接受当�
 | P2 顶层 Guidance 与领域 rules import | 已实现 |
 | P3 fresh Init | 已实现 |
 | Upgrade / Migration | 当前产品已退役，未来重新设计 |
-| P5 Requirement Questioning 与 Draft Spec | 已实现；Specified state executor 未实现 |
+| P5 Requirement Questioning 与 Draft Spec | `Themis-Q` Skill、无版本 Spec candidate/publisher 和最终语义 readiness 已实现；Specified state executor 未实现 |
 | P5.2 Spec 双视图 | 已实现 |
-| P5.4 Context Trust | 已确认但未实现；必须保持当前 Workspace schema |
+| P5.4 Context Trust | 已实现；五项无版本 Protocol、Catalog/Search/Bundle/Freshness/Signal/Navigation 执行器与 bootstrap 布局保持当前 Workspace schema |
 | Planning / Review / Implementation / Verification | 已确认但未实现 |
 | Human Acceptance / Summary | 已确认但未实现 |
 | Attribution / Knowledge 自动执行器 | 已确认但未实现 |
-| 专用 Agent、Command、Skill 与通用 lifecycle scripts | 已确认但未实现 |
+| Themis-Q Project Skill | 已实现；聚焦、适应性提问方法、需求覆盖与对抗问题指导 |
+| 专用 Agent、其他 Command/Skill 与通用 lifecycle scripts | 已确认但未实现 |
 
 ## 相关设计
 

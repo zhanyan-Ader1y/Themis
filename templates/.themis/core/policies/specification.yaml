@@ -1,15 +1,12 @@
 # Themis 需求追问策略配置
-# 该策略声明 Draft 阶段的语义门禁；字段类型、对象 ID 和引用由 Spec v2 协议定义。
+# 该策略声明 Draft 阶段的语义门禁；字段类型、对象 ID 和引用由唯一 Spec 合同定义。
 
 specification:
-  schema: themis-specification-policy/v2
+  schema: themis-specification-policy
 
   artifact:
     authoritative_source: spec.yaml
     human_projection: spec.md
-    source_schema: themis-spec/v2
-    projection_schema: themis-spec-projection/v1
-    writable_schemas: [themis-spec/v2]
     reverse_sync: forbidden
 
   publishing:
@@ -35,7 +32,7 @@ specification:
 
   readiness:
     draft_validity:
-      - spec_schema_valid
+      - spec_structure_valid
       - spec_ids_valid
       - spec_references_valid
     specified:
@@ -133,16 +130,15 @@ specification:
     - try_one_line
     - obviously_best
 
-  self_check:
-    structural:
-      - no_placeholders
-      - no_contradictions
-      - no_ambiguous_terms
-      - scope_explicit
-    adversarial:
-      - assumptions_traceable
-      - failure_scenarios_covered
-      - evidence_anchored
-      - attack_residue_recorded
-      - root_cause_aligned
-      - rollback_feasible
+  semantic_consistency:
+    placeholder_patterns:
+      - '(?i)(^|[^a-z])todo([^a-z]|$)'
+      - '(?i)(^|[^a-z])tbd([^a-z]|$)'
+      - '(?i)(^|[^a-z])placeholder([^a-z]|$)'
+      - '\?\?\?'
+    require_summary_intent_match: true
+    require_scope_summary_match: true
+    require_resolved_assumptions_and_options: true
+    require_selected_option_references: true
+    require_requirement_and_ac_traceability: true
+    require_complete_rollback: true

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Themis Spec v2 TAP 测试。
+# Themis Spec TAP 测试。
 # 用途：验证结构、引用、readiness、确定性投影、漂移和事务式配对发布。
 # 边界：只操作临时夹具，不修改模板或项目 Workspace。
 #
@@ -66,15 +66,10 @@ make_ready() {
     .review.primary_risks = ["RSK-001"] |
     .review.primary_diagrams = [] |
     .review.no_diagram_reason = "Low-complexity change has no architectural interaction." |
-    .questioning.intent_status = "complete" |
-    .questioning.scope_status = "complete" |
-    .questioning.context_status = "skipped" |
-    .questioning.design_status = "complete" |
-    .questioning.adversarial_status = "complete" |
-    .questioning.self_checks.structural = {"no_placeholders":true,"no_contradictions":true,"no_ambiguous_terms":true,"scope_explicit":true} |
-    .questioning.self_checks.adversarial = {"assumptions_traceable":true,"failure_scenarios_covered":true,"evidence_anchored":true,"attack_residue_recorded":true,"root_cause_aligned":true,"rollback_feasible":true} |
-    .intent = {"request":"Test request","outcome":"Observable result","root_cause":"Test root cause"} |
-    .scope."SCP-001" = {"kind":"include","statement":"One behavior","rationale":"fixture"} |
+    .context_basis = {"disposition":"not_required","evidence_refs":[],"limitation_refs":[],"rationale":"Confirmed low-complexity fixture does not require project Context."} |
+    .intent = {"request":"Test request","outcome":"Test intent","root_cause":"Test root cause"} |
+    .scope."SCP-001" = {"kind":"include","statement":"one behavior","rationale":"fixture"} |
+    .scope."SCP-002" = {"kind":"exclude","statement":"unrelated behavior","rationale":"fixture"} |
     .evidence."EVD-001" = {"kind":"user","source":"test fixture","summary":"Approved test input"} |
     .assumptions."ASM-001" = {"statement":"Fixture is isolated","validation":"temporary directory","status":"validated"} |
     .options."OPT-001" = {"summary":"Implement fixture","tradeoffs":"test only","disposition":"selected"} |
@@ -96,7 +91,7 @@ if ! command -v yq >/dev/null 2>&1 || ! command -v git >/dev/null 2>&1; then
   exit 2
 fi
 
-printf '1..64\n'
+printf '1..74\n'
 
 DRAFT="${TEST_TMP}/draft.yaml"
 make_draft "${DRAFT}" draft
@@ -188,12 +183,12 @@ run_command env THEMIS_SPEC_TEST_FAIL_AFTER_SOURCE=1 "${SPEC_EXECUTOR}" publish 
 assert_status 1 'new-pair failure rejects publication'
 if [ ! -e "${NEW_TARGET}/spec.yaml" ] && [ ! -e "${NEW_TARGET}/spec.md" ]; then pass 'new-pair failure leaves no half pair'; else fail 'new-pair failure leaves no half pair'; fi
 
-LEGACY_SPEC_SCHEMA="${TEST_TMP}/legacy-spec-schema.yaml"
-make_ready "${LEGACY_SPEC_SCHEMA}" legacy-spec-schema
-yq eval -i '.spec_schema = "themis-spec/v1"' "${LEGACY_SPEC_SCHEMA}"
-run_command "${SPEC_EXECUTOR}" validate --source "${LEGACY_SPEC_SCHEMA}"
-assert_status 1 'legacy Spec schema fails validation'
-assert_output_contains 'value.spec_schema' 'legacy Spec schema reports stable value error'
+RETIRED_SPEC_SCHEMA="${TEST_TMP}/retired-spec-schema.yaml"
+make_ready "${RETIRED_SPEC_SCHEMA}" retired-spec-schema
+yq eval -i '.spec_schema = "legacy-versioned-spec"' "${RETIRED_SPEC_SCHEMA}"
+run_command "${SPEC_EXECUTOR}" validate --source "${RETIRED_SPEC_SCHEMA}"
+assert_status 1 'retired Spec schema field fails validation'
+assert_output_contains 'top_level.unknown.spec_schema' 'retired Spec schema reports unknown-key error'
 
 CRITICAL_DEFER="${TEST_TMP}/critical-defer.yaml"
 make_ready "${CRITICAL_DEFER}" critical-defer
@@ -213,7 +208,7 @@ FORGED_BODY_OID=$(git hash-object -- "${FORGED_BODY}")
 FORGED_MARKER=$(sed -n '1p' "${FORGED_PROJECTION}")
 FORGED_SOURCE_OID=$(printf '%s\n' "${FORGED_MARKER}" | sed -n 's/.* source_oid=\([^ ]*\) body_oid=.*/\1/p')
 {
-  printf '<!-- themis-projection/v1 source=spec.yaml source_oid=%s body_oid=%s -->\n' "${FORGED_SOURCE_OID}" "${FORGED_BODY_OID}"
+  printf '<!-- themis-projection source=spec.yaml source_oid=%s body_oid=%s -->\n' "${FORGED_SOURCE_OID}" "${FORGED_BODY_OID}"
   cat "${FORGED_BODY}"
 } >"${FORGED_PROJECTION}"
 run_command "${SPEC_EXECUTOR}" validate --source "${TEST_TMP}/forged-source.yaml" --projection "${FORGED_PROJECTION}"
@@ -248,15 +243,47 @@ run_command "${SPEC_EXECUTOR}" validate --source "${EMPTY_AC}"
 assert_status 0 'empty AC prose remains structurally valid Draft'
 assert_output_contains '"id":"spec_design_acceptance_complete","status":"fail"' 'empty AC prose blocks design readiness'
 
-SWAPPED_SELF_CHECK="${TEST_TMP}/swapped-self-check.yaml"
-make_ready "${SWAPPED_SELF_CHECK}" swapped-self-check
-yq eval -i '
-  .questioning.self_checks.structural = {"assumptions_traceable":true,"failure_scenarios_covered":true,"evidence_anchored":true,"attack_residue_recorded":true,"root_cause_aligned":true,"rollback_feasible":true} |
-  .questioning.self_checks.adversarial = {"no_placeholders":true,"no_contradictions":true,"no_ambiguous_terms":true,"scope_explicit":true}
-' "${SWAPPED_SELF_CHECK}"
-run_command "${SPEC_EXECUTOR}" validate --source "${SWAPPED_SELF_CHECK}"
-assert_status 0 'swapped self-check maps remain structurally valid'
-assert_output_contains '"id":"spec_self_check_passed","status":"fail"' 'self-check IDs must appear in their declared domain'
+QUESTIONING_FIELD="${TEST_TMP}/questioning-field.yaml"
+make_ready "${QUESTIONING_FIELD}" questioning-field
+yq eval -i '.questioning = {"intent_status":"complete"}' "${QUESTIONING_FIELD}"
+run_command "${SPEC_EXECUTOR}" validate --source "${QUESTIONING_FIELD}"
+assert_status 1 'questioning process state fails validation'
+assert_output_contains 'top_level.unknown.questioning' 'questioning process state reports unknown-key error'
+
+SUMMARY_MISMATCH="${TEST_TMP}/summary-mismatch.yaml"
+make_ready "${SUMMARY_MISMATCH}" summary-mismatch
+yq eval -i '.review.summary.intent = "Different intent"' "${SUMMARY_MISMATCH}"
+run_command "${SPEC_EXECUTOR}" validate --source "${SUMMARY_MISMATCH}"
+assert_status 0 'summary mismatch remains structurally valid Draft'
+assert_output_contains '"id":"spec_self_check_passed","status":"fail"' 'summary mismatch blocks semantic consistency'
+
+PLACEHOLDER="${TEST_TMP}/placeholder.yaml"
+make_ready "${PLACEHOLDER}" placeholder
+yq eval -i '.requirements."REQ-001".statement = "TODO implement output"' "${PLACEHOLDER}"
+run_command "${SPEC_EXECUTOR}" validate --source "${PLACEHOLDER}"
+assert_status 0 'placeholder remains structurally valid Draft'
+assert_output_contains '"id":"spec_self_check_passed","status":"fail"' 'placeholder blocks semantic consistency'
+
+GROUNDED="${TEST_TMP}/grounded.yaml"
+make_ready "${GROUNDED}" grounded
+yq eval -i '.context_basis = {"disposition":"grounded","evidence_refs":["EVD-001"],"limitation_refs":[],"rationale":"Verified from project evidence."} | .evidence."EVD-001".kind = "code"' "${GROUNDED}"
+run_command "${SPEC_EXECUTOR}" validate --source "${GROUNDED}"
+assert_status 0 'grounded Context basis is structurally valid'
+assert_output_contains '"id":"spec_context_complete","status":"pass"' 'grounded Context evidence passes readiness'
+
+LIMITED="${TEST_TMP}/limited.yaml"
+make_ready "${LIMITED}" limited
+yq eval -i '.complexity.level = "medium" | .context_basis = {"disposition":"limited","evidence_refs":["EVD-001"],"limitation_refs":["ASM-001"],"rationale":"Available evidence has a validated limitation."}' "${LIMITED}"
+run_command "${SPEC_EXECUTOR}" validate --source "${LIMITED}"
+assert_status 1 'medium fixture without required diagram remains invalid'
+assert_output_contains '"id":"spec_context_complete","status":"pass"' 'limited resolved evidence passes Context readiness'
+
+DANGLING_CONTEXT="${TEST_TMP}/dangling-context.yaml"
+make_ready "${DANGLING_CONTEXT}" dangling-context
+yq eval -i '.context_basis = {"disposition":"grounded","evidence_refs":["EVD-999"],"limitation_refs":[],"rationale":"invalid fixture"}' "${DANGLING_CONTEXT}"
+run_command "${SPEC_EXECUTOR}" validate --source "${DANGLING_CONTEXT}"
+assert_status 1 'dangling Context evidence fails validation'
+assert_output_contains 'context_basis.dangling.evidence_refs' 'dangling Context evidence reports stable error'
 
 MIGRATION_FIELD="${TEST_TMP}/migration-field.yaml"
 make_ready "${MIGRATION_FIELD}" migration-field

@@ -59,7 +59,7 @@ themis-knowledge-record.sh --help
 
 ```json
 {
-  "schema": "themis-knowledge-record-result/v1",
+  "schema": "themis-knowledge-record-result",
   "status": "created",
   "kind": "candidate",
   "id": "KNC-...",
@@ -106,7 +106,7 @@ themis-knowledge-lint.sh --help
 
 ```json
 {
-  "schema": "themis-knowledge-lint-result/v1",
+  "schema": "themis-knowledge-lint-result",
   "status": "pass",
   "kind": "review",
   "path": "...",
@@ -190,7 +190,7 @@ Action ID 由 review digest 生成：`KAC-<review-digest>`。重复执行：
 
 ```json
 {
-  "schema": "themis-knowledge-apply-result/v1",
+  "schema": "themis-knowledge-apply-result",
   "status": "applied",
   "decision": "promote",
   "action_id": "KAC-...",

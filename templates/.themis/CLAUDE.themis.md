@@ -12,15 +12,15 @@ This Themis-managed guidance defines cross-stage boundaries for the installed pr
 
 ## Source of Truth
 
-Use sources in this order:
+Classify the claim before choosing its authority:
 
-1. Current code, configuration, structured artifacts, and command output.
-2. Persistent Workspace state and recorded evidence.
-3. Core policies, protocols, and deterministic tool results when those tools exist.
-4. Imported guidance rules.
-5. Conversation memory or Agent inference.
+- Governed Context and approved design artifacts describe intended rules, decisions, terminology, and constraints: what the project should be.
+- Current code, configuration, Schema, and observed command output describe current implementation: what the project currently is.
+- Workspace lifecycle state and recorded evidence describe what work and verification have durably occurred.
+- Core policies, Protocols, and deterministic tool output govern Themis operations; imported rules govern routing.
+- Conversation memory and Agent inference are discovery aids only.
 
-A lower-ranked source must not override a higher-ranked fact. Missing evidence is not evidence of success.
+These are complementary trust axes, not one global precedence list. When intended and current facts disagree, preserve both claims and surface Context/code drift or conflict; do not silently make either one override the other. Missing evidence is not evidence of success.
 
 ## Lifecycle Routing
 

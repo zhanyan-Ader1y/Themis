@@ -16,7 +16,7 @@ P6.5 将 Verification 从 policy/prompt 占位设计扩展为可恢复的确定�
 | D6 | Agent/用户在 runner 外修复；runner 只发出 `repair_required` 并在 `resume` 时校验 handoff、使旧 evidence 失效并重跑。 |
 | D7 | retry 耗尽持久化 escalation，stdout 返回稳定 JSON，process exit `2`。普通 Gate fail/invalid input 使用 exit `1`，成功/可继续使用 `0`。 |
 | D8 | escalation 只提交 Knowledge candidate 请求，不直接写 Context；Knowledge capability 缺失时在 Run 保留 `candidate_pending`。 |
-| D9 | Run、Gate attempt、repair state、escalation 使用版本化 Protocol；`verify.md` 是 Human projection，不是机器 verdict 源。 |
+| D9 | Run、Gate attempt、repair state、escalation 使用稳定无版本 Protocol；`verify.md` 是 Human projection，不是机器 verdict 源。 |
 | D10 | 每个记录绑定 project identity、Workspace root、revision、Spec/Plan/approved Review/Task 和 evidence refs；runner 禁止跨 Workspace 操作。 |
 | D11 | Verification 只接受 current approved Review 作为实施授权依据；Review 绑定失效时返回 inconclusive/blocked，不执行 Gate。 |
 | D12 | verdict `pass` 后路由 Human Acceptance；Verification 不记录 acceptance，不生成 `summary.md`。 |
@@ -27,7 +27,7 @@ P6.5 将 Verification 从 policy/prompt 占位设计扩展为可恢复的确定�
 
 至少声明：
 
-- policy schema/version；
+- stable policy schema identifier；
 - Gate type：`blocking | warning | informational`；
 - execution mode：默认 sequential、blocking fail-fast；
 - status：`pending | running | passed | failed | skipped | error`；
@@ -49,7 +49,7 @@ P6.5 将 Verification 从 policy/prompt 占位设计扩展为可恢复的确定�
 
 ## Protocol
 
-目标目录：`templates/.themis/core/protocols/verification/v1/`
+目标目录：`templates/.themis/core/protocols/verification/`
 
 ### Run record
 
@@ -141,7 +141,7 @@ themis-verify.sh render --workspace <path> --run <id> --output <verify.md>
 ### Core assets
 
 - `templates/.themis/core/policies/verification.yaml`
-- `templates/.themis/core/protocols/verification/v1/{run,gate-attempt,repair-state,escalation}-schema.yaml`
+- `templates/.themis/core/protocols/verification/{run,gate-attempt,repair-state,escalation}-schema.yaml`
 - `templates/.themis/core/templates/{failure-classification,repair-handoff}.md`
 - `templates/.themis/core/templates/verify.md` 或 projection protocol
 - `templates/.themis/core/kernel/verification/themis-verify.sh`

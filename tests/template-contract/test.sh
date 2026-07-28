@@ -7,6 +7,7 @@
 TEST_ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)
 CHECKER_PATH="${TEST_ROOT}/bin/themis-template-check.sh"
 SOURCE_TEMPLATE_ROOT="${TEST_ROOT}/templates/.themis"
+SOURCE_SKILL_ROOT="${TEST_ROOT}/templates/.claude/skills/Themis-Q"
 TEST_TMP=${TMPDIR:-/tmp}/themis-template-contract-$$
 YQ_EXECUTABLE=${YQ:-yq}
 TEST_COUNT=0
@@ -72,8 +73,9 @@ make_fixture() {
   local name=$1
   local fixture_parent="${TEST_TMP}/${name}"
 
-  mkdir -p "${fixture_parent}"
+  mkdir -p "${fixture_parent}/.claude/skills"
   cp -R "${SOURCE_TEMPLATE_ROOT}" "${fixture_parent}/.themis"
+  cp -R "${SOURCE_SKILL_ROOT}" "${fixture_parent}/.claude/skills/Themis-Q"
   printf '%s\n' "${fixture_parent}/.themis"
 }
 
@@ -106,7 +108,7 @@ case "$("${YQ_EXECUTABLE}" --version 2>&1)" in
     ;;
 esac
 
-printf '1..64\n'
+printf '1..88\n'
 
 CLEAN_FIXTURE=$(make_fixture clean)
 run_checker "${CLEAN_FIXTURE}"
@@ -156,7 +158,7 @@ assert_status 1 'legacy misspelled path fails validation'
 assert_output_contains 'legacy template path present' 'legacy path reports spelling diagnostic'
 
 LEGACY_SPEC_TEMPLATE_FIXTURE=$(make_fixture legacy-spec-template)
-printf '%s\n' '# Obsolete Spec v1 template.' >"${LEGACY_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md"
+printf '%s\n' '# Obsolete Spec Markdown template.' >"${LEGACY_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.md"
 run_checker "${LEGACY_SPEC_TEMPLATE_FIXTURE}"
 assert_status 1 'legacy Spec Markdown template fails validation'
 assert_output_contains 'legacy Spec compatibility asset present' 'legacy Spec template reports compatibility diagnostic'
@@ -244,11 +246,45 @@ run_checker "${MALFORMED_P5_POLICY_FIXTURE}"
 assert_status 1 'malformed Specification policy fails validation'
 assert_output_contains 'YAML unreadable' 'malformed Specification policy reports YAML diagnostic'
 
-MISSING_QUESTIONING_TEMPLATE_FIXTURE=$(make_fixture missing-questioning-template)
-rm "${MISSING_QUESTIONING_TEMPLATE_FIXTURE}/core/templates/spec-questioning.md"
-run_checker "${MISSING_QUESTIONING_TEMPLATE_FIXTURE}"
-assert_status 1 'missing Specification questioning template fails validation'
-assert_output_contains 'required path missing' 'missing Specification questioning template reports path diagnostic'
+MISSING_THEMIS_Q_FIXTURE=$(make_fixture missing-themis-q)
+rm -rf "${MISSING_THEMIS_Q_FIXTURE%/.themis}/.claude/skills/Themis-Q"
+run_checker "${MISSING_THEMIS_Q_FIXTURE}"
+assert_status 1 'missing Themis-Q Skill fails validation'
+assert_output_contains 'required path missing' 'missing Themis-Q Skill reports path diagnostic'
+
+MISSING_QUESTIONING_STYLE_FIXTURE=$(make_fixture missing-questioning-style)
+awk '$0 != "## Questioning style"' "${MISSING_QUESTIONING_STYLE_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md" >"${MISSING_QUESTIONING_STYLE_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md.tmp"
+mv "${MISSING_QUESTIONING_STYLE_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md.tmp" "${MISSING_QUESTIONING_STYLE_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md"
+run_checker "${MISSING_QUESTIONING_STYLE_FIXTURE}"
+assert_status 1 'missing Themis-Q questioning style fails validation'
+assert_output_contains 'Themis-Q questioning coverage missing' 'missing Themis-Q questioning style reports coverage diagnostic'
+
+MISSING_FOCUSED_QUESTION_FIXTURE=$(make_fixture missing-focused-question)
+awk '$0 != "- Ask one focused question at a time."' "${MISSING_FOCUSED_QUESTION_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md" >"${MISSING_FOCUSED_QUESTION_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md.tmp"
+mv "${MISSING_FOCUSED_QUESTION_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md.tmp" "${MISSING_FOCUSED_QUESTION_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md"
+run_checker "${MISSING_FOCUSED_QUESTION_FIXTURE}"
+assert_status 1 'missing focused-question rule fails validation'
+assert_output_contains 'Themis-Q focused questioning rule missing' 'missing focused-question rule reports guidance diagnostic'
+
+MISSING_CONVERGENCE_FIXTURE=$(make_fixture missing-convergence)
+awk '$0 != "## Convergence"' "${MISSING_CONVERGENCE_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md" >"${MISSING_CONVERGENCE_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md.tmp"
+mv "${MISSING_CONVERGENCE_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md.tmp" "${MISSING_CONVERGENCE_FIXTURE%/.themis}/.claude/skills/Themis-Q/SKILL.md"
+run_checker "${MISSING_CONVERGENCE_FIXTURE}"
+assert_status 1 'missing Themis-Q convergence guidance fails validation'
+assert_output_contains 'Themis-Q questioning coverage missing' 'missing Themis-Q convergence reports coverage diagnostic'
+
+LEGACY_QUESTIONING_ASSET_FIXTURE=$(make_fixture legacy-questioning-asset)
+printf '%s\n' '# Retired questioning Prompt.' >"${LEGACY_QUESTIONING_ASSET_FIXTURE}/core/templates/spec-questioning.md"
+run_checker "${LEGACY_QUESTIONING_ASSET_FIXTURE}"
+assert_status 1 'retired questioning Prompt fails validation'
+assert_output_contains 'retired Specification questioning asset present' 'retired questioning Prompt reports contract diagnostic'
+
+MISSING_SKILL_INVOCATION_FIXTURE=$(make_fixture missing-skill-invocation)
+awk '$0 != "Before creating or modifying a Spec candidate, invoke the `Themis-Q` Skill with the Skill tool unless it has already clarified the current request in this conversation."' "${MISSING_SKILL_INVOCATION_FIXTURE}/core/kernel/specification/rules.md" >"${MISSING_SKILL_INVOCATION_FIXTURE}/core/kernel/specification/rules.md.tmp"
+mv "${MISSING_SKILL_INVOCATION_FIXTURE}/core/kernel/specification/rules.md.tmp" "${MISSING_SKILL_INVOCATION_FIXTURE}/core/kernel/specification/rules.md"
+run_checker "${MISSING_SKILL_INVOCATION_FIXTURE}"
+assert_status 1 'missing Specification Skill invocation fails validation'
+assert_output_contains 'Specification Themis-Q invocation missing' 'missing Specification Skill invocation reports contract diagnostic'
 
 MISSING_TRANSITION_FIXTURE=$(make_fixture missing-transition)
 set_yaml 'del(.transitions.draft_to_specified)' "${MISSING_TRANSITION_FIXTURE}/core/policies/transitions.yaml"
@@ -283,22 +319,15 @@ assert_output_contains 'Specification adversarial dimensions invalid' 'missing a
 BROKEN_SPEC_TEMPLATE_FIXTURE=$(make_fixture broken-spec-template)
 set_yaml '.template_version = 1' "${BROKEN_SPEC_TEMPLATE_FIXTURE}/core/templates/spec.yaml"
 run_checker "${BROKEN_SPEC_TEMPLATE_FIXTURE}"
-assert_status 1 'wrong Spec YAML template version fails validation'
-assert_output_contains 'Spec template version invalid' 'wrong Spec YAML template version reports diagnostic'
-
-MISSING_STEP_FOUR_FIXTURE=$(make_fixture missing-step-four)
-awk '$0 != "## Step 4 — Adversarial Validation（对抗验证）"' "${MISSING_STEP_FOUR_FIXTURE}/core/templates/spec-questioning.md" >"${MISSING_STEP_FOUR_FIXTURE}/core/templates/spec-questioning.md.tmp"
-mv "${MISSING_STEP_FOUR_FIXTURE}/core/templates/spec-questioning.md.tmp" "${MISSING_STEP_FOUR_FIXTURE}/core/templates/spec-questioning.md"
-run_checker "${MISSING_STEP_FOUR_FIXTURE}"
-assert_status 1 'missing questioning Step 4 fails validation'
-assert_output_contains 'Specification questioning step missing' 'missing questioning Step 4 reports diagnostic'
+assert_status 1 'retired Spec template version field fails validation'
+assert_output_contains 'retired Spec field present' 'retired Spec template version reports diagnostic'
 
 MISSING_ATTACK_HEADING_FIXTURE=$(make_fixture missing-attack-heading)
-awk '$0 != "## 维度 6：数据完整性"' "${MISSING_ATTACK_HEADING_FIXTURE}/core/templates/spec-adversarial-checklist.md" >"${MISSING_ATTACK_HEADING_FIXTURE}/core/templates/spec-adversarial-checklist.md.tmp"
-mv "${MISSING_ATTACK_HEADING_FIXTURE}/core/templates/spec-adversarial-checklist.md.tmp" "${MISSING_ATTACK_HEADING_FIXTURE}/core/templates/spec-adversarial-checklist.md"
+awk '$0 != "## Data integrity"' "${MISSING_ATTACK_HEADING_FIXTURE%/.themis}/.claude/skills/Themis-Q/references/adversarial-checklist.md" >"${MISSING_ATTACK_HEADING_FIXTURE%/.themis}/.claude/skills/Themis-Q/references/adversarial-checklist.md.tmp"
+mv "${MISSING_ATTACK_HEADING_FIXTURE%/.themis}/.claude/skills/Themis-Q/references/adversarial-checklist.md.tmp" "${MISSING_ATTACK_HEADING_FIXTURE%/.themis}/.claude/skills/Themis-Q/references/adversarial-checklist.md"
 run_checker "${MISSING_ATTACK_HEADING_FIXTURE}"
-assert_status 1 'missing attack dimension heading fails validation'
-assert_output_contains 'Specification attack dimension heading missing' 'missing attack dimension heading reports diagnostic'
+assert_status 1 'missing Themis-Q attack dimension fails validation'
+assert_output_contains 'Themis-Q attack dimension missing' 'missing Themis-Q attack dimension reports diagnostic'
 
 OVERSIZED_SPECIFICATION_RULES_FIXTURE=$(make_fixture oversized-specification-rules)
 while [ "$(wc -l < "${OVERSIZED_SPECIFICATION_RULES_FIXTURE}/core/kernel/specification/rules.md")" -le 50 ]; do
@@ -307,6 +336,57 @@ done
 run_checker "${OVERSIZED_SPECIFICATION_RULES_FIXTURE}"
 assert_status 1 'oversized Specification rules fail validation'
 assert_output_contains 'specification guidance too large' 'oversized Specification rules report budget diagnostic'
+
+MISSING_CONTEXT_PROTOCOL_FIXTURE=$(make_fixture missing-context-protocol)
+rm "${MISSING_CONTEXT_PROTOCOL_FIXTURE}/core/protocols/context/signal-schema.yaml"
+run_checker "${MISSING_CONTEXT_PROTOCOL_FIXTURE}"
+assert_status 1 'missing Context Protocol fails validation'
+assert_output_contains 'required path missing' 'missing Context Protocol reports path diagnostic'
+
+NON_EXECUTABLE_CONTEXT_FIXTURE=$(make_fixture non-executable-context)
+rm "${NON_EXECUTABLE_CONTEXT_FIXTURE}/core/bin/themis-context-search.sh"
+mkdir "${NON_EXECUTABLE_CONTEXT_FIXTURE}/core/bin/themis-context-search.sh"
+run_checker "${NON_EXECUTABLE_CONTEXT_FIXTURE}"
+assert_status 1 'non-executable Context command fails validation'
+assert_output_contains 'required executor is not executable' 'non-executable Context command reports mode diagnostic'
+
+WRONG_CONTEXT_RESULT_FIXTURE=$(make_fixture wrong-context-result)
+set_yaml '.result_schema = "themis-context-result-versioned"' "${WRONG_CONTEXT_RESULT_FIXTURE}/core/protocols/context/common-schema.yaml"
+run_checker "${WRONG_CONTEXT_RESULT_FIXTURE}"
+assert_status 1 'wrong Context result protocol fails validation'
+assert_output_contains 'Context result protocol invalid' 'wrong Context result protocol reports identifier diagnostic'
+
+VERSIONED_MODULE_IDENTIFIER_FIXTURE=$(make_fixture versioned-module-identifier)
+printf '%s\n' 'schema: themis-review/v1' >"${VERSIONED_MODULE_IDENTIFIER_FIXTURE}/core/protocols/review-schema.yaml"
+run_checker "${VERSIONED_MODULE_IDENTIFIER_FIXTURE}"
+assert_status 1 'module-level version identifier fails validation'
+assert_output_contains 'module version identifier forbidden' 'module-level version identifier reports contract diagnostic'
+
+VERSIONED_MODULE_DIRECTORY_FIXTURE=$(make_fixture versioned-module-directory)
+mkdir -p "${VERSIONED_MODULE_DIRECTORY_FIXTURE}/core/protocols/review/v1"
+printf '%s\n' 'schema: themis-review' >"${VERSIONED_MODULE_DIRECTORY_FIXTURE}/core/protocols/review/v1/review-schema.yaml"
+run_checker "${VERSIONED_MODULE_DIRECTORY_FIXTURE}"
+assert_status 1 'module-level version directory fails validation'
+assert_output_contains 'module version directory forbidden' 'module-level version directory reports contract diagnostic'
+
+BOUND_BOOTSTRAP_CATALOG_FIXTURE=$(make_fixture bound-bootstrap-catalog)
+set_yaml '.binding = "bound" | .project.name = "fixture" | .workspace_identity_digest = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"' "${BOUND_BOOTSTRAP_CATALOG_FIXTURE}/workspace/context/catalog.yaml"
+run_checker "${BOUND_BOOTSTRAP_CATALOG_FIXTURE}"
+assert_status 1 'bound bootstrap Context Catalog fails validation'
+assert_output_contains 'Bootstrap Context Catalog binding invalid' 'bound bootstrap Context Catalog reports binding diagnostic'
+
+MISSING_CONTEXT_PROJECTION_FIXTURE=$(make_fixture missing-context-projection)
+rm "${MISSING_CONTEXT_PROJECTION_FIXTURE}/workspace/context/external/.overview.md"
+run_checker "${MISSING_CONTEXT_PROJECTION_FIXTURE}"
+assert_status 1 'missing Context projection fails validation'
+assert_output_contains 'required path missing' 'missing Context projection reports path diagnostic'
+
+MISSING_CONTEXT_ROUTING_FIXTURE=$(make_fixture missing-context-routing)
+awk '$0 != "- Before semantic selection, MUST Read `core/templates/context-resolution.md` and the Context Protocols, then use the installed deterministic Search and Assemble executors."' "${MISSING_CONTEXT_ROUTING_FIXTURE}/core/kernel/context/rules.md" >"${MISSING_CONTEXT_ROUTING_FIXTURE}/core/kernel/context/rules.md.tmp"
+mv "${MISSING_CONTEXT_ROUTING_FIXTURE}/core/kernel/context/rules.md.tmp" "${MISSING_CONTEXT_ROUTING_FIXTURE}/core/kernel/context/rules.md"
+run_checker "${MISSING_CONTEXT_ROUTING_FIXTURE}"
+assert_status 1 'missing Context resolution routing fails validation'
+assert_output_contains 'Context resolution routing missing' 'missing Context resolution routing reports boundary diagnostic'
 
 if [ "${TEST_FAILURES}" -ne 0 ]; then
   printf '%s of %s tests failed\n' "${TEST_FAILURES}" "${TEST_COUNT}" >&2

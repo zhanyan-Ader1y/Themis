@@ -1,200 +1,159 @@
-# P5.4 实施索引
+# P5.4 Context Restructure 实施设计
 
-P5.4 将已确认的双轴可信模型和 L1/L2/L3 Context 设计落地为机器协议、唯一 Catalog、确定性检索/装配、新鲜度与 Signal。它必须在当前 `themis-workspace/v1` 可表达的目录内实施，不实现 Schema 转换、Knowledge Promotion、Behavior Map 或生命周期编排。
+P5.4 在现有 `themis-workspace/v1` 内实现受治理 Context 与当前代码事实的双轴可信模型。正式知识仅位于 `workspace/context/`；Catalog 是唯一持久注册表；L1/L2、索引和 Bundle 可重建；Signal 持久记录 missing、stale、Context 冲突和 Context/code drift。P5.4 不改变 Workspace/Artifact schema，不转换既有安装，不实现 Knowledge Promotion、生命周期编排、Behavior Map、Upgrade 或 Migration。
 
-**状态**：实施设计待用户确认。确认前不得修改本计划列出的协议、脚本、Workspace 模板、测试或正式设计。
+**状态**：已实施（2026-07-28）。
 
 ## 设计决策
 
-| # | 决策 |
-|---|---|
-| D1 | 正式项目知识只有 `workspace/context/`；当前代码、配置和 Schema 负责当前实现事实。 |
-| D2 | `workspace/context/catalog.yaml` 是唯一持久注册表；L1/L2、索引和 Bundle 都可重建。 |
-| D3 | Context Item、Catalog、Bundle、Signal 分别使用版本化 Protocol，不把多个职责塞入一个 schema。 |
-| D4 | Prompt 只在确定性 search 返回的候选 ID 内做语义筛选；脚本再次校验 ID/path/digest。 |
-| D5 | `missing`、`stale`、`context_conflict`、`context_code_drift` 持久化到 `workspace/state/context-signals/`，不在 Cache 中保存唯一状态。 |
-| D6 | Context executor 只处理一个显式 Workspace；所有输出绑定 project identity、Workspace root 和 source revision，禁止跨 Workspace 扫描。 |
-| D7 | P5.4 只能使用当前 `themis-workspace/v1` 已允许的目录和 manifest paths；不得修改 schema、转换既有安装或隐式创建不兼容结构。 |
-| D8 | 不创建或预留 Behavior Map、B1/B2/B3、Anchor 或 Behavior Extractor；Planning/Review 直接核验当前源码。 |
-| D9 | Spec 和 Knowledge 消费 Context 能力，不各自实现 Catalog/Search/Freshness。 |
-| D10 | 所有写入使用路径校验、锁、临时文件、原子替换、read-back 和失败恢复；机器输出使用 JSON。 |
-| D11 | L1/L2 是可重建导航投影。L3/Catalog 变化时只标记受影响投影 stale；Search 始终可直接查询完整 Catalog/L3。 |
-| D12 | Context/Knowledge 这类跨领域数据服务安装在 `core/bin/`；生命周期 runner 与领域 rules 共置于 `core/kernel/<domain>/`。 |
+1. Context Item、Catalog、Bundle、Signal 分别使用稳定且无模块版本的 `themis-context-*` Protocol；共享枚举和结果 envelope 位于 `common-schema.yaml`。
+2. Item ID 为 `CTX-[0-9]{3,}`；Bundle 和 Signal ID 分别为 `CBL-`/`CSG-` 加 canonical SHA-256。
+3. 所有 digest 为 `sha256:<64 lowercase hex>`。YAML 使用递归 key-sort 的紧凑 JSON；Item 正文统一 LF 和单个末尾换行；普通文件按原始字节计算。
+4. Workspace identity 只覆盖 manifest 的 schema、project identity、逻辑 root 和 paths，不持久化机器绝对路径。
+5. Revision 支持 Git commit + clean/dirty；非 Git 合法记录 unavailable。具体代码事实始终另带文件 digest。
+6. Fresh Init 安装 unbound 空 Catalog；首个治理写操作显式 `catalog bind`。Init 不依赖 Git，不制造 revision。
+7. Catalog 只保存受治理 registry；Freshness 不改写 L3、Item status 或 Catalog registry，动态状态由 digest/revision/dependency 和 open Signal 合成。
+8. Prompt 只能在 deterministic Search/Prepare 返回的 ID 内语义选择；Shell 重验 ID、path、digest、budget 和 Signal。
+9. 所有执行器显式接收 `--workspace`，不向父目录发现 Workspace；代码检查另显式接收 `--project-root`。
+10. stdout 恰好一个 `themis-context-result` JSON；stderr 为人类诊断；exit 0 成功、1 invalid、2 adjudication/unavailable。
+11. 写操作使用 `workspace/state/locks/context.lock/` 原子目录锁和 `workspace/state/transactions/context/` 可恢复事务；未知锁或 residue 不自动删除。
+12. L1/L2 只复制获批 Catalog/L3 metadata，不生成新事实；未注册文件不会自动进入 Catalog。
+13. 不在 `core.yaml` 增加 capability registry；实现完成时协调提升 Core/VERSION 到 `0.4.0`，Workspace/Artifact allow-list 不变。
 
-## 机器协议
+## Protocol 合同
 
-目标目录：`templates/.themis/core/protocols/context/v1/`
+目标：`templates/.themis/core/protocols/context/`。
 
-### `context-item-schema.yaml`
+- `context-item-schema.yaml`：Markdown frontmatter 的 required/allowed keys、category、authority、status、scope/tags、source refs、dependencies、supersedes、abstract/overview 和 digest。
+- `catalog-schema.yaml`：binding、project、workspace identity、revision、Catalog digest、ID→path/category/status/digest/source refs、唯一性和无环引用。
+- `bundle-schema.yaml`：request、candidate/selected/excluded refs、code refs、Signal refs、预算、revision 和 `complete|partial|conflict|unavailable`。
+- `signal-schema.yaml`：`missing|stale|context_conflict|context_code_drift`、`open|resolved|accepted|superseded`、scope/sources/evidence、首次/末次观测和 disposition。
+- `common-schema.yaml`：共享 ID patterns、enums、digest/revision/path/timestamp 结构和 JSON result envelope。
 
-至少定义：
+审计时间为 UTC RFC3339 秒精度，不参与 Bundle/Signal ID。Catalog digest 排除机器观察时间、Signal 和 Cache。相同 Signal 身份幂等更新，不重复创建。
 
-- `context_item_schema: themis-context-item/v1`；
-- 稳定 `CTX-*` ID、L3、category、knowledge kind、authority、status；
-- scope、tags、source refs、project identity；
-- source revision、verified time、dependencies、supersedes；
-- content digest、freshness；
-- frontmatter 与正文 digest 的一致性规则。
+## 共享运行时
 
-### `catalog-schema.yaml`
+`templates/.themis/core/bin/_themis-context-common.sh` 统一提供：
 
-至少定义：
+- Bash 3.2 CLI、JSON escape/result、mikefarah/yq v4 和 `sha256sum` 检查；
+- manifest/Protocol 定位、Workspace identity、Git/unavailable revision；
+- YAML/frontmatter canonical digest；
+- 相对路径、Core/相邻 Workspace/symlink containment；
+- Context 专属 owner-token lock；
+- Workspace-local staging、read-back、backup、rollback 和 explicit recovery。
 
-- `catalog_schema: themis-context-catalog/v1`；
-- project identity、Workspace root digest、revision；
-- Context ID → path/category/status/digest/freshness/source refs；
-- ID/path 唯一性和路径逃逸禁止；
-- L1/L2 派生投影引用。
+read-only 命令不创建目录。写命令只在已安装且协议可识别的 layout 工作。锁不按年龄自动清理；事务恢复只处理 owner、operation、target 和 digest 都可验证的记录。
 
-### `bundle-schema.yaml`
+## 执行器合同
 
-至少定义：
-
-- `bundle_schema: themis-context-bundle/v1`；
-- query intent、Spec/Task、scope、token budget；
-- selected/excluded Context ID、path、digest、freshness 和理由；
-- 读取的 code/config/schema paths；
-- unresolved Signal refs；
-- `complete | partial | conflict | unavailable`。
-
-### `signal-schema.yaml`
-
-至少定义：
-
-- `signal_schema: themis-context-signal/v1`；
-- `missing | stale | context_conflict | context_code_drift`；
-- project/workspace/revision、scope、sources、evidence refs；
-- `open | resolved | accepted | superseded`；
-- resolution/disposition 和审计时间。
-
-## 确定性执行器
-
-目标目录：`templates/.themis/core/bin/`
-
-| 脚本 | 操作 | 写入边界 |
-|---|---|---|
-| `themis-context-lint.sh` | 校验 Item/Catalog/Bundle/Signal、引用和路径 | 默认只读；可输出 JSON 报告 |
-| `themis-context-catalog.sh` | `build/check/register/remove/status` | Catalog；register/remove 仅供获批治理调用 |
-| `themis-context-search.sh` | 按 ID/domain/entity/operation/state/path/term 检索 | 只读；输出稳定候选集合 |
-| `themis-context-assemble.sh` | `prepare/select/finalize/status` 装配 Bundle | `workspace/cache/resolved-context/` |
-| `themis-context-freshness.sh` | 重算 digest/revision/dependency 并记录 Signal | Catalog freshness + `state/context-signals/` |
-| `themis-context-navigation.sh` | `lint/status/publish/rebuild-index` 校验并发布 L1/L2 candidate | `.abstract.md` / `.overview.md`；不修改 L3 |
-
-共同合同：
-
-- 必须显式传入 Workspace root，不从父目录搜索其他 Workspace；
-- 验证 root 位于项目内，拒绝绝对输出路径、`..`、符号链接逃逸和 Core 写入；
-- stdout 为单个稳定 JSON，诊断写 stderr；
-- exit `0` 成功，`1` 无效/失败，`2` 表示需要人工裁决；
-- 写操作可重复执行且不生成重复记录；
-- 中断或 read-back 失败时恢复旧状态或报告保留的 recovery path；
-- 复用 `themis-spec.sh` 的 staging、原子替换与 read-back 模式，不引用已退役脚本。
-
-## Context Resolution
+### Lint
 
 ```text
-Intent/Scope
-  → explicit Context IDs
-  → deterministic Catalog search
-  → L1 filter → L2 navigation → selected L3
-  → Prompt semantic selection within returned IDs
-  → script validates selected IDs/path/digest/freshness
-  → current code/config/schema lookup when needed
-  → Bundle or persistent Signal
+themis-context-lint.sh lint --workspace <root>
+  [--kind all|item|catalog|bundle|signal] [--path <workspace-relative-path>]
 ```
 
-- 搜索无命中不等于事实不存在；返回 `partial/unavailable` 并记录 `missing`。
-- stale/conflict 时不得输出 `complete`。
-- Context/代码职责互补可以同时进入 Bundle；冲突必须写 `context_code_drift`。
-- Bundle 丢失后可从 Catalog、query 和 revision 重建。
-- Catalog 是检索全集；L1/L2 只优化披露。缺失或 stale 时 search 直接使用 Catalog/L3，并返回 navigation warning。
-- L3/Catalog 变更后标记受影响导航 stale；`context-summary.md` 只能基于 Catalog 返回的 L3 引用生成 candidate，executor 校验引用覆盖、digest 和无新增事实后再发布。
+只读批量校验 schema、allowed keys、ID/path、digest、唯一性、引用和 containment。
 
-## Workspace 初始化边界
+### Catalog
 
-P5.4 只在 fresh Init 模板中声明当前 schema 已允许的目标目录、初始 Catalog 或 `.gitkeep`：
+```text
+themis-context-catalog.sh bind --workspace <root> --project-root <root>
+themis-context-catalog.sh check --workspace <root> [--project-root <root>]
+themis-context-catalog.sh register --workspace <root> --item <context-relative-path>
+  --expected-catalog-digest <digest>
+themis-context-catalog.sh remove --workspace <root> --id <CTX-id>
+  --expected-catalog-digest <digest>
+themis-context-catalog.sh status --workspace <root>
+themis-context-catalog.sh recover --workspace <root> --transaction <id>
+```
 
-1. `workspace/context/catalog.yaml` 与 L1/L2 导航位置；
-2. `workspace/state/context-signals/`；
-3. `workspace/cache/context-index/` 与 `resolved-context/`；
-4. `workspace/knowledge/` 的治理子目录可由对应获批计划在同一现行 schema 内定义。
+Bind 只允许 unbound→bound；identity 不同返回 adjudication。Register 相同内容幂等，验证 ID/path 唯一、依赖存在和无环。Remove 只移除 registry，不删除 L3；被引用或 active Item 需要裁决。
 
-对既有 `.themis`：
+### Search
 
-- P5.4 不运行 Init 覆盖、不转换 manifest、不补建目录；
-- 缺失目标结构时返回 `unsupported_workspace_layout` 或 `unavailable`；
-- 不建议删除 Workspace 或复制模板绕过；
-- 任何需要 schema 变化或已有安装转换的工作延期到未来重新设计。
+```text
+themis-context-search.sh query --workspace <root> [filters...] [--term <text> ...] [--limit <n>]
+```
 
-## Spec 与 Knowledge 集成边界
+过滤 ID/category/kind/scope/status/path，按 exact-ID、category、path、ID 稳定排序。Term 使用 deterministic ASCII case-fold substring；非 ASCII 按原字节。无命中返回空 candidates 和 missing 建议，不隐式写 Signal。导航 stale 不阻断 Catalog Search。
 
-- Spec 的 `EVD-* kind: context` 使用稳定 `CTX-*` source；Spec validator 只校验结构和引用链，Catalog/digest/freshness 由本模块校验。
-- Knowledge promotion 前必须调用 search/lint/freshness；Knowledge 不维护第二个索引或 Signal 算法。
-- 缺少本模块或 Workspace layout 不受支持时，上游返回 unavailable/unsupported，不得临时创建 Catalog 或伪造 Context ID。
+### Assemble
 
-## 目标文件
+```text
+themis-context-assemble.sh prepare --workspace <root> --request <relative-yaml>
+themis-context-assemble.sh select --workspace <root> --bundle <CBL-id> --selection <relative-yaml>
+themis-context-assemble.sh finalize --workspace <root> --bundle <CBL-id> [--project-root <root>]
+themis-context-assemble.sh status --workspace <root> --bundle <CBL-id>
+themis-context-assemble.sh recover --workspace <root> --transaction <id>
+```
 
-### Core
+Prepare 固定 request、Catalog digest、revision 和候选。Select 只接受该候选集合。Finalize 重验来源并写 `cache/resolved-context/<id>/{manifest.yaml,context.md}`；Markdown 仅稳定连接 L3 正文，不总结。`token_budget` 是元数据，`content_budget_bytes` 是 Shell 强制上限。
 
-- `templates/.themis/core/protocols/context/v1/{context-item,catalog,bundle,signal}-schema.yaml`
-- `templates/.themis/core/bin/themis-context-{lint,catalog,search,assemble,freshness,navigation}.sh`
-- `templates/.themis/core/templates/{context-resolution,context-summary}.md`
-- `templates/.themis/core/kernel/context/rules.md`
-- `templates/.themis/core/core.yaml`（仅登记受支持协议/能力，不改变 schema allow-list）
+### Freshness
 
-### Workspace
+```text
+themis-context-freshness.sh check --workspace <root> (--id <CTX-id>|--all) [--project-root <root>]
+themis-context-freshness.sh record --workspace <root> --report <relative-yaml>
+themis-context-freshness.sh resolve --workspace <root> --signal <CSG-id>
+  --status resolved|accepted|superseded --actor <value> --note <relative-file>
+themis-context-freshness.sh status --workspace <root> [--signal <CSG-id>]
+themis-context-freshness.sh recover --workspace <root> --transaction <id>
+```
 
-- 当前 `themis-workspace/v1` 内的目标目录模板与初始 Catalog
-- `templates/.themis/workspace/manifest.yaml`（仅在现有字段/paths 内校准，不改变 schema）
+Check 只读；Record 才持久 Signal；Resolve 记录人工 actor/note/evidence。任何操作都不自动改 L3/Catalog 或裁决双轴冲突。
 
-### 检查与测试
+### Navigation
 
-- `bin/themis-template-check.sh`
-- `tests/template-contract/test.sh`
-- `tests/context-resolution/test.sh`
-- `tests/init/test.sh`
+```text
+themis-context-navigation.sh render --workspace <root> --candidate <cache-relative-dir>
+themis-context-navigation.sh publish --workspace <root> --candidate <cache-relative-dir>
+  --expected-catalog-digest <digest>
+themis-context-navigation.sh status --workspace <root>
+themis-context-navigation.sh rebuild-index --workspace <root>
+themis-context-navigation.sh recover --workspace <root> --transaction <id>
+```
 
-### 正式设计与发布
+Root `.abstract.md` 按固定 category 显示 active count；root `.overview.md` 列 title/abstract/status/scope/path/digest；category `.overview.md` 额外复制受治理 overview 和依赖。Projection frontmatter 绑定 Catalog/source digests；generated time 不参与 currency。Render 只写 Cache candidate，Publish 重验后事务发布。
 
-- `docs/design/{governance,architecture,workflow}.md`
-- `docs/design/core/kernel/{context,specification,knowledge}.md`
-- `docs/design/core/{protocols,templates}.md`
-- `docs/design/workspace/overview.md`
-- `docs/plan/README.md`
-- `CHANGES.md`
-- `templates/.themis/VERSION`
+## Prompt、模板与集成
+
+- `context-resolution.md` 强制先 Search/Prepare，模型只能返回候选 ID 内的 selection；缺失/stale/conflict/drift 时停止事实性结论。
+- `context-summary.md` 只生成待治理 Item metadata candidate，禁止直接写 Catalog/L3/L1/L2。
+- `context/rules.md` 保持 50 行内，以按需 `MUST Read` 路由 Protocol、Prompt 和 executors；不增加 Orchestrator 常驻 import。
+- 顶层 Guidance 与 Orchestrator 明确 governed Context 和 current code 是双轴来源，不写成全局覆盖关系。
+- Fresh template 安装空 Catalog、root 空投影、七类目录、Signal/transaction/lock/cache skeleton；不制造项目事实或 Git revision。
+- Manifest 沿用现有 fields/paths；Init 只配置既有 project name，不承担 Catalog bind。
+- Template checker 要求全部协议、执行器、Prompt、bootstrap 和权限，并继续拒绝退役资产。
 
 ## Task DAG
 
 | Task | 内容 | 依赖 |
 |---|---|---|
-| CTX-01 | 四类 Protocol 与稳定身份/路径合同 | 无 |
-| CTX-02 | lint + Catalog executor | CTX-01 |
-| CTX-03 | search + resolution Prompt | CTX-02 |
-| CTX-04 | assemble Bundle + semantic selection read-back | CTX-03 |
-| CTX-05 | freshness + Signal | CTX-02 |
-| CTX-06 | context-summary Prompt + L1/L2 navigation lint/publish | CTX-02、CTX-05 |
-| CTX-07 | fresh Init 模板、rules、模板检查和模块测试 | CTX-03、CTX-04、CTX-05、CTX-06 |
-| CTX-08 | Spec/Knowledge 接口验证与正式设计同步 | CTX-07 |
-| CTX-09 | 全量回归和版本发布记录 | CTX-08 |
+| CTX-01 | Protocol、共同 runtime、digest/path/result 合同 | 无 |
+| CTX-02 | Lint、Catalog、bootstrap bind、锁/事务 | CTX-01 |
+| CTX-03 | Search、Prepare/Select/Finalize 和 resolution Prompt | CTX-02 |
+| CTX-04 | Freshness、Signal 和人工 disposition | CTX-02 |
+| CTX-05 | L1/L2 Navigation、Index 和 summary candidate 边界 | CTX-02、CTX-04 |
+| CTX-06 | fresh template、rules、Guidance、Template Contract、Init | CTX-03、CTX-04、CTX-05 |
+| CTX-07 | 正式设计、状态、版本和发布记录 | CTX-06 |
+| CTX-08 | 全量回归、扫描、diff/status | CTX-07 |
 
 ## 验证矩阵
 
-| 验证项 | 预期 |
-|---|---|
-| Protocol YAML | 四个 schema 可解析，required/allowed/enums/ID/path 严格。 |
-| Shell syntax/static | Bash 3.2 语法和 ShellCheck 通过。 |
-| Catalog | ID/path 唯一；digest/revision 错误 fail closed；重复 register 幂等。 |
-| Search | 只返回 Catalog 内候选；排序稳定；无命中不伪造事实。 |
-| Bundle | selected/excluded/Signal/code refs 完整；Cache 删除后可重建。 |
-| Freshness | source/dependency 改变产生 stale Signal，不自动改写 L3。 |
-| L1/L2 navigation | L3 变化后投影 stale；Catalog search 仍命中；无来源 candidate 不能发布。 |
-| Conflict | Context/Context 与 Context/code drift 分别持久化，阶段不继续。 |
-| Isolation | 不能读写相邻 Workspace、Core 或路径逃逸目标。 |
-| Existing install | 缺失布局稳定返回 unsupported/unavailable，Workspace 字节不变。 |
-| Init | fresh 安装包含协议、脚本和当前 schema 允许的目标模板。 |
-| Integration | Spec 与 Knowledge 只消费本模块接口，不存在第二套 resolver。 |
+- Protocol：YAML 可解析；unknown key/type/enum/ID/digest/ref/cycle fail closed。
+- Shell：`bash -n`、`shellcheck -x`、Bash 3.2。
+- Bootstrap：非 Git bind 合法；不同 identity 不自动重绑；existing install 不变。
+- Catalog：ID/path 唯一、expected digest、register 幂等、remove 引用保护。
+- Search：Catalog-only、稳定排序、empty hit、navigation fallback。
+- Bundle：越界 selection、预算、stale/conflict/unavailable、Cache 删除后重建。
+- Freshness：Check 只读、Signal 幂等、人工 disposition、Catalog/L3 字节不变。
+- Navigation：root/category currency、coverage/digest、无来源 candidate 拒绝。
+- Isolation：拒绝 absolute、`..`、symlink、Core、相邻 Workspace。
+- Recovery：锁竞争、未知锁、写入中断、rollback、restore failure 和 explicit recover。
+- 性能：20 Item 正常主流程不超过 `2N + 30` 次 yq；禁止 per-field process pattern。
+- Integration：Spec/Knowledge 只消费本模块接口；不存在第二 Catalog/resolver。
+- Regression：Template Check、Context、Init、Template Contract、Spec Artifact 和现有套件实际输出通过。
 
-## 确认门禁
-
-本实施索引确认后才能创建或修改上述实现资产。P5.5 和 Spec Context 引用必须等待本模块的实际 Protocol 与 executor 可用后再集成。
+实现不得修改独立未跟踪的 `docs/plan/53-requirement-questioning-skill/`，不得创建 commit 或 push，除非用户另行明确要求。

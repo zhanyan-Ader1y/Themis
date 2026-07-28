@@ -13,18 +13,19 @@ Define what a project change must achieve, why it is needed, its approved scope,
 
 ## Outputs
 
-Save each Draft beneath `workspace/specs/<spec-id>/` as authoritative `spec.yaml` plus generated `spec.md`. Stable map keys identify semantic objects and references; Markdown prose is never machine evidence.
+After requirements are clarified and the user confirms Specification's normalized summary, create exactly one candidate at `workspace/cache/spec-candidates/<spec-id>.yaml`, then publish the authoritative `spec.yaml` plus generated `spec.md`. Stable map keys identify semantic objects and references; Markdown prose is never machine evidence.
 
 ## Requirement Questioning
 
-You MUST Read these files before any Specification work:
+Before creating or modifying a Spec candidate, invoke the `Themis-Q` Skill with the Skill tool unless it has already clarified the current request in this conversation.
 
-1. `core/templates/spec-questioning.md` — the Step 0–4 protocol and publisher workflow.
-2. `core/policies/specification.yaml` — complexity, readiness, projection, and publishing policy.
-3. `core/policies/transitions.yaml` — validator check IDs for `draft_to_specified`.
-4. `core/protocols/artifact/v2/spec-schema.yaml` and `spec-projection.yaml` — authoritative structures.
+- `Themis-Q` supplies questioning methods and coverage only. It does not own lifecycle routing, persistence, confirmation gates, candidate creation, or a handoff format.
+- Specification owns reading `core/policies/specification.yaml`, relevant Context, existing Specs, and current code or configuration needed to ground the questions.
+- Specification owns complexity classification, deciding when material uncertainty is resolved, normalizing the clarified requirement, and asking the user whether to generate the Draft Spec.
+- If the Skill is missing or invocation fails, remain in Specification and report the blocker. Do not read a legacy questioning Prompt or create a candidate as fallback.
+- If the user rejects or corrects the normalized summary, continue clarification and invoke `Themis-Q` again when its questioning guidance is needed.
 
-Write only a temporary `spec.yaml` candidate, then use `core/kernel/specification/themis-spec.sh publish`; never hand-maintain the pair. P5 keeps `status: draft`; P8 alone may record a lifecycle transition.
+After explicit confirmation, read `core/policies/transitions.yaml`, `core/templates/spec.yaml`, and the Artifact v2 Spec schema/projection protocols. Map final semantics from the conversation into the single candidate, then use `core/kernel/specification/themis-spec.sh publish`; never hand-maintain the canonical pair. P5 keeps `status: draft`; P8 alone may record a lifecycle transition.
 
 ## Boundaries
 

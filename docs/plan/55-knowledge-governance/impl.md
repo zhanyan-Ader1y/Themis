@@ -17,7 +17,7 @@ P5.5 必须自行提供最小确定性执行器；P8 未来只负责 Agent、Com
 | D1 | P5.5 的明确依赖为 P1、P2、P5、P5.4；P5 提供人工批准模式，P5.4 提供 Context Item、Catalog、Signal、检索与 Freshness 契约。 |
 | D2 | `workspace/context/` 是唯一正式知识库；`workspace/knowledge/` 只保存候选、审核、拒绝、处置和历史归档记录。 |
 | D3 | 候选和治理记录采用追加式历史。拒绝、合并重复或修订均不删除原候选；修订创建带 `supersedes` 的新候选。 |
-| D4 | v1 的所有最终处置都要求持久化人工批准。AI 只可提取候选、标记潜在重复/冲突并给出推荐。 |
+| D4 | 当前合同的所有最终处置都要求持久化人工批准。AI 只可提取候选、标记潜在重复/冲突并给出推荐。 |
 | D5 | 精确内容/来源重复由脚本确定性识别；语义重复和事实冲突保持 Prompt 驱动，并由人工作最终裁决。不声明无实现基础的相似度数值阈值。 |
 | D6 | 支持五类候选来源：`implementation_experience`、`verification_failure`、`review_finding`、`outcome`、`manual`。`verification_failure` 只接受耗尽 Verification repair/retry 预算或进入 escalation 的 Run；单次瞬时失败不产生候选。缺失的上游能力只能报告 unavailable，不得伪造来源工件。 |
 | D7 | 可提升的 Context 类型与现有 Workspace 对齐：`architecture`、`domain`、`engineering`、`decisions`、`pitfalls`、`glossary`、`external`。不写入 Behavior Map 或其他派生源码表示。 |

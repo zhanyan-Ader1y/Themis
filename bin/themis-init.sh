@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # Themis 项目初始化器。
-# 用途：向尚未安装 Themis 的项目复制已验证模板，并向 CLAUDE.md 追加受管直接 import 块。
-# 边界：仅支持全新安装；已有 .themis/ 时在写入前失败，不执行项目命令、不创建 SDD 产物，也不修改 AGENTS.md。
+# 用途：向尚未安装 Themis 的项目复制已验证模板和 Themis-Q Project Skill，并向 CLAUDE.md 追加受管直接 import 块。
+# 边界：仅支持全新 `.themis` 安装；安全合并 `.claude/skills/Themis-Q/`，同名冲突在写入前失败，不执行项目命令、不创建 SDD 产物，也不修改 AGENTS.md。
 # 兼容性：保持 Bash 3.2 兼容，仅在 P0 前置条件通过后使用 mikefarah/yq v4。
 #
 THEMIS_INIT_GUIDANCE_START='<!-- themis:guidance:start -->'
@@ -34,6 +34,9 @@ THEMIS_INIT_GITIGNORE_BACKUP=
 THEMIS_INIT_CLAUDE_EXISTED=0
 THEMIS_INIT_GITIGNORE_EXISTED=0
 THEMIS_INIT_CREATED_TEMPLATE=0
+THEMIS_INIT_CREATED_SKILL=0
+THEMIS_INIT_CREATED_SKILLS_DIRECTORY=0
+THEMIS_INIT_CREATED_CLAUDE_DIRECTORY=0
 
 # 输出一条可操作的 Init 失败诊断。参数为简短主题和修复建议。
 themis_init_error() {
@@ -153,8 +156,17 @@ themis_init_backup_file() {
   return 0
 }
 
-# 恢复本次调用修改的文件，并仅删除本次创建的全新模板。
+# 恢复本次调用修改的文件，并仅删除本次创建的模板、Skill 与仍为空的父目录。
 themis_init_rollback() {
+  if [ "${THEMIS_INIT_CREATED_SKILL}" -eq 1 ]; then
+    rm -rf -- "${THEMIS_INIT_TARGET}/.claude/skills/Themis-Q"
+  fi
+  if [ "${THEMIS_INIT_CREATED_SKILLS_DIRECTORY}" -eq 1 ]; then
+    rmdir -- "${THEMIS_INIT_TARGET}/.claude/skills" 2>/dev/null || true
+  fi
+  if [ "${THEMIS_INIT_CREATED_CLAUDE_DIRECTORY}" -eq 1 ]; then
+    rmdir -- "${THEMIS_INIT_TARGET}/.claude" 2>/dev/null || true
+  fi
   if [ "${THEMIS_INIT_CREATED_TEMPLATE}" -eq 1 ]; then
     rm -rf -- "${THEMIS_INIT_TARGET}/.themis"
   fi
@@ -285,6 +297,7 @@ themis_init_write_manifest() {
 THEMIS_INIT_SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd) || exit 1
 THEMIS_INIT_REPOSITORY_ROOT=$(CDPATH='' cd -- "${THEMIS_INIT_SCRIPT_DIR}/.." && pwd) || exit 1
 THEMIS_INIT_TEMPLATE_SOURCE="${THEMIS_INIT_REPOSITORY_ROOT}/templates/.themis"
+THEMIS_INIT_SKILL_SOURCE="${THEMIS_INIT_REPOSITORY_ROOT}/templates/.claude/skills/Themis-Q"
 THEMIS_INIT_CHECKER="${THEMIS_INIT_REPOSITORY_ROOT}/bin/themis-template-check.sh"
 # shellcheck source=bin/_themis-init-env.sh
 . "${THEMIS_INIT_SCRIPT_DIR}/_themis-init-env.sh"
@@ -304,6 +317,18 @@ if [ ! -w "${THEMIS_INIT_TARGET}" ]; then
 fi
 if [ -e "${THEMIS_INIT_TARGET}/.themis" ]; then
   themis_init_error 'existing .themis installation' 'In-place updates are not supported. Preserve the existing Workspace and do not run Init over it.'
+  exit 1
+fi
+if [ -e "${THEMIS_INIT_TARGET}/.claude/skills/Themis-Q" ]; then
+  themis_init_error 'existing Themis-Q Skill path' 'Move or remove the conflicting .claude/skills/Themis-Q path before running Init; Init never overwrites project Skills.'
+  exit 1
+fi
+if [ -e "${THEMIS_INIT_TARGET}/.claude" ] && [ ! -d "${THEMIS_INIT_TARGET}/.claude" ]; then
+  themis_init_error 'conflicting .claude path' 'Replace the path with a directory or choose another project.'
+  exit 1
+fi
+if [ -e "${THEMIS_INIT_TARGET}/.claude/skills" ] && [ ! -d "${THEMIS_INIT_TARGET}/.claude/skills" ]; then
+  themis_init_error 'conflicting .claude/skills path' 'Replace the path with a directory or choose another project.'
   exit 1
 fi
 if ! bash "${THEMIS_INIT_CHECKER}" "${THEMIS_INIT_TEMPLATE_SOURCE}"; then
@@ -330,6 +355,33 @@ if ! cp -R "${THEMIS_INIT_TEMPLATE_SOURCE}" "${THEMIS_INIT_TARGET}/.themis"; the
   exit 1
 fi
 THEMIS_INIT_CREATED_TEMPLATE=1
+if [ ! -d "${THEMIS_INIT_TARGET}/.claude" ]; then
+  if ! mkdir "${THEMIS_INIT_TARGET}/.claude"; then
+    themis_init_rollback
+    themis_init_error 'Skill parent creation failed' 'Check target write access for .claude/.'
+    exit 1
+  fi
+  THEMIS_INIT_CREATED_CLAUDE_DIRECTORY=1
+fi
+if [ ! -d "${THEMIS_INIT_TARGET}/.claude/skills" ]; then
+  if ! mkdir "${THEMIS_INIT_TARGET}/.claude/skills"; then
+    themis_init_rollback
+    themis_init_error 'Skill directory creation failed' 'Check target write access for .claude/skills/.'
+    exit 1
+  fi
+  THEMIS_INIT_CREATED_SKILLS_DIRECTORY=1
+fi
+if ! cp -R "${THEMIS_INIT_SKILL_SOURCE}" "${THEMIS_INIT_TARGET}/.claude/skills/Themis-Q"; then
+  themis_init_rollback
+  themis_init_error 'Themis-Q Skill copy failed' 'Check target write access and the source Skill bundle.'
+  exit 1
+fi
+THEMIS_INIT_CREATED_SKILL=1
+if [ "${THEMIS_INIT_TEST_FAIL_AFTER_SKILL:-0}" -eq 1 ]; then
+  themis_init_rollback
+  themis_init_error 'injected failure after Skill copy' 'Disable the test failure injection and retry.'
+  exit 1
+fi
 if ! themis_init_write_manifest "${THEMIS_INIT_TARGET}/.themis/workspace/manifest.yaml"; then
   themis_init_rollback
   themis_init_error 'manifest update failed' 'Check yq output and the copied Workspace manifest.'

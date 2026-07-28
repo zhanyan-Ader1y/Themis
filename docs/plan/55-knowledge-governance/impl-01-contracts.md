@@ -10,7 +10,7 @@
 
 ```yaml
 knowledge_governance:
-  schema: themis-knowledge-governance-policy/v1
+  schema: themis-knowledge-governance-policy
   sources: []
   categories: []
   flows: {}
@@ -82,7 +82,7 @@ flows:
 
 - 脚本对规范化 payload 摘要和精确来源引用执行确定性比较。
 - Prompt 可标记 `potential_duplicate`、`potential_conflict`，但不得自行合并、覆盖或删除。
-- v1 不提供 `0.8` 一类语义相似度阈值，因为没有确定的 embedding 模型、向量空间或索引实现。
+- 当前合同不提供 `0.8` 一类语义相似度阈值，因为没有确定的 embedding 模型、向量空间或索引实现。
 
 ### 审核维度
 
@@ -117,7 +117,7 @@ flows:
 YAML front matter 最低字段：
 
 ```yaml
-knowledge_candidate_schema: themis-knowledge-candidate/v1
+knowledge_candidate_schema: themis-knowledge-candidate
 id: ""
 status: candidate
 category: ""
@@ -130,7 +130,7 @@ workspace_root: ""
 source_revision: ""
 confidence: null
 content_digest: ""
-digest_algorithm: git-hash-object/v1
+digest_algorithm: sha256
 sensitivity:
   reviewed: false
   disposition: pending
@@ -154,7 +154,7 @@ created_by: ""
 workspace/knowledge/candidates/<candidate-id>.md
 ```
 
-ID 由 record 脚本对规范化语义 payload 和 provenance 计算 Git object digest 后生成，格式为 `KNC-<full-digest>`。创建时间不参与摘要，保证同一候选重复记录时返回同一 ID。
+ID 由 record 脚本对 canonical semantic payload 和 provenance 计算 SHA-256 后生成，格式为 `KNC-<64 lowercase hex>`。创建时间不参与摘要，保证同一候选重复记录时返回同一 ID。
 
 ## Review 工件
 
@@ -163,7 +163,7 @@ ID 由 record 脚本对规范化语义 payload 和 provenance 计算 Git object 
 最低字段：
 
 ```yaml
-knowledge_review_schema: themis-knowledge-review/v1
+knowledge_review_schema: themis-knowledge-review
 id: ""
 operation: candidate_review
 candidate_id: ""
@@ -219,7 +219,7 @@ workspace/knowledge/reviews/<review-id>.md
 Action 是脚本执行结果，不由 Prompt 伪造：
 
 ```yaml
-knowledge_action_schema: themis-knowledge-action/v1
+knowledge_action_schema: themis-knowledge-action
 id: ""
 review_id: ""
 review_digest: ""
@@ -235,7 +235,7 @@ context_id: null
 context_path: null
 index_path: null
 applied_at: ""
-executor: themis-knowledge-apply/v1
+executor: themis-knowledge-apply
 ```
 
 存储规则：
@@ -246,7 +246,7 @@ executor: themis-knowledge-apply/v1
 
 ## Context 写入与 Catalog
 
-`promote` 生成符合 `themis-context-item/v1` 的 L3 Item：
+`promote` 生成符合 `themis-context-item` 的 L3 Item：
 
 ```text
 workspace/context/<category>/<context-id>.md
@@ -254,7 +254,7 @@ workspace/context/<category>/<context-id>.md
 
 Context ID 格式：`CTX-<candidate-digest>`。正式 Context 必须保留 candidate、review、action、来源 artifact/evidence 和内容摘要引用，并记录 P5.4 要求的 authority、Scope、status、digest、dependencies 和 supersession。
 
-`workspace/context/catalog.yaml` 使用 P5.4 的 `themis-context-catalog/v1`，P5.5 不定义第二套 Schema。Apply 只能在同一原子处置内更新 L3 Item 与 Catalog，并执行 read-back 校验：
+`workspace/context/catalog.yaml` 使用 P5.4 的 `themis-context-catalog`，P5.5 不定义第二套 Schema。Apply 只能在同一原子处置内更新 L3 Item 与 Catalog，并执行 read-back 校验：
 
 - Context ID、path、category、status 与 Catalog 一致；
 - `content_digest` 与实际 L3 内容一致；

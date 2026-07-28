@@ -15,8 +15,9 @@
 | P4 | [Upgrade](40-upgrade/) | 历史无损升级实现 | — | 已退役；保留历史 |
 | P4.5 | [Explicit Migration](45-explicit-migration/) | 历史 Schema 转换实现 | — | 已退役；保留历史 |
 | P5 | [Requirement Questioning](50-requirement-questioning/) | Spec 创建前的追问与需求澄清 | P1、P2 | 已完成（P8 状态执行器待实施） |
-| P5.2 | [Spec Dual View](52-spec-dual-view/) | `spec.yaml` Agent 权威源 + `spec.md` Human 审阅投影 | P5 | 已完成（P8 状态迁移待实施） |
-| P5.4 | [Context Restructure](54-context-restructure/) | 双轴可信源、L1/L2/L3 Context、Catalog、检索装配与 Signal | P1、P2、P5 | 设计完成，待发起 |
+| P5.2 | [Spec Dual View](52-spec-dual-view/) | `spec.yaml` Agent 权威源 + `spec.md` Human 审阅投影 | P5 | 已完成；Spec 过程状态/独立版本字段由 P5.3 替代 |
+| P5.3 | [Requirement Questioning Skill](53-requirement-questioning-skill/) | `Themis-Q` 追问方法、Specification 工作流边界与无版本 Spec 最终语义 | P5、P5.2 | 已完成 |
+| P5.4 | [Context Restructure](54-context-restructure/) | 双轴可信源、L1/L2/L3 Context、Catalog、检索装配与 Signal | P1、P2、P5 | 已完成 |
 | P5.5 | [Knowledge Governance](55-knowledge-governance/) | 人机混合知识治理（候选→审核→提升→废弃） | P1、P2、P5、P5.4 | 待发起 |
 | P5.8 | [Planning Enhancement](58-planning-enhancement/) | Task、依赖 DAG、Traceability、Plan 校验 | P1、P5、P5.4 | 待发起 |
 | P6.8 | [Review Enhancement](68-review-enhancement/) | Implementation 前的 Spec/Plan/设计/风险批准 | P1、P5、P5.8 | 待发起 |
@@ -36,6 +37,7 @@ P0 Init Environment Validation
       │    ├── P3 fresh Init
       │    └── P5 Requirement Questioning
       │         ├── P5.2 Spec Dual View
+      │         │    └── P5.3 Requirement Questioning Skill
       │         ├── P5.4 Context Restructure
       │         │    └── P5.5 Knowledge Governance
       │         └── P5.8 Planning Enhancement

@@ -2,7 +2,7 @@
 
 > 文档状态：设计输入索引，不拥有长期规则。下方“原始输入”保留调研与实践记录；每条结论必须以“处置矩阵”链接的唯一 owning design page 为准。
 >
-> 实现状态：能力退役与正式设计收敛已采纳；P5.4 Context、P5.5 Knowledge、P6.5 Verification recovery 与 P6.8 Review runtime 仍未实现。
+> 实现状态：能力退役与正式设计收敛已采纳；P5.4 Context 已实现，P5.5 Knowledge、P6.5 Verification recovery 与 P6.8 Review runtime 仍未实现。
 
 ## 原始输入
 
@@ -95,7 +95,7 @@ Themis失败 draft模板：
 | 任一步失败即停、修复重跑、默认 3 次、耗尽 exit 2 | `adopted` | [Workflow](workflow.md#verification-失败修复循环)、[Orchestrator](core/kernel/orchestrator.md#routing-与-recovery) 和 [Verification](core/kernel/verification.md#失败修复与-escalation) 的目标合同。 |
 | 失败必须分类 | `already_owned` | [Verification](core/kernel/verification.md#evidence-与失败分类)。 |
 | Escalation 先生成 learn draft，不直接污染知识 | `adopted` | [Knowledge](core/kernel/knowledge.md#verification-escalation)；仅 exhaustion/escalation 可产生 candidate。 |
-| 追问不应生成文件 | `rejected` | [Specification](core/kernel/specification.md#spec-双视图) 保留持久 candidate，以支持恢复、验证和事务发布。 |
+| 追问不应生成文件 | `adopted` | [Specification](core/kernel/specification.md#requirement-questioning) 规定追问先于 Spec candidate；Themis-Q 只提供提问方法，Specification 在需求收敛并获确认后才创建单一 candidate。 |
 | 移除 Spec 投影章节 | `rejected` | [Specification](core/kernel/specification.md#spec-双视图) 保留 `spec.yaml` 权威源与 `spec.md` 单向 Human projection。 |
 | 提供 `review.md` | `deferred` | [Review](core/kernel/review.md#human-review-投影) 已确认前置 Review 投影合同，等待 P6.8 实施。 |
 | 新增 `summary.md` | `adopted` | [Workflow](workflow.md#verified--human-acceptance--summary--archived) 规定仅在 Human Acceptance `accepted` 后确定性生成最终交付投影。 |

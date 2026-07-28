@@ -1,7 +1,5 @@
-schema: themis-spec-schema/v2
+schema: themis-spec-schema
 artifact_schema: themis-artifact/v2
-spec_schema: themis-spec/v2
-template_version: 2
 
 identity:
   spec_id_pattern: '^[a-z0-9][a-z0-9._-]*$'
@@ -9,18 +7,16 @@ identity:
 
 top_level:
   required:
-    - spec_schema
     - id
     - title
     - status
     - revision
-    - template_version
     - created_at
     - updated_at
     - author
     - complexity
     - review
-    - questioning
+    - context_basis
     - intent
     - scope
     - evidence
@@ -38,18 +34,16 @@ top_level:
     - rollback
     - approval
   allowed:
-    - spec_schema
     - id
     - title
     - status
     - revision
-    - template_version
     - created_at
     - updated_at
     - author
     - complexity
     - review
-    - questioning
+    - context_basis
     - intent
     - scope
     - evidence
@@ -70,7 +64,7 @@ top_level:
 enums:
   status: [draft, specified]
   complexity_level: [pending, low, medium, high]
-  step_status: [pending, skipped, complete]
+  context_disposition: [pending, grounded, not_required, limited]
   assumption_status: [pending, validated, invalid]
   option_disposition: [pending, selected, rejected, option_zero]
   requirement_kind: [functional, non_functional]
@@ -98,12 +92,9 @@ fixed_maps:
   review_summary:
     required: [request, intent, root_cause, included, excluded, success, blockers]
     allowed: [request, intent, root_cause, included, excluded, success, blockers]
-  questioning:
-    required: [intent_status, scope_status, context_status, design_status, adversarial_status, self_checks]
-    allowed: [intent_status, scope_status, context_status, design_status, adversarial_status, self_checks]
-  self_checks:
-    required: [structural, adversarial]
-    allowed: [structural, adversarial]
+  context_basis:
+    required: [disposition, evidence_refs, limitation_refs, rationale]
+    allowed: [disposition, evidence_refs, limitation_refs, rationale]
   intent:
     required: [request, outcome, root_cause]
     allowed: [request, outcome, root_cause]

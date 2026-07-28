@@ -2,23 +2,26 @@
 
 ## Responsibility
 
-Maintain durable project facts and indexes that other domains can select as evidence. Context owns factual discovery and freshness, not requirement decisions or implementation choices.
+Resolve governed project knowledge and current implementation evidence without collapsing them into one authority. Context owns discovery, selection, freshness, conflict signaling, Bundles, and derived navigation; it does not decide requirements or implementation.
 
 ## Inputs
 
-- project source, schemas, configuration, and external references through available read-only access or adapters;
-- existing records beneath `workspace/context/`;
-- freshness or conflict signals recorded by installed capabilities.
+- `workspace/context/catalog.yaml` and registered L3 Context Items;
+- current source, configuration, Schema, and explicit external references;
+- Context Bundle requests, freshness reports, and persistent Signals.
 
 ## Outputs
 
-Write validated project context and indexes only beneath `workspace/context/` and declared cache locations. Preserve source references so consumers can distinguish facts from explanation.
+- validated Catalog queries and task-scoped Bundles beneath declared Cache paths;
+- freshness reports and explicit Signals beneath `workspace/state/context-signals/`;
+- deterministic L1/L2 projections copied only from governed metadata.
 
 ## Boundaries
 
-- Do not store project facts in Core.
-- Do not convert uncertain inference into an authoritative fact.
-- Do not decide how a fact changes a Spec or Plan.
-- Surface stale, missing, or conflicting context instead of silently selecting a convenient version.
-
-Context discovery, catalog validation, freshness policy, and resolution tooling require separately installed capabilities and are not implied by this baseline.
+- Governed Context describes what the project should be; current code, configuration, and Schema describe what it currently is. Neither globally overrides the other.
+- Before semantic selection, MUST Read `core/templates/context-resolution.md` and the Context Protocols, then use the installed deterministic Search and Assemble executors.
+- For a proposed reusable knowledge summary, MUST Read `core/templates/context-summary.md`; its output is an unapproved Knowledge Governance candidate only.
+- Do not scan unregistered L3 as official knowledge, infer IDs, trust Cache as authority, or publish model-generated facts.
+- Stop conclusions that depend on missing, stale, conflicting, unavailable, or code-drifted facts; record or surface the corresponding Signal.
+- Catalog/L3 mutation and Signal disposition require their explicit deterministic commands and governance evidence.
+- Do not modify Core, lifecycle state, Spec, Plan, or project code while resolving Context.

@@ -14,15 +14,15 @@ The Orchestrator decides what domain should act next. It does not implement doma
 
 ## Authority Order
 
-Use the highest available authority:
+Classify each claim before routing it:
 
-1. Current code, configuration, structured artifacts, and command output.
-2. Workspace state and recorded evidence.
-3. Core policy, protocol, and deterministic tool output.
-4. These imported rules.
-5. Conversation memory or inferred progress.
+- Governed Context and approved design artifacts govern intended rules, decisions, terminology, and constraints.
+- Current code, configuration, Schema, and observed command output govern claims about current implementation.
+- Workspace state and recorded evidence govern lifecycle progress, execution, verification, and acceptance claims.
+- Core policy, Protocol, and deterministic tool output govern Themis operations; these imported rules govern routing.
+- Conversation memory and inference are never sufficient proof.
 
-Never replace a higher-authority result with a lower-authority assumption. If sources conflict, stop at the current stage and report the conflict.
+No global precedence exists between intended Context and current implementation. If they disagree, preserve both, route the discrepancy as Context/code drift or conflict, and stop any stage whose conclusion depends on resolving it.
 
 ## Managed Change Detection
 

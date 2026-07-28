@@ -1,6 +1,6 @@
 # 设计治理
 
-> 规范状态：正式设计。实现状态：治理规则已生效；P5.4 Context Trust 的 Protocol、检索、装配与 Signal 执行器尚未实现。
+> 规范状态：正式设计。实现状态：治理规则与 P5.4 Context Protocol、检索、装配、Freshness、Signal 和 Navigation 执行器已生效；Knowledge Promotion 仍未实现。
 
 本文定义 Themis 设计规范、项目事实、流程事实、持久证据和非规范文档之间的权威关系。文档分类与状态语义见 [设计规范入口](README.md)。
 

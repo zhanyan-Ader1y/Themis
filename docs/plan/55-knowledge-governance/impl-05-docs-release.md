@@ -40,7 +40,7 @@
 - 展示来源、分类、流程顺序、审核维度和处置；
 - 删除 `similarity_threshold: 0.8`；
 - 解释 exact duplicate 与 semantic assessment 的边界；
-- 解释 v1 只允许人工批准。
+- 解释当前合同只允许人工批准。
 
 不得顺手实现全局 Effective Policy 合并器；若项目级 override 存在但当前没有确定性解析能力，应报告缺失能力。
 

@@ -1,7 +1,6 @@
-schema: themis-spec-projection/v1
-source_schema: themis-spec/v2
+schema: themis-spec-projection
 output: spec.md
-marker: themis-projection/v1
+marker: themis-projection
 source_name: spec.yaml
 
 sections:

@@ -1,12 +1,12 @@
 # Themis 生命周期迁移声明
-# P5.2 提供稳定 validator check；P8 负责确定性评估、状态记录和跨工件追踪。
+# P5.3 提供稳定 validator check；P8 负责确定性评估、状态记录和跨工件追踪。
 
 transitions:
   draft_to_specified:
     from: draft
     to: specified
     hard_gate: true
-    description: Spec v2 已通过完整 readiness、投影漂移和用户批准检查。
+    description: Spec 已通过完整 readiness、投影漂移和用户批准检查。
     conditions:
       - id: spec_intent_complete
         description: 核心意图、结果和根因已记录。

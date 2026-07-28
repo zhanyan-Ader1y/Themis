@@ -1,6 +1,6 @@
 # P6.8 前置 Review 实施索引
 
-P6.8 将 Review 落地为 Implementation 前的只读设计与计划批准。机器结果保存在 versioned Review evidence 中，`review.md` 是确定性 Human projection；Review 批准 current Spec/Plan、设计、风险、scope lock、回滚与验收方案后，才允许 Implementation。
+P6.8 将 Review 落地为 Implementation 前的只读设计与计划批准。机器结果保存在稳定无版本 Review evidence 中，`review.md` 是确定性 Human projection；Review 批准 current Spec/Plan、设计、风险、scope lock、回滚与验收方案后，才允许 Implementation。
 
 **状态**：实施设计待用户确认。原计划中“Verification 后审查实现”的方向已被正式设计替代；实施时以本索引和 `docs/design/core/kernel/review.md` 为准。
 
@@ -11,7 +11,7 @@ P6.8 将 Review 落地为 Implementation 前的只读设计与计划批准。机
 | D1 | Review 只读消费 current Spec pair、Plan、Context/源码依据、设计、风险、实施边界、回滚和验收方案，不消费已完成 implementation diff 或 Verification evidence。 |
 | D2 | 评审维度、severity、blocking 规则和 result 聚合由 YAML policy 定义。 |
 | D3 | Prompt 产生结构化 finding candidate；确定性 lint 校验引用、severity、failure scenario、result 门禁和 bound revision。 |
-| D4 | 机器权威是 versioned Review evidence；`review.md` 是可重建 Human projection，不作为 lifecycle evidence parser 输入。 |
+| D4 | 机器权威是稳定无版本 Review evidence；`review.md` 是可重建 Human projection，不作为 lifecycle evidence parser 输入。 |
 | D5 | 未解决 `critical` 或 `major` 阻止 `approved`；事实、设计或验收 evidence 不可核验时返回 `blocked`。 |
 | D6 | `approved` 绑定 current Spec/Plan revision/digest，并构成 Implementation authorization；任一受绑定工件变化后失效。 |
 | D7 | Review 不修改代码、不执行 Gate、不计算 Verification verdict、不写 lifecycle transition。 |
@@ -25,7 +25,7 @@ P6.8 将 Review 落地为 Implementation 前的只读设计与计划批准。机
 
 至少声明：
 
-- schema/version；
+- stable policy schema identifier；
 - dimensions：spec completeness、plan traceability、architecture/interfaces/state、security/data risk、scope lock、rollback、verification design、human acceptance design；
 - severity：`critical | major | minor | suggestion`；
 - result：`approved | changes_requested | blocked`；
@@ -38,7 +38,7 @@ P6.8 将 Review 落地为 Implementation 前的只读设计与计划批准。机
 
 ## Review evidence Protocol
 
-目标：`templates/.themis/core/protocols/review/v1/review-schema.yaml`
+目标：`templates/.themis/core/protocols/review/review-schema.yaml`
 
 至少记录：
 
@@ -143,7 +143,7 @@ executor 只处理一个显式 Workspace，不跨项目查找 Context 或 Eviden
 ### Core assets
 
 - `templates/.themis/core/policies/review.yaml`
-- `templates/.themis/core/protocols/review/v1/review-schema.yaml`
+- `templates/.themis/core/protocols/review/review-schema.yaml`
 - `templates/.themis/core/templates/review-execution.md`
 - `templates/.themis/core/templates/review.md` 或 projection protocol
 - `templates/.themis/core/kernel/review/themis-review.sh`

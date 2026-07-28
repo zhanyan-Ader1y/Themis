@@ -48,7 +48,8 @@ Draft → Specified → Planned → Reviewed → Implemented → Verified
 - Verification blocking Gate 首次失败后，只按持久 repair state 路由到修复者；修复后路由 `resume`，不得重置最多 3 次的 repair 预算或跳过失败 Gate。
 - repair 预算耗尽时路由持久化 escalation 和 Knowledge candidate 请求；Knowledge 不可用时保留 Run 中的 `candidate_pending`，并以 exit `2` 暴露 exhaustion。
 - Acceptance 拒绝时按证据返回 Specification、Planning 或 Implementation；任何实现变化都会使受影响 Verification evidence 失效。
-- 所需 Command、Skill、Agent、Adapter 或脚本不存在时停留当前阶段并报告缺口，不能手写机器状态作为替代。
+- 进入 Specification 且当前请求仍需澄清时，Specification 必须调用精确名称 `Themis-Q` 获取追问方法与覆盖指导；Skill 缺失或调用失败时停留 Specification，不能创建 candidate 代替。收敛判断、规范化摘要、用户确认与 candidate 创建均属于 Specification。
+- 所需其他 Command、Skill、Agent、Adapter 或脚本不存在时停留当前阶段并报告缺口，不能手写机器状态作为替代。
 
 ## Workspace 交互
 

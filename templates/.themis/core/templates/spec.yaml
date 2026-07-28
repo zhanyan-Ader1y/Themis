@@ -1,9 +1,7 @@
-spec_schema: themis-spec/v2
 id: ""
 title: ""
 status: draft
 revision: 1
-template_version: 2
 created_at: ""
 updated_at: ""
 author: ""
@@ -25,15 +23,11 @@ review:
   primary_risks: []
   primary_diagrams: []
   no_diagram_reason: ""
-questioning:
-  intent_status: pending
-  scope_status: pending
-  context_status: pending
-  design_status: pending
-  adversarial_status: pending
-  self_checks:
-    structural: {}
-    adversarial: {}
+context_basis:
+  disposition: pending
+  evidence_refs: []
+  limitation_refs: []
+  rationale: ""
 intent:
   request: ""
   outcome: ""

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Themis Spec v2 确定性执行器。
+# Themis Spec 确定性执行器。
 # 用途：校验 Agent 权威源、生成 Human 投影，并事务式发布 Spec 配对工件。
 # 边界：不进行语义总结，不反向同步 Markdown，不记录生命周期迁移或并发锁。
 # 兼容性：保持 Bash 3.2 兼容；要求 mikefarah/yq v4，投影操作额外要求 Git。
@@ -36,7 +36,7 @@ Usage:
   themis-spec.sh publish --candidate <spec.yaml> --target <spec-directory>
 
 Commands:
-  validate  Validate Spec v2 structure, references, readiness, and optional projection drift.
+  validate  Validate Spec structure, references, readiness, and optional projection drift.
   render    Deterministically rebuild the Human projection from spec.yaml.
   publish   Validate, render, pair-check, and transactionally publish both artifacts.
 EOF
@@ -184,6 +184,32 @@ themis_spec_expect_nullable_string() {
   esac
   themis_spec_add_error "$3"
   return 1
+}
+
+# 校验固定对象的必需键与未知键；字段类型由对应专用校验继续负责。
+themis_spec_validate_fixed_map() {
+  local themis_spec_fixed_source=$1
+  local themis_spec_fixed_contract=$2
+  local themis_spec_fixed_expression=$3
+  local themis_spec_fixed_field
+
+  if ! yq eval -e "${themis_spec_fixed_expression} | type == \"!!map\"" "${themis_spec_fixed_source}" >/dev/null 2>&1; then
+    return 1
+  fi
+
+  while IFS= read -r themis_spec_fixed_field; do
+    if ! THEMIS_SPEC_FIELD=${themis_spec_fixed_field} yq eval -e "${themis_spec_fixed_expression} | has(strenv(THEMIS_SPEC_FIELD))" "${themis_spec_fixed_source}" >/dev/null 2>&1; then
+      themis_spec_add_error "fixed_map.${themis_spec_fixed_contract}.required.${themis_spec_fixed_field}"
+    fi
+  done < <(THEMIS_SPEC_FIXED_MAP=${themis_spec_fixed_contract} yq eval -r '.fixed_maps[strenv(THEMIS_SPEC_FIXED_MAP)].required[]' "${THEMIS_SPEC_SCHEMA}")
+
+  while IFS= read -r themis_spec_fixed_field; do
+    if ! THEMIS_SPEC_FIXED_MAP=${themis_spec_fixed_contract} THEMIS_SPEC_FIELD=${themis_spec_fixed_field} \
+      yq eval -e '.fixed_maps[strenv(THEMIS_SPEC_FIXED_MAP)].allowed | contains([strenv(THEMIS_SPEC_FIELD)])' "${THEMIS_SPEC_SCHEMA}" >/dev/null 2>&1; then
+      themis_spec_add_error "fixed_map.${themis_spec_fixed_contract}.unknown.${themis_spec_fixed_field}"
+    fi
+  done < <(yq eval -r "${themis_spec_fixed_expression} | keys | .[]" "${themis_spec_fixed_source}")
+  return 0
 }
 
 # 判断字符串是否属于协议声明的枚举。
@@ -382,7 +408,7 @@ themis_spec_check_projection() {
   IFS= read -r themis_spec_projection_marker <"${themis_spec_projection_file}" || return 1
   themis_spec_projection_marker=${themis_spec_projection_marker%$'\r'}
   case "${themis_spec_projection_marker}" in
-    '<!-- themis-projection/v1 source=spec.yaml source_oid='*' body_oid='*' -->') ;;
+    '<!-- themis-projection source=spec.yaml source_oid='*' body_oid='*' -->') ;;
     *) return 1 ;;
   esac
 
@@ -436,21 +462,135 @@ themis_spec_readiness_fields_complete() {
   return 0
 }
 
+# 校验最终语义中的 Context 依据；引用只允许指向 evidence、assumptions 与 risks。
+themis_spec_validate_context_basis() {
+  local themis_spec_context_source=$1
+  local themis_spec_context_ref
+
+  themis_spec_expect_type "${themis_spec_context_source}" '.context_basis.disposition' '!!str' 'type.context_basis.disposition' || true
+  themis_spec_expect_type "${themis_spec_context_source}" '.context_basis.evidence_refs' '!!seq' 'type.context_basis.evidence_refs' || true
+  themis_spec_expect_type "${themis_spec_context_source}" '.context_basis.limitation_refs' '!!seq' 'type.context_basis.limitation_refs' || true
+  themis_spec_expect_type "${themis_spec_context_source}" '.context_basis.rationale' '!!str' 'type.context_basis.rationale' || true
+
+  while IFS= read -r themis_spec_context_ref; do
+    [ -n "${themis_spec_context_ref}" ] || continue
+    if ! themis_spec_reference_exists evidence "${themis_spec_context_ref}" "${themis_spec_context_source}"; then
+      themis_spec_add_error 'context_basis.dangling.evidence_refs'
+    fi
+  done < <(yq eval -r '.context_basis.evidence_refs[]?' "${themis_spec_context_source}")
+
+  while IFS= read -r themis_spec_context_ref; do
+    [ -n "${themis_spec_context_ref}" ] || continue
+    case "${themis_spec_context_ref}" in
+      ASM-*)
+        themis_spec_reference_exists assumptions "${themis_spec_context_ref}" "${themis_spec_context_source}" || themis_spec_add_error 'context_basis.dangling.limitation_refs'
+        ;;
+      RSK-*)
+        themis_spec_reference_exists risks "${themis_spec_context_ref}" "${themis_spec_context_source}" || themis_spec_add_error 'context_basis.dangling.limitation_refs'
+        ;;
+      *) themis_spec_add_error 'context_basis.invalid.limitation_refs' ;;
+    esac
+  done < <(yq eval -r '.context_basis.limitation_refs[]?' "${themis_spec_context_source}")
+}
+
+# 检查最终 Spec 是否包含 policy 声明的占位文本。
+themis_spec_has_placeholder() {
+  local themis_spec_placeholder_source=$1
+  local themis_spec_placeholder_pattern
+
+  while IFS= read -r themis_spec_placeholder_pattern; do
+    if THEMIS_SPEC_PATTERN=${themis_spec_placeholder_pattern} yq eval -e '
+      .. | select(type == "!!str") | select(test(strenv(THEMIS_SPEC_PATTERN)))
+    ' "${themis_spec_placeholder_source}" >/dev/null 2>&1; then
+      return 0
+    fi
+  done < <(yq eval -r '.specification.semantic_consistency.placeholder_patterns[]' "${THEMIS_SPEC_POLICY}")
+  return 1
+}
+
+# 比较 Review Summary 的 include/exclude 文本与 scope 中同类 statement。
+themis_spec_scope_summary_matches() {
+  local themis_spec_scope_source=$1
+  local themis_spec_scope_kind
+  local themis_spec_scope_summary_field
+  local themis_spec_scope_count
+  local themis_spec_summary_count
+  local themis_spec_scope_id
+  local themis_spec_scope_statement
+
+  for themis_spec_scope_kind in include exclude; do
+    case "${themis_spec_scope_kind}" in
+      include) themis_spec_scope_summary_field=included ;;
+      exclude) themis_spec_scope_summary_field=excluded ;;
+    esac
+    themis_spec_scope_count=$(THEMIS_SPEC_SCOPE_KIND=${themis_spec_scope_kind} yq eval '[.scope[] | select(.kind == strenv(THEMIS_SPEC_SCOPE_KIND))] | length' "${themis_spec_scope_source}")
+    themis_spec_summary_count=$(THEMIS_SPEC_SUMMARY_FIELD=${themis_spec_scope_summary_field} yq eval '.review.summary[strenv(THEMIS_SPEC_SUMMARY_FIELD)] | length' "${themis_spec_scope_source}")
+    [ "${themis_spec_scope_count}" -eq "${themis_spec_summary_count}" ] || return 1
+
+    while IFS= read -r themis_spec_scope_id; do
+      themis_spec_scope_statement=$(themis_spec_read_field scope "${themis_spec_scope_id}" statement "${themis_spec_scope_source}")
+      if ! THEMIS_SPEC_SUMMARY_FIELD=${themis_spec_scope_summary_field} THEMIS_SPEC_STATEMENT=${themis_spec_scope_statement} \
+        yq eval -e '.review.summary[strenv(THEMIS_SPEC_SUMMARY_FIELD)] | contains([strenv(THEMIS_SPEC_STATEMENT)])' "${themis_spec_scope_source}" >/dev/null 2>&1; then
+        return 1
+      fi
+    done < <(THEMIS_SPEC_SCOPE_KIND=${themis_spec_scope_kind} yq eval -r '.scope | to_entries[] | select(.value.kind == strenv(THEMIS_SPEC_SCOPE_KIND)) | .key' "${themis_spec_scope_source}")
+  done
+  return 0
+}
+
+# 检查 selected option 必须被 decision 引用，且 assumption/option 无 pending。
+themis_spec_decisions_consistent() {
+  local themis_spec_decision_source=$1
+  local themis_spec_selected_option
+
+  # shellcheck disable=SC2016 # `$root` 与 `$ref` 属于 yq 表达式，不由 shell 展开。
+  if yq eval -e '.assumptions[] | select(.status == "pending")' "${themis_spec_decision_source}" >/dev/null 2>&1 || \
+     yq eval -e '.options[] | select(.disposition == "pending")' "${themis_spec_decision_source}" >/dev/null 2>&1 || \
+     yq eval -e '. as $root | .decisions[] | select((.option_refs | length == 0) or ([.option_refs[] as $ref | $root.options[$ref].disposition == "selected"] | any | not))' "${themis_spec_decision_source}" >/dev/null 2>&1; then
+    return 1
+  fi
+
+  while IFS= read -r themis_spec_selected_option; do
+    if ! THEMIS_SPEC_OPTION_ID=${themis_spec_selected_option} yq eval -e '.decisions[] | select(.option_refs | contains([strenv(THEMIS_SPEC_OPTION_ID)]))' "${themis_spec_decision_source}" >/dev/null 2>&1; then
+      return 1
+    fi
+  done < <(yq eval -r '.options | to_entries[] | select(.value.disposition == "selected") | .key' "${themis_spec_decision_source}")
+  return 0
+}
+
+# 计算可由 executor 证明的最终语义一致性，不接受 Agent 自报布尔值。
+themis_spec_semantic_consistency_complete() {
+  local themis_spec_consistency_source=$1
+
+  themis_spec_readiness_fields_complete "${themis_spec_consistency_source}" || return 1
+  themis_spec_has_placeholder "${themis_spec_consistency_source}" && return 1
+  [ "$(yq eval -r '.review.summary.request' "${themis_spec_consistency_source}")" = "$(yq eval -r '.intent.request' "${themis_spec_consistency_source}")" ] || return 1
+  [ "$(yq eval -r '.review.summary.intent' "${themis_spec_consistency_source}")" = "$(yq eval -r '.intent.outcome' "${themis_spec_consistency_source}")" ] || return 1
+  [ "$(yq eval -r '.review.summary.root_cause' "${themis_spec_consistency_source}")" = "$(yq eval -r '.intent.root_cause' "${themis_spec_consistency_source}")" ] || return 1
+  themis_spec_scope_summary_matches "${themis_spec_consistency_source}" || return 1
+  themis_spec_decisions_consistent "${themis_spec_consistency_source}" || return 1
+  ! yq eval -e '.requirements[] | select((.scope_refs | length == 0) or (.evidence_refs | length == 0))' "${themis_spec_consistency_source}" >/dev/null 2>&1 || return 1
+  ! yq eval -e '.acceptance_criteria[] | select(.requirement_refs | length == 0)' "${themis_spec_consistency_source}" >/dev/null 2>&1 || return 1
+  [ "$(yq eval '.rollback.triggers | length' "${themis_spec_consistency_source}")" -gt 0 ] || return 1
+  [ "$(yq eval '.rollback.steps | length' "${themis_spec_consistency_source}")" -gt 0 ] || return 1
+  [ -n "$(yq eval -r '.rollback.impact' "${themis_spec_consistency_source}")" ] || return 1
+  return 0
+}
+
 # 计算八个稳定 readiness check；只做可确定判断，不替代用户语义决策。
 themis_spec_compute_readiness() {
   local themis_spec_readiness_source=$1
   local themis_spec_readiness_projection=${2-}
   local themis_spec_readiness_level
+  local themis_spec_readiness_context_disposition
   local themis_spec_readiness_context=0
   local themis_spec_readiness_adversarial=1
-  local themis_spec_readiness_self_check=1
   local themis_spec_readiness_finding
   local themis_spec_readiness_disposition
   local themis_spec_readiness_dimension
   local themis_spec_readiness_severity
   local themis_spec_readiness_count
   local themis_spec_readiness_limit
-  local themis_spec_readiness_check
 
   THEMIS_SPEC_CHECK_INTENT=0
   THEMIS_SPEC_CHECK_SCOPE=0
@@ -463,33 +603,54 @@ themis_spec_compute_readiness() {
 
   if [ -n "$(yq eval -r '.intent.request' "${themis_spec_readiness_source}")" ] && \
      [ -n "$(yq eval -r '.intent.outcome' "${themis_spec_readiness_source}")" ] && \
-     [ -n "$(yq eval -r '.intent.root_cause' "${themis_spec_readiness_source}")" ] && \
-     [ "$(yq eval -r '.questioning.intent_status' "${themis_spec_readiness_source}")" = complete ]; then
+     [ -n "$(yq eval -r '.intent.root_cause' "${themis_spec_readiness_source}")" ]; then
     THEMIS_SPEC_CHECK_INTENT=1
   fi
 
   themis_spec_readiness_level=$(yq eval -r '.complexity.level' "${themis_spec_readiness_source}")
   if case "${themis_spec_readiness_level}" in low|medium|high) true ;; *) false ;; esac && \
      [ "$(yq eval -r '.complexity.confirmed' "${themis_spec_readiness_source}")" = true ] && \
-     [ "$(yq eval '.scope | length' "${themis_spec_readiness_source}")" -gt 0 ] && \
-     [ "$(yq eval -r '.questioning.scope_status' "${themis_spec_readiness_source}")" = complete ]; then
+     [ "$(yq eval '.scope | length' "${themis_spec_readiness_source}")" -gt 0 ]; then
     THEMIS_SPEC_CHECK_SCOPE=1
   fi
 
-  case "${themis_spec_readiness_level}" in
-    low)
-      case "$(yq eval -r '.questioning.context_status' "${themis_spec_readiness_source}")" in complete|skipped) themis_spec_readiness_context=1 ;; esac
+  themis_spec_readiness_context_disposition=$(yq eval -r '.context_basis.disposition' "${themis_spec_readiness_source}")
+  case "${themis_spec_readiness_context_disposition}" in
+    grounded)
+      # shellcheck disable=SC2016 # `$ref` 属于 yq 表达式，不由 shell 展开。
+      if [ "$(yq eval '.context_basis.evidence_refs | length' "${themis_spec_readiness_source}")" -gt 0 ] && \
+         yq eval -e '
+           .context_basis.evidence_refs[] as $ref |
+           .evidence[$ref] | select(.kind == "context" or .kind == "code" or .kind == "external")
+         ' "${themis_spec_readiness_source}" >/dev/null 2>&1; then
+        themis_spec_readiness_context=1
+      fi
       ;;
-    medium|high)
-      if [ "$(yq eval -r '.questioning.context_status' "${themis_spec_readiness_source}")" = complete ] && [ "$(yq eval '.evidence | length' "${themis_spec_readiness_source}")" -gt 0 ]; then
+    not_required)
+      if [ "${themis_spec_readiness_level}" = low ] && \
+         [ "$(yq eval -r '.complexity.confirmed' "${themis_spec_readiness_source}")" = true ] && \
+         [ -n "$(yq eval -r '.context_basis.rationale' "${themis_spec_readiness_source}")" ]; then
+        themis_spec_readiness_context=1
+      fi
+      ;;
+    limited)
+      # shellcheck disable=SC2016 # `$ref` 属于 yq 表达式，不由 shell 展开。
+      if [ -n "$(yq eval -r '.context_basis.rationale' "${themis_spec_readiness_source}")" ] && \
+         [ "$(yq eval '.context_basis.evidence_refs | length' "${themis_spec_readiness_source}")" -gt 0 ] && \
+         [ "$(yq eval '.context_basis.limitation_refs | length' "${themis_spec_readiness_source}")" -gt 0 ] && \
+         ! yq eval -e '
+           .context_basis.limitation_refs[] as $ref |
+           if ($ref | startswith("ASM-")) then .assumptions[$ref] | select(.status == "pending")
+           elif ($ref | startswith("RSK-")) then .risks[$ref] | select(.status == "open")
+           else true end
+         ' "${themis_spec_readiness_source}" >/dev/null 2>&1; then
         themis_spec_readiness_context=1
       fi
       ;;
   esac
   THEMIS_SPEC_CHECK_CONTEXT=${themis_spec_readiness_context}
 
-  if [ "$(yq eval -r '.questioning.design_status' "${themis_spec_readiness_source}")" = complete ] && \
-     [ "$(yq eval '.decisions | length' "${themis_spec_readiness_source}")" -gt 0 ] && \
+  if [ "$(yq eval '.decisions | length' "${themis_spec_readiness_source}")" -gt 0 ] && \
      [ "$(yq eval '.requirements | length' "${themis_spec_readiness_source}")" -gt 0 ] && \
      [ "$(yq eval '.acceptance_criteria | length' "${themis_spec_readiness_source}")" -gt 0 ] && \
      ! yq eval -e '.acceptance_criteria[] | select(.requirement_refs | length == 0)' "${themis_spec_readiness_source}" >/dev/null 2>&1 && \
@@ -529,22 +690,11 @@ themis_spec_compute_readiness() {
   if [ "${themis_spec_readiness_count}" -gt "${themis_spec_readiness_limit}" ]; then
     themis_spec_readiness_adversarial=0
   fi
-  if [ "$(yq eval -r '.questioning.adversarial_status' "${themis_spec_readiness_source}")" != complete ]; then
-    themis_spec_readiness_adversarial=0
-  fi
   THEMIS_SPEC_CHECK_ADVERSARIAL=${themis_spec_readiness_adversarial}
 
-  for themis_spec_readiness_check in $(yq eval -r '.specification.self_check.structural[]' "${THEMIS_SPEC_POLICY}"); do
-    if ! THEMIS_SPEC_CHECK_ID=${themis_spec_readiness_check} yq eval -e '.questioning.self_checks.structural[strenv(THEMIS_SPEC_CHECK_ID)] == true' "${themis_spec_readiness_source}" >/dev/null 2>&1; then
-      themis_spec_readiness_self_check=0
-    fi
-  done
-  for themis_spec_readiness_check in $(yq eval -r '.specification.self_check.adversarial[]' "${THEMIS_SPEC_POLICY}"); do
-    if ! THEMIS_SPEC_CHECK_ID=${themis_spec_readiness_check} yq eval -e '.questioning.self_checks.adversarial[strenv(THEMIS_SPEC_CHECK_ID)] == true' "${themis_spec_readiness_source}" >/dev/null 2>&1; then
-      themis_spec_readiness_self_check=0
-    fi
-  done
-  THEMIS_SPEC_CHECK_SELF=${themis_spec_readiness_self_check}
+  if themis_spec_semantic_consistency_complete "${themis_spec_readiness_source}"; then
+    THEMIS_SPEC_CHECK_SELF=1
+  fi
 
   if [ "$(yq eval -r '.approval.decision' "${themis_spec_readiness_source}")" = approved ] && \
      [ "$(yq eval -r '.approval.approved_by // ""' "${themis_spec_readiness_source}")" != '' ] && \
@@ -603,21 +753,24 @@ themis_spec_validate_internal() {
     fi
   done < <(yq eval -r 'keys | .[]' "${themis_spec_validate_source}")
 
-  themis_spec_expect_type "${themis_spec_validate_source}" '.spec_schema' '!!str' 'type.spec_schema' || true
   themis_spec_expect_type "${themis_spec_validate_source}" '.id' '!!str' 'type.id' || true
   themis_spec_expect_type "${themis_spec_validate_source}" '.title' '!!str' 'type.title' || true
   themis_spec_expect_type "${themis_spec_validate_source}" '.status' '!!str' 'type.status' || true
   themis_spec_expect_type "${themis_spec_validate_source}" '.revision' '!!int' 'type.revision' || true
-  themis_spec_expect_type "${themis_spec_validate_source}" '.template_version' '!!int' 'type.template_version' || true
   for themis_spec_validate_key in created_at updated_at author; do
     themis_spec_expect_type "${themis_spec_validate_source}" ".${themis_spec_validate_key}" '!!str' "type.${themis_spec_validate_key}" || true
   done
-  for themis_spec_validate_key in complexity review questioning intent scope evidence assumptions options decisions requirements interfaces contracts invariants acceptance_criteria adversarial_findings risks diagrams rollback approval; do
+  for themis_spec_validate_key in complexity review context_basis intent scope evidence assumptions options decisions requirements interfaces contracts invariants acceptance_criteria adversarial_findings risks diagrams rollback approval; do
     themis_spec_expect_type "${themis_spec_validate_source}" ".${themis_spec_validate_key}" '!!map' "type.${themis_spec_validate_key}" || true
   done
+  themis_spec_validate_fixed_map "${themis_spec_validate_source}" complexity '.complexity' || true
+  themis_spec_validate_fixed_map "${themis_spec_validate_source}" review '.review' || true
+  themis_spec_validate_fixed_map "${themis_spec_validate_source}" review_summary '.review.summary' || true
+  themis_spec_validate_fixed_map "${themis_spec_validate_source}" context_basis '.context_basis' || true
+  themis_spec_validate_fixed_map "${themis_spec_validate_source}" intent '.intent' || true
+  themis_spec_validate_fixed_map "${themis_spec_validate_source}" rollback '.rollback' || true
+  themis_spec_validate_fixed_map "${themis_spec_validate_source}" approval '.approval' || true
 
-  themis_spec_validate_value=$(yq eval -r '.spec_schema // ""' "${themis_spec_validate_source}")
-  [ "${themis_spec_validate_value}" = themis-spec/v2 ] || themis_spec_add_error 'value.spec_schema'
   themis_spec_validate_value=$(yq eval -r '.id // ""' "${themis_spec_validate_source}")
   case "${themis_spec_validate_value}" in
     ''|*[!a-z0-9._-]*|[!a-z0-9]*) themis_spec_add_error 'value.id' ;;
@@ -626,7 +779,6 @@ themis_spec_validate_internal() {
   themis_spec_validate_value=$(yq eval -r '.status // ""' "${themis_spec_validate_source}")
   themis_spec_protocol_enum_contains status "${themis_spec_validate_value}" || themis_spec_add_error 'value.status'
   [ "$(yq eval '.revision // 0' "${themis_spec_validate_source}")" -ge 1 ] 2>/dev/null || themis_spec_add_error 'value.revision'
-  [ "$(yq eval '.template_version // 0' "${themis_spec_validate_source}")" -eq 2 ] 2>/dev/null || themis_spec_add_error 'value.template_version'
   themis_spec_validate_value=$(yq eval -r '.complexity.level // ""' "${themis_spec_validate_source}")
   themis_spec_protocol_enum_contains complexity_level "${themis_spec_validate_value}" || themis_spec_add_error 'value.complexity.level'
 
@@ -641,12 +793,9 @@ themis_spec_validate_internal() {
     themis_spec_expect_type "${themis_spec_validate_source}" ".review.summary.${themis_spec_validate_key}" '!!str' "type.review.summary.${themis_spec_validate_key}" || true
   done
   themis_spec_expect_type "${themis_spec_validate_source}" '.review.no_diagram_reason' '!!str' 'type.review.no_diagram_reason' || true
-  for themis_spec_validate_key in intent_status scope_status context_status design_status adversarial_status; do
-    themis_spec_validate_value=$(yq eval -r ".questioning.${themis_spec_validate_key} // \"\"" "${themis_spec_validate_source}")
-    themis_spec_protocol_enum_contains step_status "${themis_spec_validate_value}" || themis_spec_add_error "value.questioning.${themis_spec_validate_key}"
-  done
-  themis_spec_expect_type "${themis_spec_validate_source}" '.questioning.self_checks.structural' '!!map' 'type.self_checks.structural' || true
-  themis_spec_expect_type "${themis_spec_validate_source}" '.questioning.self_checks.adversarial' '!!map' 'type.self_checks.adversarial' || true
+  themis_spec_validate_value=$(yq eval -r '.context_basis.disposition // ""' "${themis_spec_validate_source}")
+  themis_spec_protocol_enum_contains context_disposition "${themis_spec_validate_value}" || themis_spec_add_error 'value.context_basis.disposition'
+  themis_spec_validate_context_basis "${themis_spec_validate_source}"
   for themis_spec_validate_key in request outcome root_cause; do
     themis_spec_expect_type "${themis_spec_validate_source}" ".intent.${themis_spec_validate_key}" '!!str' "type.intent.${themis_spec_validate_key}" || true
   done
@@ -881,7 +1030,7 @@ themis_spec_render_internal() {
   themis_spec_render_source_oid=$(git hash-object -- "${themis_spec_render_source}") || return 1
   themis_spec_render_body_oid=$(git hash-object -- "${themis_spec_render_body}") || return 1
   {
-    printf '<!-- themis-projection/v1 source=spec.yaml source_oid=%s body_oid=%s -->\n' "${themis_spec_render_source_oid}" "${themis_spec_render_body_oid}"
+    printf '<!-- themis-projection source=spec.yaml source_oid=%s body_oid=%s -->\n' "${themis_spec_render_source_oid}" "${themis_spec_render_body_oid}"
     cat "${themis_spec_render_body}"
   } >"${themis_spec_render_temp}" || {
     rm -f "${themis_spec_render_temp}" "${themis_spec_render_body}"

@@ -1,13 +1,13 @@
 # Workspace — 项目空间
 
-> 规范状态：正式设计。实现状态：当前 `themis-workspace/v1` 目录骨架、manifest 与 Spec v2 双视图已实现；Context Catalog/Signal/Bundle、通用 lifecycle state、Review、Verification、Acceptance、Summary、Outcome 和知识治理执行器均尚未实现。
+> 规范状态：正式设计。实现状态：当前 `themis-workspace/v1` 目录骨架、manifest、无版本 Spec 双视图与 P5.4 Context Catalog/Signal/Bundle/Navigation 基础设施已实现；通用 lifecycle state、Review、Verification、Acceptance、Summary、Outcome 和知识治理执行器尚未实现。
 
 ## 职责边界
 
 Workspace 完全属于当前项目，保存项目特有内容和运行数据；Core 读取并治理这些内容，但不得在内部复制项目事实。
 
 - Workspace 保存内容，不实现控制逻辑。
-- 当前版本只支持 fresh Init，不更新或转换既有 `.themis`。
+- 当前版本只支持 fresh Init，不更新或转换既有 `.themis`；Init 只在目标 `Themis-Q` 路径不存在时安全合并 `.claude/skills/Themis-Q/`。
 - Workspace/Artifact Schema 必须位于 `core.yaml` 的 fixed supported allow-list；不支持的值 fail closed。
 - 任何运行时都不得隐式改写 Schema、创建不兼容结构或以复制模板替代更新机制。
 - 正式项目知识只存在于 `workspace/context/`；`workspace/knowledge/` 是治理过程数据。
@@ -51,20 +51,20 @@ paths:
 | 路径 | 内容 | 当前状态 |
 |---|---|---|
 | `policies/` | 项目允许的 policy override | 目录骨架 |
-| `context/` | 正式项目知识 | 分类目录骨架；P5.4 Catalog/L1/L2/L3 未实现 |
-| `specs/` | Spec、Plan、Review、Verify、Summary 等 SDD 工件 | Spec v2 双视图已实现；其余未实现 |
-| `state/` | transition、Task、retry、lock、session、Context Signal 等机器状态 | 目录骨架 |
+| `context/` | 正式项目知识 | 空 bootstrap Catalog、L1/L2 Navigation 与七类目录已实现；L3 内容由人工维护或未来 P5.5 Knowledge Governance 提供 |
+| `specs/` | Spec、Plan、Review、Verify、Summary 等 SDD 工件 | 无版本 Spec 双视图已实现；其余未实现 |
+| `state/` | transition、Task、retry、lock、session、Context Signal 等机器状态 | Context Signal、lock 与 transaction 基础设施已实现；通用 lifecycle state 未实现 |
 | `runs/` | 一次执行的输入、Gate、verdict 与摘要 | 目录骨架 |
 | `evidence/` | 命令、构建、测试、Review、Acceptance、漂移与部署证据 | 目录骨架 |
 | `outcomes/` | success、rework、defect、incident、rollback | 目录骨架 |
 | `knowledge/` | candidate、review、canonical action、rejected projection、archive snapshot | 目录骨架 |
-| `cache/` | 可重建的 Context 索引、Bundle 与派生元数据 | 目录骨架 |
+| `cache/` | 可重建的 Context 索引、Bundle 与派生元数据 | Context index 与 resolved Bundle Cache 已实现 |
 
 目录存在不代表对应执行能力已经实现。
 
-## P5.4 目标 Context 结构
+## P5.4 Context 结构
 
-P5.4 必须在当前 `themis-workspace/v1` 可表达的目录内实施：
+P5.4 在当前 `themis-workspace/v1` 可表达的目录内实现：
 
 ```text
 workspace/
@@ -105,7 +105,7 @@ workspace/
 
 ```text
 workspace/specs/<spec-id>/
-├── spec.yaml       # themis-spec/v2；唯一机器语义源
+├── spec.yaml       # 当前唯一、无独立版本号的机器语义源
 ├── spec.md         # 确定性 Human projection
 ├── plan.md
 ├── review.md       # 前置 Review projection
@@ -113,7 +113,7 @@ workspace/specs/<spec-id>/
 └── summary.md      # Human Acceptance 后的最终交付投影
 ```
 
-当前只实现 `spec.yaml`/`spec.md` pair。P5 通过 `workspace/cache/spec-candidates/<spec-id>.yaml` 写 candidate；`themis-spec.sh publish` 负责验证、渲染、配对校验与可恢复发布。Plan、Review、Verify、Summary 的模板和执行器尚未落地。
+当前只实现 `spec.yaml`/`spec.md` pair。Requirement Questioning 发生在 Workspace 写入之前；Themis-Q 只提供提问方法，Specification 在需求收敛并获用户确认后才创建唯一 `workspace/cache/spec-candidates/<spec-id>.yaml` candidate，`themis-spec.sh publish` 负责验证、渲染、配对校验与可恢复发布。Plan、Review、Verify、Summary 的模板和执行器尚未落地。
 
 生命周期状态统一为：
 

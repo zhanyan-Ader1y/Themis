@@ -1,5 +1,7 @@
 # P5 实施索引
 
+> **2026-07-28 后续替代说明**：本文保留原始 P5 实施决策与验证记录。当前 Requirement Questioning 已由 [P5.3 Themis-Q Skill](../53-requirement-questioning-skill/impl.md) 替代：Themis-Q 只维护提问方法与内容，Specification 负责 policy、Context、收敛、确认和唯一 candidate；旧 Core Prompt、Spec 过程状态和 Spec 独立版本字段不再是当前合同。
+
 P5 将需求追问落地为可安装的 Core 能力。它以 YAML 声明门禁，以 Prompt 执行语义追问和对抗验证，以脚本验证确定性模板结构；不会在没有 P8 执行器时伪造生命周期状态迁移。
 
 ## 设计决策
