@@ -1,63 +1,53 @@
-# Themis 实施计划
+# Themis 活动实施计划
 
-本目录以模块为单位管理 Themis 的提案、实施设计、任务和执行历史，属于非规范文档。已确认的长期设计以 [Themis 设计规范](../design/README.md) 为准；计划内容与正式设计冲突时，不得覆盖正式设计。
+`docs/plan/**` 是面向未来的活动实施队列，只保存尚待单独确认和执行的实施设计。长期规范以 [Themis 设计规范](../design/README.md) 及其所属设计页为准；本目录不替代正式设计，也不保存已经完成或退役计划的历史叙事。
 
-> **执行协议**：计划文档不是实现授权。只有用户主动发起某个计划后才可开始执行。执行的第一步必须在该计划自身目录创建或更新 `impl.md`（即 `docs/plan/<priority>-<slug>/impl.md`），将设计决策、任务拆分、目标文件和验证矩阵落地。`impl.md` 完成后必须等待用户确认，确认前不得修改该计划所涉及的实现文件。
+## 授权规则
 
-## 计划队列
+- 每个计划都是实施设计，必须由用户分别确认。
+- 确认某个计划的设计不自动确认其依赖计划，也不自动授权后续计划。
+- 本次队列清理只重组文档，**不授权实施 Plan 35 或任何其他计划**。
+- 未获得目标计划的明确实施确认前，不得修改该计划涉及的产品、模板、运行时或测试文件。
+- 实施过程中若需要改变已确认的长期设计，必须先按 [设计治理](../design/governance.md) 更新所属 `docs/design/**` 页面并取得相应确认。
 
-| 优先级 | 计划 | 模块 | 依赖 | 状态 |
+## 活动队列
+
+| 顺序 | 计划 | 依赖 | 定位 | 状态 |
 |---|---|---|---|---|
-| P0 | [Init Environment Validation](00-runtime-environment/) | Init 所需的 Bash、Git、yq 前置环境校验 | 无 | 已完成 |
-| P1 | [Template Contract](10-template-contract/) | 安装模板、版本和 YAML 契约 | P0 | 已完成 |
-| P2 | [Top-level Guidance](20-top-level-guidance/) | Themis 顶层 SDD 指引与路由 | P1 | 已完成（运行时 import 探针待认证环境复核） |
-| P3 | [Init](30-init/) | fresh installation | P0、P1、P2 | 已完成 |
-| P4 | [Upgrade](40-upgrade/) | 历史无损升级实现 | — | 已退役；保留历史 |
-| P4.5 | [Explicit Migration](45-explicit-migration/) | 历史 Schema 转换实现 | — | 已退役；保留历史 |
-| P5 | [Requirement Questioning](50-requirement-questioning/) | Spec 创建前的追问与需求澄清 | P1、P2 | 已完成（P8 状态执行器待实施） |
-| P5.2 | [Spec Dual View](52-spec-dual-view/) | `spec.yaml` Agent 权威源 + `spec.md` Human 审阅投影 | P5 | 已完成；Spec 过程状态/独立版本字段由 P5.3 替代 |
-| P5.3 | [Requirement Questioning Skill](53-requirement-questioning-skill/) | `Themis-Q` 追问方法、Specification 工作流边界与无版本 Spec 最终语义 | P5、P5.2 | 已完成 |
-| P5.4 | [Context Restructure](54-context-restructure/) | 双轴可信源、L1/L2/L3 Context、Catalog、检索装配与 Signal | P1、P2、P5 | 已完成 |
-| P5.5 | [Knowledge Governance](55-knowledge-governance/) | 人机混合知识治理（候选→审核→提升→废弃） | P1、P2、P5、P5.4 | 待发起 |
-| P5.8 | [Planning Enhancement](58-planning-enhancement/) | Task、依赖 DAG、Traceability、Plan 校验 | P1、P5、P5.4 | 待发起 |
-| P6.8 | [Review Enhancement](68-review-enhancement/) | Implementation 前的 Spec/Plan/设计/风险批准 | P1、P5、P5.8 | 待发起 |
-| P5.9 | [Implementation Enhancement](59-implementation-enhancement/) | reviewed Task 执行、范围锁定与证据记录 | P1、P5、P5.8、P6.8 | 设计中 |
-| P6 | [Behavior Map & Change Localization](60-behavior-map/) | 历史代码行为地图方案 | — | 已退役；保留历史 |
-| P6.5 | [Verification Enhancement](65-verification-enhancement/) | 实现后的 Gate、失败分类、repair/resume 与 verdict | P1、P5、P5.8、P6.8、P5.9 | 待发起 |
-| P7 | [Integration Audit](70-integration-audit/) | 模块串联、加载机制、编排保证、知识入口、结构审计 | 当前活动模块 | 分析完成，需按新生命周期复核 |
-| P7.5 | [Attribution & Outcome](75-attribution-outcome/) | 归因、Acceptance、Summary 与交付结果 | P6.5 | 待发起 |
-| P8 | [Multi-Agent Architecture](80-multi-agent-architecture/) | 领域专用 Agent + Shell 确定性操作 | P1、P5、P7 | 待发起 |
+| 35 | [Core Prompt Flow](35-core-prompt-flow/impl.md) | 无 | 串联八个领域的 Prompt-first 语义生命周期 | 待单独确认 |
+| 36 | [Deterministic Assurance](36-deterministic-assurance/impl.md) | 已单独接受的 Plan 35 | 定义语言无关的严格合同与合同夹具 | 待单独确认 |
+| 37 | [Native Runtime](37-native-runtime/impl.md) | 已单独接受的 Plan 36 | 以单一无版本 Go 模块实现首个新生产确定性运行时 | 待单独确认 |
+| 80 | [Multi-Agent Execution](80-multi-agent-execution/impl.md) | 可选；核心生命周期不依赖 | 定义隔离、handoff、聚合和证据边界 | 待单独确认，非阻塞 |
+| 90 | [Attribution Analytics](90-attribution-analytics/impl.md) | 可选；交付后使用 | 定义 Attribution 与 Outcome 分析 | 待单独确认，非阻塞 |
 
-## 依赖图
+## 依赖与阶段约束
 
 ```text
-P0 Init Environment Validation
- └── P1 Template Contract
-      ├── P2 Top-level Guidance
-      │    ├── P3 fresh Init
-      │    └── P5 Requirement Questioning
-      │         ├── P5.2 Spec Dual View
-      │         │    └── P5.3 Requirement Questioning Skill
-      │         ├── P5.4 Context Restructure
-      │         │    └── P5.5 Knowledge Governance
-      │         └── P5.8 Planning Enhancement
-      │              └── P6.8 Review Enhancement
-      │                   └── P5.9 Implementation Enhancement
-      │                        └── P6.5 Verification Enhancement
-      │                             └── P7.5 Attribution & Outcome
-      └── P7 Integration Audit
-           └── P8 Multi-Agent Architecture
+Plan 35 Core Prompt Flow
+  └── Plan 36 Deterministic Assurance
+        └── Plan 37 Native Runtime
 
-P4 Upgrade、P4.5 Explicit Migration 与 P6 Behavior Map 已从当前产品退役，不再是活动计划的依赖。
-P5.4 必须在当前 `themis-workspace` 内实施，不得隐式转换既有安装或引入 Behavior Map。
-P5.8 产出 Plan；P6.8 在 Implementation 前批准 current Spec/Plan；P5.9 只执行 approved Review 范围；P6.5 在实现后运行 Verification。
-Verification `pass` 后进入 Human Acceptance；`accepted` 后生成 `summary.md`，再完成 Outcome、Attribution、知识处置与归档。
-P7 是跨模块分析性审计；P8 是最终执行层。
+Plan 80 Multi-Agent Execution       optional / non-blocking
+Plan 90 Attribution Analytics       optional / post-delivery / non-blocking
 ```
 
-## 通用边界
+核心生命周期保持：
 
-- Themis 默认假设用户已有文件系统权限与 Agent 环境；计划及实现不得检查、安装或配置这两者。
-- Bash、Git 与 [mikefarah/yq](https://github.com/mikefarah/yq) 是 **Init 的安装前置环境**，仅由 Init 校验；已安装 Themis 的 SDD 运行流程不会调用这些环境检查。
-- Core 是 Themis 管理的能力层；Workspace 是项目持有的内容与运行数据层。当前没有 Core 原地更新或 Workspace/Artifact Schema 转换能力，任何计划不得隐式改写既有 Workspace。
-- 每项计划的 `impl.md` 是该计划自身的执行设计记录，不是新的长期 WIKI 模块；它位于对应计划目录中，便于隔离审计。
+```text
+Context → Specification → Planning → Review → Implementation
+        → Verification → Human Acceptance → Summary → Knowledge
+```
+
+- Review 必须发生在 Implementation 前，并绑定待实施的 current Spec 与 Plan。
+- Verification 必须发生在 Implementation 后；证据缺失、不确定、不可访问或已失效时不得报告成功，必须返回 `inconclusive` 或失败。
+- Human Acceptance 只能在 current Verification 返回 `pass` 后记录。
+- Summary 只能在 Human Acceptance 已持久记录为 `accepted` 后生成。
+- Plan 80 和 Plan 90 不得成为 Verification、Human Acceptance、Summary 或核心生命周期完成的前置条件。
+
+## 通用实施边界
+
+- 不引入功能性 `v1`、`v2` 或模块/协议版本目录；模块只维护唯一 current contract。
+- Prompt 与 Agent 行为拥有意图、方案、风险、Review、语义判断和知识价值判断。
+- 确定性执行器只拥有可验证的解析、校验、状态、投影、事务、文件和命令执行，不得替代语义判断。
+- 只能调用实际存在且已核验的工具、命令和能力；不得虚构文件、状态、输出、命令、证据或成功。
+- 每个计划完成时都必须按自身验证矩阵提供实际证据；计划文档中的预期结果不是完成证据。

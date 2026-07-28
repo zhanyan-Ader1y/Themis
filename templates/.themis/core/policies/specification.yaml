@@ -1,5 +1,4 @@
-# Themis 需求追问策略配置
-# 该策略声明 Draft 阶段的语义门禁；字段类型、对象 ID 和引用由唯一 Spec 合同定义。
+# Themis Specification Policy
 
 specification:
   schema: themis-specification-policy
@@ -9,15 +8,13 @@ specification:
     human_projection: spec.md
     reverse_sync: forbidden
 
-  publishing:
-    executor: core/kernel/specification/themis-spec.sh
-    candidate_root: workspace/cache/spec-candidates
-    publisher_only: true
-    fail_closed: true
-    require_pair_validation: true
-    restore_previous_pair_on_failure: true
-    preserve_complete_backup_on_restore_failure: true
-    report_recovery_path_on_restore_failure: true
+  assurance:
+    validator: unavailable
+    projector: unavailable
+    publisher: unavailable
+    currentness: unavailable
+    transaction: unavailable
+    unavailable_values: [not_run, unavailable, pending]
 
   projection:
     renderer_summarizes: false
@@ -46,6 +43,7 @@ specification:
       - spec_projection_current
 
   questioning:
+    method_skill: Themis-Q
     complexity:
       precedence: [low, medium, high]
       low:
@@ -121,14 +119,6 @@ specification:
       blocked_dimensions_when_critical:
         - security_and_permissions
         - data_integrity
-
-  red_flags:
-    - too_simple
-    - skip_spec
-    - code_first
-    - already_clear
-    - try_one_line
-    - obviously_best
 
   semantic_consistency:
     placeholder_patterns:

@@ -2,25 +2,23 @@
 
 ## Responsibility
 
-Turn an approved Specification into bounded, ordered, evidence-oriented tasks. Planning owns task organization and traceability, not requirement approval or code changes.
+Turn an approved Specification into bounded, ordered, evidence-oriented tasks. Planning owns task organization, AC traceability, scope, and resume data, not requirement approval or code changes.
 
 ## Inputs
 
-- validated `workspace/specs/<spec-id>/spec.yaml` and its stable Requirement, AC, Contract, and Invariant IDs;
-- the current `themis-spec.sh validate --readiness` JSON result and lifecycle state when installed;
-- relevant architecture and engineering Context from `workspace/context/`;
-- existing Plan and task evidence when revising unfinished work.
-
-`spec.md` is display-only and must never be parsed as Planning input. Planning accepts only an Artifact v2 `spec.yaml` pair whose installed validator reports valid and current.
+- current approved `workspace/specs/<spec-id>/spec.yaml`;
+- current `spec.md` only for human review, never as semantic input;
+- relevant governed Context and directly observed current code/configuration/Schema;
+- existing Plan, task ledger, and evidence when revising unfinished work.
 
 ## Outputs
 
-Write the Plan only in the associated `workspace/specs/<spec-id>/` artifact area. Each behavior-changing task must identify the stable ACs it covers, its scope, expected evidence, and done conditions.
+Persist `plan.yaml` as semantic authority and `plan.md` as Human projection in the associated Spec area. Each Task records stable ID, dependencies, covered ACs, scope, evidence, done conditions, risks, rollback, and resume cursor.
 
 ## Boundaries
 
-- Do not plan work outside the approved Spec without returning to Specification.
-- Do not modify source code or mark tasks complete.
-- Do not infer completion from prose, Markdown headings, or conversation state.
-- Do not reimplement Spec parsing or readiness; consume the installed validator output.
-- Prefer bounded slices and keep unrelated refactoring outside the Plan.
+- Do not plan outside the approved Spec without returning to Specification.
+- Do not modify source code, approve Implementation, or mark Tasks complete.
+- Do not infer completion or currentness from prose, Markdown headings, or conversation state.
+- Prompt owns decomposition judgment; deterministic assurance may validate DAG, traceability, scope, and cursor but must not choose the Plan.
+- When validators are absent, record assurance as `unavailable`; do not claim machine-valid or current Plan state.

@@ -1,42 +1,26 @@
-# Themis 生命周期迁移声明
-# P5.3 提供稳定 validator check；P8 负责确定性评估、状态记录和跨工件追踪。
+# Lifecycle transition declaration
+# Current checkout has no transition evaluator or state recorder.
+
+lifecycle:
+  order: [draft, specified, planned, reviewed, implemented, verified, archived]
+  delivery_gates_after_verified: [human_acceptance, summary]
 
 transitions:
   draft_to_specified:
     from: draft
     to: specified
     hard_gate: true
-    description: Spec 已通过完整 readiness、投影漂移和用户批准检查。
     conditions:
-      - id: spec_intent_complete
-        description: 核心意图、结果和根因已记录。
-        evidence: validator.checks.spec_intent_complete
-      - id: spec_scope_complexity_confirmed
-        description: 范围、复杂度及用户确认已记录。
-        evidence: validator.checks.spec_scope_complexity_confirmed
-      - id: spec_context_complete
-        description: 复杂度所需的证据和 Context 已记录。
-        evidence: validator.checks.spec_context_complete
-      - id: spec_design_acceptance_complete
-        description: 决策、Requirement 和完整 Acceptance Criteria 已记录并可追踪。
-        evidence: validator.checks.spec_design_acceptance_complete
-      - id: spec_adversarial_resolved
-        description: 每个有效攻击均有可验证终态，延期符合策略。
-        evidence: validator.checks.spec_adversarial_resolved
-      - id: spec_self_check_passed
-        description: 策略定义的结构与对抗自检均通过。
-        evidence: validator.checks.spec_self_check_passed
-      - id: spec_user_approval_recorded
-        description: 用户明确批准证据完整。
-        evidence: validator.checks.spec_user_approval_recorded
-      - id: spec_projection_current
-        description: Human 投影与当前权威源逐字一致且 marker 完整。
-        evidence: validator.checks.spec_projection_current
+      - spec_intent_complete
+      - spec_scope_complexity_confirmed
+      - spec_context_complete
+      - spec_design_acceptance_complete
+      - spec_adversarial_resolved
+      - spec_self_check_passed
+      - spec_user_approval_recorded
+      - spec_projection_current
 
-adversarial_validation:
-  unresolved_attack_block: true
-  allow_deferred_attacks: true
-  max_deferred_per_spec: 5
-  critical_defer_blocked_dimensions:
-    - security_and_permissions
-    - data_integrity
+assurance:
+  evaluator: unavailable
+  state_recorder: unavailable
+  transition_claim_without_runtime: forbidden

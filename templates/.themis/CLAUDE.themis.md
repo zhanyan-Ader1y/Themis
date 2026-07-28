@@ -1,58 +1,64 @@
 # Themis Project Guidance
 
-This Themis-managed guidance defines cross-stage boundaries for the installed project. Detailed project facts and work artifacts remain in `.themis/workspace/`; the project's `CLAUDE.md` imports this file and the Orchestrator directly.
+This managed guidance defines cross-stage boundaries for an installed project. Detailed module contracts live in `.themis/core/**/README.md`; project facts and work artifacts remain in `.themis/workspace/`.
 
 ## Installation Boundary
 
-- `.themis/core/` is Themis-owned capability and policy content. Treat it as read-only during project work.
-- `.themis/workspace/` is project-owned configuration, context, specifications, state, evidence, outcomes, and knowledge.
-- `.themis/core/` and `.themis/workspace/` are not updated or converted in place by this release. Preserve an existing installation rather than running Init over it.
-- Files under a Themis source repository's `templates/` tree are installation sources. In an installed project, use the corresponding `.themis/` instance paths.
-- Do not edit project `AGENTS.md` or other project guidance to resolve a Themis conflict. Stop and surface the conflicting instructions.
+- `.themis/core/` is Themis-owned and read-only during normal project work.
+- `.themis/workspace/` is project-owned configuration, Context, Specs/Plans, state, evidence, outcomes, and knowledge governance.
+- Preserve an existing `.themis/`. Do not run Init over it, delete it as an update workaround, or copy a source template over it.
+- Current source templates describe a fresh-only target and may be installed only by an actually available approved installer.
+- Do not edit project guidance to hide a Themis conflict; stop and surface it.
+
+## Product Flow
+
+Themis must preserve: questioning before Spec, lightweight Spec Review, durable Agent Plans, and a governed evolving project knowledge base.
+
+```text
+Draft → Specified → Planned → Reviewed → Implemented → Verified
+      → Human Acceptance → Summary → Archived
+```
+
+Review is before Implementation. Verification is after Implementation. Summary is generated only after current Verification `pass` and Human Acceptance `accepted`.
 
 ## Source of Truth
 
-Classify the claim before choosing its authority:
-
-- Governed Context and approved design artifacts describe intended rules, decisions, terminology, and constraints: what the project should be.
-- Current code, configuration, Schema, and observed command output describe current implementation: what the project currently is.
-- Workspace lifecycle state and recorded evidence describe what work and verification have durably occurred.
-- Core policies, Protocols, and deterministic tool output govern Themis operations; imported rules govern routing.
+- Governed Context and approved design artifacts describe intended project facts.
+- Current code, configuration, Schema, and observed command output describe current implementation.
+- Workspace state and evidence describe durably recorded workflow facts.
+- Core policies, Protocols, and observed deterministic results govern Themis operations.
 - Conversation memory and Agent inference are discovery aids only.
 
-These are complementary trust axes, not one global precedence list. When intended and current facts disagree, preserve both claims and surface Context/code drift or conflict; do not silently make either one override the other. Missing evidence is not evidence of success.
+When intended and current facts disagree, preserve both and surface drift/conflict. Missing evidence is never success.
 
 ## Lifecycle Routing
 
-The documented default lifecycle is:
+Route from existing artifacts, not conversation claims:
 
-```text
-Draft → Specified → Planned → Reviewed → Implemented → Verified → Human Acceptance → Summary → Archived
-```
+- unresolved intent or no current approved Spec → Specification;
+- approved Spec without adequate durable Plan → Planning;
+- current Plan without pre-Implementation approval → Review;
+- current approved Review with ready Task → Implementation;
+- implemented work without sufficient Gate evidence → Verification;
+- current Verification `pass` without acceptance → Delivery acceptance;
+- accepted work without Summary → Delivery summary;
+- reusable evidence-backed lesson → Knowledge governance;
+- archive only after Acceptance, Summary, and required Knowledge disposition.
 
-Route from existing artifacts rather than from what the conversation claims has happened:
+Attribution analytics is optional and never a core gate.
 
-- No approved specification: use Specification.
-- Approved specification without an adequate plan: use Planning.
-- Current plan without an approved pre-implementation review: use Review.
-- Approved review with unfinished tasks: implement only the reviewed scope.
-- Implemented work without command-backed evidence: use Verification.
-- Passing Verification without human acceptance: request acceptance against the approved Spec, Plan, Review, and Verification evidence.
-- Accepted work without a final delivery projection: generate Summary when that capability exists.
-- Archive only after acceptance, Summary, required outcomes, and knowledge handling are complete.
+## Safe Degradation
 
-Workspace policy or a future deterministic status tool may refine this routing. Do not hand-edit lifecycle state or claim a transition that has not been durably recorded.
+Before invoking a Command, Skill, Agent, Adapter, validator, or runtime operation, confirm it exists. If absent, keep the semantic stage, report `not_run`/`unavailable`/`pending`, and never invent output, evidence, verdicts, transitions, locks, transactions, promotion, or recovery.
 
 ## Key Paths
 
 | Purpose | Installed path |
 |---|---|
-| Core metadata and compatibility | `.themis/core/core.yaml` |
-| Project manifest and configured gates | `.themis/workspace/manifest.yaml` |
-| Project context | `.themis/workspace/context/` |
-| Specifications and plans | `.themis/workspace/specs/` (`spec.yaml` authoritative; `spec.md` review-only) |
-| Lifecycle state | `.themis/workspace/state/` |
+| Package contracts and Core assets | `.themis/core/` |
+| Project manifest | `.themis/workspace/manifest.yaml` |
+| Formal project knowledge | `.themis/workspace/context/` |
+| Specifications and Plans | `.themis/workspace/specs/` |
+| State and cursors | `.themis/workspace/state/` |
 | Runs and evidence | `.themis/workspace/runs/`, `.themis/workspace/evidence/` |
 | Outcomes and knowledge governance | `.themis/workspace/outcomes/`, `.themis/workspace/knowledge/` |
-
-The Orchestrator supplies the always-on routing and module boundaries. Later Themis capabilities may add explicit Commands, Skills, Agents, policies, or deterministic executors; never assume those capabilities exist until their files or tool results are present.

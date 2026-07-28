@@ -2,23 +2,14 @@
 
 ## Responsibility
 
-Connect durable project outcomes to the Specifications, changes, runs, and evidence that support them. Attribution owns traceable analysis, not lifecycle routing or project implementation.
-
-## Inputs
-
-- completed Spec, Plan, Review, and Verification artifacts;
-- run records and evidence beneath `workspace/`;
-- outcome records whose provenance can be checked.
-
-## Outputs
-
-Write attributable outcome analysis only to declared Workspace outcome or analysis locations. Preserve links to the supporting artifacts and distinguish measured results from interpretation.
+Optionally correlate durable project outcomes with supporting Specifications, changes, runs, and evidence after core delivery. Attribution owns traceable analysis, not lifecycle routing or project implementation.
 
 ## Boundaries
 
-- Do not infer causation from missing or unrelated evidence.
-- Do not rewrite source evidence to fit an outcome.
-- Do not store project analysis in Core.
-- Do not enter the baseline import graph until a later capability defines its trigger and artifact contract.
+- Do not enter the baseline Orchestrator import graph.
+- Do not block Review, Implementation, Verification, Human Acceptance, Summary, Knowledge, or Archive.
+- Do not infer causation from missing, unrelated, or merely correlated evidence.
+- Do not rewrite source evidence, evaluate individual performance, or modify Context directly.
+- Any reusable conclusion is only a Knowledge candidate.
 
-Metrics, analysis methods, retention, and automated attribution tooling belong to later Themis plans and are not implied by this baseline.
+Metrics, privacy, retention, and automation belong to optional Plan 90 and are not implied by this rule file.
