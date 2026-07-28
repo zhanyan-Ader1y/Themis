@@ -201,7 +201,7 @@ themis_spec_validate_fixed_map() {
   while IFS= read -r themis_spec_fixed_type; do
     break
   done < <(
-    THEMIS_SPEC_FIXED_MAP=${themis_spec_fixed_contract} yq eval -r "
+    THEMIS_SPEC_FIXED_MAP=${themis_spec_fixed_contract} THEMIS_SPEC_SCHEMA=${THEMIS_SPEC_SCHEMA} yq eval -r "
       . as \$source |
       load(strenv(THEMIS_SPEC_SCHEMA)) as \$schema |
       strenv(THEMIS_SPEC_FIXED_MAP) as \$name |
@@ -222,7 +222,7 @@ themis_spec_validate_fixed_map() {
     [ -n "${themis_spec_fixed_error}" ] || continue
     themis_spec_add_error "${themis_spec_fixed_error}"
   done < <(
-    THEMIS_SPEC_FIXED_MAP=${themis_spec_fixed_contract} yq eval -r "
+    THEMIS_SPEC_FIXED_MAP=${themis_spec_fixed_contract} THEMIS_SPEC_SCHEMA=${THEMIS_SPEC_SCHEMA} yq eval -r "
       . as \$source |
       load(strenv(THEMIS_SPEC_SCHEMA)) as \$schema |
       strenv(THEMIS_SPEC_FIXED_MAP) as \$name |
@@ -853,11 +853,16 @@ themis_spec_validate_internal() {
   themis_spec_expect_nullable_string "${themis_spec_validate_source}" '.approval.approved_at' 'type.approval.approved_at' || true
   themis_spec_expect_type "${themis_spec_validate_source}" '.approval.record' '!!str' 'type.approval.record' || true
 
+  # 空集合没有对象级规则可校验；一次筛选后只遍历有对象的集合，避免为 Draft 重复启动 yq。
+  # shellcheck disable=SC2016 # `$source` 与 `$collection` 属于 yq 表达式，不由 shell 展开。
   while IFS= read -r themis_spec_validate_collection; do
-    if yq eval -e ".${themis_spec_validate_collection} | type == \"!!map\"" "${themis_spec_validate_source}" >/dev/null 2>&1; then
-      themis_spec_validate_collection "${themis_spec_validate_collection}" "${themis_spec_validate_source}"
-    fi
-  done < <(yq eval -r '.collections | keys | .[]' "${THEMIS_SPEC_SCHEMA}")
+    themis_spec_validate_collection "${themis_spec_validate_collection}" "${themis_spec_validate_source}"
+  done < <(THEMIS_SPEC_SCHEMA=${THEMIS_SPEC_SCHEMA} yq eval -r '
+    . as $source |
+    load(strenv(THEMIS_SPEC_SCHEMA)).collections | keys | .[] as $collection |
+    select(($source[$collection] | type == "!!map") and ($source[$collection] | length > 0)) |
+    $collection
+  ' "${themis_spec_validate_source}")
 
   themis_spec_validate_review_projection_contract "${themis_spec_validate_source}"
   themis_spec_compute_readiness "${themis_spec_validate_source}" "${themis_spec_validate_projection}"

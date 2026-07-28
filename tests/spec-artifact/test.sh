@@ -12,6 +12,80 @@ TEST_COUNT=0
 TEST_FAILURES=0
 LAST_OUTPUT=
 LAST_STATUS=0
+# Benchmark 只在显式启用时采样；默认 TAP 输出和夹具行为不变。
+SPEC_BENCHMARK=${THEMIS_SPEC_BENCHMARK:-0}
+SPEC_BENCHMARK_COUNT_YQ=${THEMIS_SPEC_BENCHMARK_COUNT_YQ:-0}
+SPEC_BENCHMARK_FILE=${THEMIS_SPEC_BENCHMARK_FILE:-}
+SPEC_BENCHMARK_YQ_WRAPPER=
+SPEC_BENCHMARK_YQ_COUNT_FILE=
+SPEC_BENCHMARK_YQ_COMMAND=
+SPEC_BENCHMARK_YQ_VERSION=
+SPEC_BENCHMARK_START=
+SPEC_BENCHMARK_COMMANDS=0
+
+# 返回毫秒时间；Bash 3.2 环境退回 GNU date。
+spec_benchmark_now_ms() {
+  local spec_benchmark_seconds
+  local spec_benchmark_fraction
+
+  if [ -n "${EPOCHREALTIME-}" ]; then
+    spec_benchmark_seconds=${EPOCHREALTIME%%.*}
+    spec_benchmark_fraction=${EPOCHREALTIME#*.}
+    spec_benchmark_fraction=${spec_benchmark_fraction}000
+    printf '%s%s\n' "${spec_benchmark_seconds}" "$(printf '%.3s' "${spec_benchmark_fraction}")"
+    return 0
+  fi
+  date +%s000
+}
+
+# 用临时 PATH 代理统计 executor 后代的 yq；只在计数模式改变命令解析路径。
+spec_benchmark_enable_yq_count() {
+  [ "${SPEC_BENCHMARK}" = 1 ] || return 0
+  SPEC_BENCHMARK_YQ_WRAPPER="${TEST_TMP}/benchmark-bin"
+  SPEC_BENCHMARK_YQ_COUNT_FILE="${TEST_TMP}/benchmark-yq-count"
+  SPEC_BENCHMARK_YQ_COMMAND=$(command -v yq) || return 1
+  SPEC_BENCHMARK_YQ_VERSION=$("${SPEC_BENCHMARK_YQ_COMMAND}" --version 2>/dev/null || printf unavailable)
+  mkdir -p "${SPEC_BENCHMARK_YQ_WRAPPER}" || return 1
+  : >"${SPEC_BENCHMARK_YQ_COUNT_FILE}"
+  THEMIS_SPEC_BENCHMARK_YQ_COUNT_FILE=${SPEC_BENCHMARK_YQ_COUNT_FILE}
+  THEMIS_SPEC_BENCHMARK_REAL_YQ=${SPEC_BENCHMARK_YQ_COMMAND}
+  export THEMIS_SPEC_BENCHMARK_YQ_COUNT_FILE THEMIS_SPEC_BENCHMARK_REAL_YQ
+  cat >"${SPEC_BENCHMARK_YQ_WRAPPER}/yq" <<'EOF'
+#!/usr/bin/env bash
+printf '1\n' >>"${THEMIS_SPEC_BENCHMARK_YQ_COUNT_FILE}"
+exec "${THEMIS_SPEC_BENCHMARK_REAL_YQ}" "$@"
+EOF
+  chmod +x "${SPEC_BENCHMARK_YQ_WRAPPER}/yq" || return 1
+}
+
+# 将观测记录写入 stderr 或指定文件，绝不混入 TAP stdout。
+spec_benchmark_report() {
+  local spec_benchmark_end
+  local spec_benchmark_elapsed
+  local spec_benchmark_line
+  local spec_benchmark_yq_processes=unavailable
+
+  [ "${SPEC_BENCHMARK}" = 1 ] || return 0
+  spec_benchmark_end=$(spec_benchmark_now_ms)
+  spec_benchmark_elapsed=$((spec_benchmark_end - SPEC_BENCHMARK_START))
+  if [ -n "${SPEC_BENCHMARK_YQ_COUNT_FILE}" ]; then
+    spec_benchmark_yq_processes=$(wc -l <"${SPEC_BENCHMARK_YQ_COUNT_FILE}" | tr -d ' ')
+  elif [ "${SPEC_BENCHMARK_COUNT_YQ}" != 1 ]; then
+    spec_benchmark_yq_processes=disabled
+  fi
+  spec_benchmark_line=$(printf 'themis-spec-benchmark elapsed_ms=%s executor_commands=%s yq_processes=%s bash=%s git=%s yq=%s\n' \
+    "${spec_benchmark_elapsed}" \
+    "${SPEC_BENCHMARK_COMMANDS}" \
+    "${spec_benchmark_yq_processes}" \
+    "${BASH_VERSION}" \
+    "$(git --version 2>/dev/null || printf unavailable)" \
+    "${SPEC_BENCHMARK_YQ_VERSION:-$(yq --version 2>/dev/null || printf unavailable)}")
+  if [ -n "${SPEC_BENCHMARK_FILE}" ]; then
+    printf '%s' "${spec_benchmark_line}" >>"${SPEC_BENCHMARK_FILE}"
+  else
+    printf '%s' "${spec_benchmark_line}" >&2
+  fi
+}
 
 mkdir -p "${TEST_TMP}"
 trap 'rm -rf "${TEST_TMP}"' EXIT HUP INT TERM
@@ -28,8 +102,16 @@ fail() {
   [ -z "${2-}" ] || printf '  %s\n' "$2"
 }
 
+# 执行被测命令并保留合并输出；计数代理仅注入 executor 子进程。
 run_command() {
-  LAST_OUTPUT=$("$@" 2>&1)
+  if [ "${SPEC_BENCHMARK}" = 1 ]; then
+    SPEC_BENCHMARK_COMMANDS=$((SPEC_BENCHMARK_COMMANDS + 1))
+  fi
+  if [ -n "${SPEC_BENCHMARK_YQ_WRAPPER}" ]; then
+    LAST_OUTPUT=$(PATH="${SPEC_BENCHMARK_YQ_WRAPPER}:${PATH}" "$@" 2>&1)
+  else
+    LAST_OUTPUT=$("$@" 2>&1)
+  fi
   LAST_STATUS=$?
 }
 
@@ -86,9 +168,17 @@ make_ready() {
   ' "${path}"
 }
 
+# 依赖先于代理验证，避免 benchmark 改写常规缺失依赖诊断。
 if ! command -v yq >/dev/null 2>&1 || ! command -v git >/dev/null 2>&1; then
   printf '%s\n' 'Spec artifact tests require mikefarah/yq v4 and Git.' >&2
   exit 2
+fi
+
+if [ "${SPEC_BENCHMARK}" = 1 ]; then
+  if [ "${SPEC_BENCHMARK_COUNT_YQ}" = 1 ]; then
+    spec_benchmark_enable_yq_count || exit 2
+  fi
+  SPEC_BENCHMARK_START=$(spec_benchmark_now_ms)
 fi
 
 printf '1..74\n'
@@ -339,7 +429,9 @@ assert_status 1 'first publication interruption rejects publication'
 if [ ! -e "${INTERRUPTED_NEW_TARGET}/spec.yaml" ] && [ ! -e "${INTERRUPTED_NEW_TARGET}/spec.md" ]; then pass 'first publication interruption leaves no half pair'; else fail 'first publication interruption leaves no half pair'; fi
 
 if [ "${TEST_FAILURES}" -ne 0 ]; then
+  spec_benchmark_report
   printf '%s of %s tests failed\n' "${TEST_FAILURES}" "${TEST_COUNT}" >&2
   exit 1
 fi
+spec_benchmark_report
 printf 'All %s tests passed\n' "${TEST_COUNT}"
