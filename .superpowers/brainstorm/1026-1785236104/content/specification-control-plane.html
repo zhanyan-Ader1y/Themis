@@ -1,0 +1,46 @@
+<h2>Plan 35 · Specification 控制面与能力层</h2>
+<p class="subtitle">当前理解：Rule 常驻上下文并控制流程；Specification 的具体语义能力全部按需调用 Skill。</p>
+
+<div class="section">
+  <div class="label">常驻控制层</div>
+  <div class="mockup" style="border:2px solid #2563eb">
+    <div class="mockup-header">Specification Control Rule</div>
+    <div class="mockup-body">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;text-align:center">
+        <div style="padding:12px;border:1px solid #94a3b8;border-radius:8px">识别当前阶段</div>
+        <div style="padding:12px;border:1px solid #94a3b8;border-radius:8px">选择所需能力</div>
+        <div style="padding:12px;border:1px solid #94a3b8;border-radius:8px">检查进入条件</div>
+        <div style="padding:12px;border:1px solid #94a3b8;border-radius:8px">接收并合并结果</div>
+        <div style="padding:12px;border:1px solid #94a3b8;border-radius:8px">控制确认与 handoff</div>
+      </div>
+      <p style="margin:14px 0 0;text-align:center"><strong>只保存流程权威、能力路由、停止条件和所有权边界；不承载详细执行方法。</strong></p>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;font-size:26px;line-height:1.2;margin:12px">↓ 按需发现并调用；Skill description 是发现入口 ↓</div>
+
+<div class="section">
+  <div class="label">按需能力层</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+    <div class="card"><div class="card-body"><h3>需求澄清</h3><p><strong>themis-q</strong><br>收敛 Why 与抽象 What</p></div></div>
+    <div class="card"><div class="card-body"><h3>事实依据</h3><p>协调 Context 与当前代码事实，形成可引用依据</p></div></div>
+    <div class="card"><div class="card-body"><h3>需求建模</h3><p>形成 intent、scope、constraints、assumptions</p></div></div>
+    <div class="card"><div class="card-body"><h3>合同与验收</h3><p>形成 requirements、contracts、invariants、AC</p></div></div>
+    <div class="card"><div class="card-body"><h3>对抗检查</h3><p>发现风险、冲突与未覆盖场景并推动修订</p></div></div>
+    <div class="card"><div class="card-body"><h3>审阅与批准</h3><p>生成 Human projection，处理反馈并请求批准</p></div></div>
+  </div>
+</div>
+
+<div style="text-align:center;font-size:26px;line-height:1.2;margin:12px">↓ 所有 Skill 返回同一控制面，不直接互相调用或拥有生命周期 ↓</div>
+
+<div class="mockup" style="border:2px solid #16a34a">
+  <div class="mockup-header">单一 Specification 语义权威</div>
+  <div class="mockup-body" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;text-align:center">
+    <div style="padding:18px;border:1px solid #94a3b8;border-radius:8px"><strong>spec.yaml</strong><br>唯一语义源</div>
+    <div style="font-size:24px">→</div>
+    <div style="padding:18px;border:1px solid #94a3b8;border-radius:8px"><strong>spec.md</strong><br>Human review projection</div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:20px">核心约束：Skill 不直接持久化独立权威、不决定生命周期转换、不绕过控制面 handoff；机器保证缺失时显式返回 unavailable / pending。</p>
