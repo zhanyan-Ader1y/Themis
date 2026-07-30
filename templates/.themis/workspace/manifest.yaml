@@ -13,10 +13,11 @@ context:
 gates: []
 adapters: {}
 policy_overrides: {}
+# All paths are relative to the .themis installation root.
 paths:
   policies: workspace/policies
   context: workspace/context
-  specs: workspace/specs
+  changes: workspace/changes
   state: workspace/state
   runs: workspace/runs
   evidence: workspace/evidence

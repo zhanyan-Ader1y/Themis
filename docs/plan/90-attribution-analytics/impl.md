@@ -4,7 +4,7 @@
 
 ## 1. 目标
 
-在交付流程已经完成后，建立可追溯的 Attribution 与 Outcome analytics，将 Spec、Plan、Review、Task、代码 revision/commit、Verification Run、deployment、Human Acceptance 和真实 Outcome 关联起来，用于回答“交付了什么、哪些工作与结果相关、证据质量如何、后续是否达到预期”。
+在核心生命周期已经完成后，建立可追溯的 Attribution 与 Outcome analytics，将 Current Request、Questioning、approved Plan、Review Approval、Task、代码 revision/commit、Verification Run、Human Acceptance、deployment 和真实 Outcome 关联起来，用于回答“交付了什么、哪些工作与结果相关、证据质量如何、后续是否达到预期”。
 
 本计划严格区分：
 
@@ -19,19 +19,19 @@ Analytics 不改写上述原始记录，也不把相关性包装成因果性。
 
 - 实施前必须由用户针对 Plan 90 单独授权。
 - Plan 90 是可选 post-delivery 能力，可在核心 Plan 35–37 之后或独立于 Plan 80 实施。
-- Plan 90 运行时必须发生在 Delivery 之后；它不能成为以下事项的 prerequisite：
+- Plan 90 只能在 core lifecycle `completed` 后运行；它不能成为以下事项的 prerequisite：
   - Verification；
   - Human Acceptance；
   - Summary；
-  - 核心 lifecycle completion。
-- Summary 仍只依赖 current Verification `pass` 和 durable Human Acceptance `accepted`，不得等待 Outcome 数据或 Attribution score。
-- Archived Gate 若正式设计仍要求 Outcome/Attribution 处置，允许记录明确的 `not_configured`、`not_due` 或无数据处置，但不得把 analytics 计算成功变为核心交付成功的条件。
+  - core lifecycle completion。
+- Summary 仍只依赖 current Verification `passed` 和 durable Human Acceptance `accepted`，不得等待 Outcome 数据或 Attribution score。
+- Analytics 未配置、未到观察窗口或无数据时可记录 `not_configured`、`not_due` 或 `insufficient_data`，但不得改变已经完成的 lifecycle。
 
 ## 3. 权威与数据边界
 
 ### 原始来源
 
-- Spec/Plan/Review/Task：说明批准目标、方案、风险、scope 和 traceability。
+- Current Request/Questioning/Plan/Review Approval/Task：说明目标、需求收敛、批准方案、风险、scope 和 traceability。
 - Git revision/commit/change set：说明实际版本化实现变化。
 - Verification Run/Evidence：说明在特定 revision 上实际执行的命令和 verdict。
 - Deployment/release record：说明何时、何处部署了什么 revision。
@@ -54,7 +54,7 @@ Analytics 不改写上述原始记录，也不把相关性包装成因果性。
 
 定义稳定 node/reference，而不是建立功能版本模型：
 
-- Spec 与 AC；
+- Current Request、Questioning round 与 acceptance requirements；
 - Plan 与 Task；
 - Review decision/finding；
 - implementation revision/commit/change set；
@@ -107,8 +107,8 @@ Outcome 允许 positive/negative/neutral/unknown 等派生解释，但原始数�
 
 ### 6.2 Flow analytics
 
-- Specification、Planning、Review、Implementation、Verification、Acceptance 的阶段时长；
-- Review rework、Verification rerun、Acceptance rejection cycle；
+- Questioning、Complexity Assessment、Plan Formation/Check、Review、Verify、Acceptance 的阶段时长；
+- Review rework、Verification rerun、Acceptance implementation-defect/rework cycle；
 - blocking time 与 evidence collection delay；
 - 多 Agent 情况下的 handoff/coordination 成本，但 Plan 80 不存在时 analytics 仍可运行。
 
@@ -116,7 +116,7 @@ Outcome 允许 positive/negative/neutral/unknown 等派生解释，但原始数�
 
 ### 6.3 Quality analytics
 
-- Gate pass/fail/inconclusive 分布；
+- Verification `passed`/`failed`、semantic route 与 blocked 分布；
 - flaky/transient 与稳定 code/configuration failure；
 - evidence coverage 和 stale rate；
 - escaped defect/incident 与相关 delivery links；
@@ -157,7 +157,7 @@ Outcome 允许 positive/negative/neutral/unknown 等派生解释，但原始数�
 - residual uncertainty；
 - 后续行动或 Knowledge candidate。
 
-Analytics report 不是 `summary.md`，不能回填或替换交付 Summary，也不能改变 archived delivery 的历史判断。
+Analytics report 不是 `summary.md`，不能回填或替换交付 Summary，也不能改变 completed lifecycle 的历史判断。
 
 ## 8. Knowledge 反馈
 
@@ -243,7 +243,7 @@ Outcome observation 可按一次性或周期性窗口运行，但调度是可选
 - contract fixtures 与 runtime tests；
 - privacy/redaction/retention 配置。
 
-不得让 analytics 文件成为原始 Spec、Verification、Acceptance 或 Context 的替代来源。
+不得让 analytics 文件成为原始 Current Request、Questioning、Plan、Verification、Acceptance 或 Context 的替代来源。
 
 ## 13. 任务拆分
 
@@ -292,9 +292,9 @@ Outcome observation 可按一次性或周期性窗口运行，但调度是可选
 | 场景 | 必需结果 |
 |---|---|
 | 未配置 analytics | 核心 delivery 与 Summary 正常完成 |
-| Verification `fail`/`inconclusive` | 原 verdict 保持，不能由 Outcome 覆盖 |
-| Acceptance `rejected` | 不存在 accepted delivery；analytics 不改成 accepted |
-| 已 `pass` + durable `accepted` | Summary 可先生成，无需等待 Plan 90 |
+| Verification 非 `passed` | 原 verdict/route 保持，不能由 Outcome 覆盖 |
+| Acceptance 非 `accepted` | 不存在 accepted delivery；analytics 不改成 accepted |
+| 已 `passed` + durable `accepted` | Summary 可先生成，无需等待 Plan 90 |
 | 缺少 explicit links | 标记 unlinked/proposed，不由模型补事实 |
 | stale artifact binding | 保留历史并报告 stale，不归到 current delivery |
 | Outcome 尚未到窗口 | `not_due`，不判断成败 |
@@ -316,7 +316,7 @@ Outcome observation 可按一次性或周期性窗口运行，但调度是可选
 - deterministic metrics 可复算；缺失/stale/conflict 数据不会产生成功结论。
 - 语义报告明确区分事实、相关性、假设和因果声明。
 - Analytics report 不替换或修改 Summary 和历史记录。
-- Knowledge 反馈仍经过完整治理事务。
+- Knowledge 反馈仍经过明确批准、实际 apply 与 reread verification 的治理流程。
 - 可选 connector/scheduler 不可用时核心流程不受影响。
 - privacy、security、retention 和 cross-project isolation 已验证。
 - 用户审阅实际 evidence 并单独接受 Plan 90。

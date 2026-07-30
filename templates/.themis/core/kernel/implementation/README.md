@@ -2,41 +2,40 @@
 
 ## Responsibility
 
-Implementation 在 current approved Review 和 Plan scope 内一次执行一个 dependency-ready Task，并把执行事实持久化，避免 Agent 计划和进度只留在会话中。
+Implementation 只按当前 Review Approval 绑定的统一 Plan 执行一个 dependency-ready task，记录实际 delta、完成条件、偏差和 external drift。它是 Verify 阶段的执行部分，不拥有 Verification verdict。
 
-## Owned assets
+## Capability mapping
 
-- 未来 `rules.md`、Implementation Prompt、task ledger 和 deviation/repair protocols。
+- `themis-impl`：使用固定 `implementation-writer` Profile、唯一可在批准范围内修改项目实现的内部 Capability。
+- `core/templates/impl-result.md`：一次 Impl invocation 的人工记录结构。
 
 ## Inputs and outputs
 
-输入为 current approved Spec、Plan、Review、Task dependencies、allowed scope 和 done/evidence requirements。输出为 changed files、covered ACs、observations、evidence references、deviations、Task status 和 resume cursor。
+输入为 Current Request、Review Approval、approved Plan/task、Task Execution Identity、Invocation Identity、attempt、baseline、expected delta 和允许写入范围。输出状态：
 
-## Prompt flow and handoff
+```text
+implemented
+needs-planning
+escalate-full
+blocked
+```
 
-1. 选择最低序且 dependency-ready 的一个 Task。
-2. 核对批准、scope 和当前代码事实。
-3. 只实施该 Task 需要的变化。
-4. 记录实际修改、命令观察、偏差和恢复位置。
-5. Plan 不足但仍在 Spec 内时返回 Planning；超出 Spec 时返回 Specification。
-6. 所有 planned Tasks 完成后 handoff 到 Verification。
+`implemented` only reports that the internal Capability completed its authorized work and recorded the observed delta; it does not prove Verification passed.
 
-## Assurance boundary
+## Boundaries
 
-Agent 拥有具体实现选择。未来 runtime 可校验 readiness、scope、ledger/currentness 和 evidence shape，但不编写实现或判定 Verification success。
+- 不修改 Plan、Review、Approval 或验收要求。
+- 不做无关重构或扩大批准范围。
+- simple path 发现隐藏复杂度必须 `escalate-full` 并停止。
+- 未授权 workspace/dependency/configuration/Schema/behavior 变化属于 external drift。
+- 工具、命令或 result contract 失败计入共享 Plan task 失败预算，不能包装成 blocked。
 
-## Safe degradation
+## Write isolation
 
-批准、Task、依赖、scope 或必要工具不可用时不开始/不继续 Task，并保存真实 blocker。不得伪造 Task completion、command output 或 evidence。
+A mutating invocation binds lifecycle/task/invocation identities, an exclusive worktree when concurrency is enabled, approved paths, pre-Impl baseline, and expected state. If exclusive worktree ownership is unavailable, execution must use one serial writer or stop fail closed. Writes require pre-write validation, complete temporary write and atomic single-file replacement where applicable, completion/incomplete markers for critical multi-step records, and reread of files plus Git status/diff.
 
-## Workspace interaction
-
-修改仅限 approved project scope；ledger 和 cursor 写入声明的 Workspace artifact/state paths。不得修改 Core、Spec/Plan/Review-owned semantics。
-
-## Non-ownership
-
-不批准 Plan、不扩展 Spec、不计算 Verification verdict、不记录 Human Acceptance 或 Summary。
+The package does not claim cross-worktree locks, general transactions, rollback journals, automatic recovery, cross-worktree merge, or conflict adjudication.
 
 ## Current status
 
-该 package 当前只有目录，无 `rules.md`、Prompt、ledger schema、runtime 或 tests。Plan 35 将建立 Prompt-first contract；Plans 36/37 分别提供 assurance 与实现。
+Plan 35 provides the internal Impl Capability contract, its fixed `implementation-writer` Profile, a record template, and Prompt-level worktree/write-safety boundaries. Machine task ledgers, scope enforcement, per-lifecycle recording, atomic replacement, completion markers, and reread verification are unavailable until Plans 36/37 define and implement them.

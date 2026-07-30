@@ -1,53 +1,97 @@
 # Themis 活动实施计划
 
-`docs/plan/**` 是面向未来的活动实施队列，只保存尚待单独确认和执行的实施设计。长期规范以 [Themis 设计规范](../design/README.md) 及其所属设计页为准；本目录不替代正式设计，也不保存已经完成或退役计划的历史叙事。
+`docs/plan/**` 只保存尚待实施或验收的活动计划。跨模块权威设计位于 `docs/superpowers/specs/**`，模块详细合同与当前模板状态位于 `templates/.themis/**/README.md`；本目录不建立第二套产品规范。
 
 ## 授权规则
 
-- 每个计划都是实施设计，必须由用户分别确认。
-- 确认某个计划的设计不自动确认其依赖计划，也不自动授权后续计划。
-- 本次队列清理只重组文档，**不授权实施 Plan 35 或任何其他计划**。
-- 未获得目标计划的明确实施确认前，不得修改该计划涉及的产品、模板、运行时或测试文件。
-- 实施过程中若需要改变已确认的长期设计，必须先按 [设计治理](../design/governance.md) 更新所属 `docs/design/**` 页面并取得相应确认。
+- 每个计划必须单独批准后才能实施。
+- 一个计划的批准不自动批准其依赖或后续计划。
+- 实施发现权威设计需要变化时，先更新对应设计并重新批准。
+- 未观察到真实验证输出前，不得宣称计划完成。
 
 ## 活动队列
 
 | 顺序 | 计划 | 依赖 | 定位 | 状态 |
 |---|---|---|---|---|
-| 35 | [Core Prompt Flow](35-core-prompt-flow/impl.md) | 无 | 串联八个领域的 Prompt-first 语义生命周期 | 待单独确认 |
-| 36 | [Deterministic Assurance](36-deterministic-assurance/impl.md) | 已单独接受的 Plan 35 | 定义语言无关的严格合同与合同夹具 | 待单独确认 |
-| 37 | [Native Runtime](37-native-runtime/impl.md) | 已单独接受的 Plan 36 | 以单一无版本 Go 模块实现首个新生产确定性运行时 | 待单独确认 |
-| 80 | [Multi-Agent Execution](80-multi-agent-execution/impl.md) | 可选；核心生命周期不依赖 | 定义隔离、handoff、聚合和证据边界 | 待单独确认，非阻塞 |
-| 90 | [Attribution Analytics](90-attribution-analytics/impl.md) | 可选；交付后使用 | 定义 Attribution 与 Outcome 分析 | 待单独确认，非阻塞 |
+| 35 | [Core Prompt Flow](35-core-prompt-flow/impl.md) | 无 | 一个公共 Skill、内部 Capability/Profile、唯一 route policy 与 Prompt-level 双路径生命周期 | 已批准实施，最终核验中 |
+| 36 | [Deterministic Assurance](36-deterministic-assurance/impl.md) | 用户已接受 Plan 35 | 严格 Schema、validator、canonical rules 与 accepted/rejected fixtures；无副作用 | 待单独确认 |
+| 37 | [Native Runtime](37-native-runtime/impl.md) | 用户已接受 Plan 36 | policy evaluator、temporary invocation、per-lifecycle recorder 与最小写入安全 | 待单独确认 |
+| 80 | [Multi-Agent Execution](80-multi-agent-execution/impl.md) | 可选；核心生命周期不依赖 | worktree-isolated optional worker topology | 待单独确认，非阻塞 |
+| 90 | [Attribution Analytics](90-attribution-analytics/impl.md) | 可选；交付后使用 | Attribution 与 Outcome 分析 | 待单独确认，非阻塞 |
 
-## 依赖与阶段约束
-
-```text
-Plan 35 Core Prompt Flow
-  └── Plan 36 Deterministic Assurance
-        └── Plan 37 Native Runtime
-
-Plan 80 Multi-Agent Execution       optional / non-blocking
-Plan 90 Attribution Analytics       optional / post-delivery / non-blocking
-```
-
-核心生命周期保持：
+## 依赖
 
 ```text
-Context → Specification → Planning → Review → Implementation
-        → Verification → Human Acceptance → Summary → Knowledge
+Plan 35 Prompt-level lifecycle
+  └── Plan 36 strict contracts and fixtures
+        └── Plan 37 minimal native runtime
+
+Plan 80 Multi-Agent Execution   optional / non-blocking
+Plan 90 Attribution Analytics   optional / post-delivery / non-blocking
 ```
 
-- Review 必须发生在 Implementation 前，并绑定待实施的 current Spec 与 Plan。
-- Verification 必须发生在 Implementation 后；证据缺失、不确定、不可访问或已失效时不得报告成功，必须返回 `inconclusive` 或失败。
-- Human Acceptance 只能在 current Verification 返回 `pass` 后记录。
-- Summary 只能在 Human Acceptance 已持久记录为 `accepted` 后生成。
-- Plan 80 和 Plan 90 不得成为 Verification、Human Acceptance、Summary 或核心生命周期完成的前置条件。
+## Plan 35 生命周期
 
-## 通用实施边界
+```text
+Current Request
+→ Questioning
+→ Complexity Assessment
+   ├─ simple → Simple Plan → Lightweight Plan Check
+   └─ full   → temporary Specification → Planning → Full Plan Check
+→ Review Projection → Review Check → Human Review → Review Approval
+→ Verify [Impl → independent Verification]
+→ Human Acceptance → Summary
+→ optional governed knowledge candidates
+```
 
-- 不引入功能性 `v1`、`v2` 或模块/协议版本目录；模块只维护唯一 current contract。
-- Prompt 与 Agent 行为拥有意图、方案、风险、Review、语义判断和知识价值判断。
-- 确定性执行器只拥有可验证的解析、校验、状态、投影、事务、文件和命令执行，不得替代语义判断。
-- 只能调用实际存在且已核验的工具、命令和能力；不得虚构文件、状态、输出、命令、证据或成功。
-- 每个计划完成时都必须按自身验证矩阵提供实际证据；计划文档中的预期结果不是完成证据。
+- 两条路径生成同一个 Plan，并共享 Review、Approval、Verify、Acceptance 与 Summary。
+- Review 位于 Impl 前；Verification 在 Impl 后独立执行。
+- Summary 需要 current Verification `passed` 和 Human Acceptance `accepted`。
+- Specification 是 full-path 临时 handoff，不持久化。
+- 当前代码、配置、Schema 和 observed executable behavior 是当前实现事实的唯一来源。
+
+## 统一控制模型
+
+```text
+public themis Skill
+→ Global Control Rule
+→ transitions.yaml
+→ one internal Capability + fixed Agent Profile
+→ one temporary Agent invocation
+→ Capability Invocation Result
+→ exactly one legal route
+```
+
+- `transitions.yaml` 是 route 的唯一声明源。
+- Capability 拥有语义判断；Profile 只拥有权限与隔离合同。
+- Global Rule 只协调 identity、bindings、generic actions、invalidation、recorded-state resume 与 failure budget。
+- Workspace 按 lifecycle identity 保存实际记录。
+
+## 计划边界
+
+### Plan 36
+
+只定义和测试严格合同：schemas、canonicalization、validation issues、currentness、Capability/Profile/Invocation/policy/artifact/lifecycle/write-safety shapes 与 fixtures。不得执行 transition、调用 Agent、写状态、运行命令或修改文件。
+
+### Plan 37
+
+只实现：
+
+1. policy evaluator；
+2. one-Capability temporary invocation；
+3. per-lifecycle state recorder；
+4. worktree-bound minimal fail-closed write safety。
+
+Plan 37 不实现跨 worktree locks、通用 transactions、rollback journals、automatic recovery、cross-worktree merge 或 conflict adjudication。
+
+### Plans 80/90
+
+Plan 80 和 Plan 90 都是可选能力，不能成为 Verification、Acceptance、Summary 或 lifecycle completion 的门禁。
+
+## 通用限制
+
+- 不引入功能版本、版本目录、upgrade 或 migration。
+- 不创建持久 Specification、第二种 Plan、独立 Delivery 或 Shell fallback。
+- 不覆盖已存在 `.themis`。
+- 缺失 evaluator、validator、recorder、runtime、Agent host、worktree 或 command support 时必须 fail closed。
+- 不得用 Prompt、README、template 或 directory 的存在冒充 machine enforcement。

@@ -2,40 +2,58 @@
 
 ## Responsibility
 
-Orchestrator 根据持久 Workspace 工件和实际观察选择下一个领域，不拥有任何领域的语义工作。它保证四项产品特点形成一条可恢复主链，而不是依赖对话记忆。
+Orchestrator hosts the only always-loaded Global Control Rule. It coordinates lifecycle identity, current bindings, temporary Capability invocations, generic policy actions, observed persistence, invalidation, recorded-state resume, and failure limits. It does not own any Capability's semantic method or `status → next/action` mapping.
 
 ## Owned assets
 
-- `rules.md`：权威顺序、managed-change detection、领域路由与 non-bypass rules。
+- `rules.md`：generic policy interpreter, cross-cutting authority/gates, invocation validation, shared failure budget, Workspace boundary, and safe degradation.
+- `../../policies/transitions.yaml`：the sole closed legal status-route declaration, fixed Agent Profile mappings, policy guards, and invalid-result behavior.
 
-## Inputs and outputs
+## Execution model
 
-输入包括 Workspace manifest、Context、Spec/Plan、Review、task ledger、runs、evidence、Acceptance 和 Knowledge records。输出只是明确的下一领域、阻塞原因和所需 handoff；Orchestrator 不写领域内容或 machine state。
+```text
+public themis Skill
+→ Global Control Rule
+→ transitions.yaml selects one internal Capability
+→ fixed Agent Profile
+→ one temporary Agent invocation
+→ validate Capability Invocation Result
+→ match exactly one four-field route
+→ execute declared generic action/invalidation/next
+```
 
-## Prompt flow and handoff
+```text
+Capability        = semantic judgment
+Agent Profile     = execution permission/isolation
+Invocation        = one temporary execution carrier
+transitions.yaml  = sole route policy
+Global Rule       = generic interpreter/coordinator
+Workspace         = per-lifecycle actual records
+```
 
-1. 读取当前持久工件和有效 policy。
-2. 区分 intended project facts、current implementation facts 和 lifecycle evidence。
-3. 若事实冲突，保留双方并路由到拥有者裁决。
-4. 选择 Context、Specification、Planning、Review、Implementation、Verification、Delivery 或 Knowledge。
-5. 通过声明的 Workspace artifact handoff，不通过 sibling rule imports 传递领域语义。
+A Capability cannot call another Capability. An Agent cannot call another Agent. Invocation context is discarded after one structured result; it is not shared memory or lifecycle authority.
 
-## Assurance boundary
+## Authority boundary
 
-Orchestrator 不执行 validator、transition、Gate、transaction 或 recovery。未来 runtime 的结构化结果可以作为路由输入，但不能替代语义判断。
+- Current Request Revision：current delivery target semantics.
+- Governed design constraints：solution constraints only.
+- Code/configuration/Schema/observed behavior：current implementation facts.
+- Temporary Specification handoff：full-path non-authoritative refinement.
+- Approved unified Plan：execution contract.
+- Workspace records：actual lifecycle state only when the responsible operation was observed.
 
-## Safe degradation
-
-能力或工件缺失时停在当前 stage，报告 `unavailable`/`pending`，不得手写 machine state、虚构 evidence 或跳过固定门禁。
+The Rule does not judge complexity, refine requirements, design a Plan, evaluate a Plan, create Review content, issue Verification verdicts, classify human acceptance, or publish knowledge. It never parses diagnostics or `recommended_route` as hidden control state.
 
 ## Workspace interaction
 
-只读取声明路径并把写入交给 owning domain。正常项目工作不得修改 Core。
+The Rule may append a Questioning round, update its pointer, persist an artifact/reference, record governance state, or apply invalidation only through an available operation with an observed result. Multiple lifecycles can share the same read-only policy identity/digest, but their revisions, continuations, sticky state, attempts, evidence, Acceptance, and Summary remain lifecycle-bound.
 
-## Non-ownership
+## Write isolation and interruption boundary
 
-不拥有 questioning、Plan decomposition、Review verdict、Implementation choice、Verification verdict、Human Acceptance、Knowledge value judgment 或 Attribution。Multi-Agent 只能改变执行拓扑。
+A mutating invocation binds one lifecycle/task/invocation identity, one worktree identity, approved paths, and the pre-Impl baseline. Concurrent writers require exclusive worktrees; without that support, the Rule allows only a serial unique writer or stops fail closed. Individual writes use pre-write validation, complete temporary writes and atomic replacement where applicable, completion/incomplete markers, and reread verification.
+
+After interruption, the Rule rereads actual lifecycle records, files, Git status/diff, and completion markers, then resumes only from the last proven gate or stops. Worktrees do not prove persistence. Plan 35 does not claim cross-worktree locks, general transactions, rollback journals, automatic recovery, cross-worktree merge, or conflict adjudication.
 
 ## Current status
 
-`rules.md` 存在，但仍需 Plan 35 完成 Prompt-first routing、加入 Implementation/Delivery imports 并移除 Attribution baseline import。没有 lifecycle runtime 或已观察的端到端执行证据。
+Plan 35 provides a Prompt-level Global Rule, one public Skill, fifteen internal Capability contracts, four fixed Agent Profile contracts, a 91-row route policy, explicit worktree/write-safety boundaries, and manual replay semantics. Strict Schema, result vectors, validator, canonicalization, and currentness fixtures belong to Plan 36. The future Plan 37 runtime owns policy evaluation, temporary invocation, per-lifecycle state recording, atomic replacement, completion markers, and reread verification; it does not own general locks, transactions, rollback journals, automatic recovery, cross-worktree merge, or conflict adjudication.

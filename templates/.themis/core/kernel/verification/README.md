@@ -2,47 +2,36 @@
 
 ## Responsibility
 
-Verification 在 Implementation 后运行实际存在的 Gates，形成可复现、evidence-backed 的事实。它回答“当前实现被什么证据支持”，不修改代码或重做 Review。
+Verification 在 Impl 后以独立 invocation 读取实际实现，直接证明 Current Request 和 Plan 验收要求，核验 baseline/delta、external drift 与 simple-path 边界。它不得修改实现来使检查通过。
 
-## Owned assets
+## Capability mapping
 
-- `rules.md`：当前 Verification 边界。
-- 未来 Gate、attempt、evidence、repair/resume 和 verdict contracts。
+- `themis-verification`：独立 read-only 验证能力。
+- `core/templates/verification.md`：断言、命令、stdout/stderr、delta 与 verdict 记录结构。
 
-## Inputs and outputs
+## Evidence
 
-输入为 manifest 中结构化配置的 project commands/Gates、current implementation revision、approved Plan/Review 和 Task evidence。输出为 run/evidence records 与：
+每次 attempt 记录实际 command/observation、cwd/environment、exit/result、stdout/stderr 或证据引用、覆盖范围和限制。没有配置的命令不得猜测；缺失证据不得 `passed`。
+
+## Status contract
 
 ```text
-pass | fail | inconclusive
+passed
+failed
+needs-planning
+needs-specification
+escalate-full
+blocked
 ```
 
-每次 attempt 保存 executable/args、cwd、相关 environment、exit、stdout/stderr refs、AC coverage、revision、classification、rerun history 和 limitations。
+`failed` 只表示有明确证据的 `implementation-defect`。隐藏合同、权限、数据、跨模块、状态或设计复杂度必须路由到 owning semantics，不能伪装为实现缺陷。
 
-## Prompt flow and handoff
-
-1. 枚举 blocking Gates 和 evidence requirements。
-2. 仅运行真实存在且明确配置的命令。
-3. 保存观察结果并区分 fail、unavailable 和 not_run。
-4. 所有 blocking Gates 有充分 evidence 才能 `pass`。
-5. `fail`/`inconclusive` 产生 repair handoff；`pass` handoff 到 Delivery。
-
-## Assurance boundary
-
-Prompt 可运行可用工具并记录观察；不能伪造 command/exit/output 或自行把缺失证据聚合为 `pass`。Plan 37 runtime 以 child process 运行项目命令，不用 Shell 串联 Themis 操作。
-
-## Safe degradation
-
-未配置命令、工具缺失、输出不可访问或 evidence 不完整时返回 `inconclusive`/`unavailable`。任何实现变化使受影响 evidence 和 Acceptance 失效。
+Impl 与 Verification 使用不同 Invocation Identity，但共享一个 Plan execution task identity 和累计三次失败预算。普通实现修复不修改 Plan，可直接重跑受影响 Verification；设计/需求/路径变化使 Approval 失效。
 
 ## Workspace interaction
 
-runs 写入 `workspace/runs/`，evidence 写入 `workspace/evidence/`；不得在 Verification 中修改 project code。
-
-## Non-ownership
-
-不作 pre-Implementation Review、Implementation、Human Acceptance、Summary 或 Attribution causal judgment。
+invocation metadata belongs under `workspace/runs/<lifecycle-id>/`; direct evidence belongs under `workspace/evidence/<lifecycle-id>/`. Current templates do not prove machine persistence, currentness, or collection.
 
 ## Current status
 
-`rules.md` 和 Workspace directories 存在；Gate runner、attempt/verdict schema、state invalidation、recovery 和 executable tests 尚未实现。
+Plan 35 provides the internal Verification Capability contract, fixed `independent-checker` Profile, and human-readable evidence template. Strict evidence/result contracts and fixtures belong to Plan 36; command execution, per-lifecycle attempt recording, completion markers, and reread verification belong to Plan 37. General transactions, locks, rollback journals, and automatic recovery are out of scope.

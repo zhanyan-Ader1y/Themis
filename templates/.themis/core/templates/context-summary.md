@@ -2,42 +2,37 @@
 
 ## Purpose
 
-Propose a source-backed Context Item candidate for Knowledge Governance. This Prompt may compress verified material into reviewable metadata and body text; it cannot approve, register, publish, or assign authority to project knowledge.
+提出有来源支撑的治理候选。该模板可以把已核验材料压缩为可审阅内容，但不能批准、发布、注册、计算 digest 或赋予正式权威。
 
 ## Required Inputs
 
-- the verified source material and its relative paths or external references;
-- the relevant governed Context Bundle, when one exists;
-- the intended category and scope;
-- unresolved uncertainty, conflict, freshness, and code-drift signals.
+- 已核验的来源材料和真实引用；
+- 候选所属知识或经验治理区域；
+- 适用范围、复用条件和限制；
+- 未解决的不确定、冲突、freshness 与 code drift。
 
 ## Output
 
 ```yaml
 candidate:
-  title: <concise governed title>
-  category: domain | glossary | decisions | architecture | engineering | pitfalls | external
-  kind: <knowledge kind>
-  authority: <proposed authority>
+  title: <concise title>
+  area: <governed knowledge or experience area>
+  kind: <candidate kind>
   scope: []
   tags: []
   abstract: <L1-safe abstract>
   overview: <L2-safe overview>
   source_refs: []
   dependencies: []
-  supersedes: []
 body: |
-  <proposed L3 detail grounded only in the cited sources>
+  <proposed L3 detail grounded only in cited sources>
 uncertainties: []
 ```
 
-Use stable Context IDs in `dependencies` and `supersedes` only when those IDs already exist in the validated Catalog. Preserve disagreement and uncertainty explicitly instead of smoothing it into one claim.
-
 ## Boundaries
 
-- Do not invent a `CTX-*` ID, status, digest, revision, approval, or Catalog entry.
-- Do not write directly to `workspace/context/`, `catalog.yaml`, L1/L2 projections, or Context Cache.
-- Do not convert current code behavior into intended policy without human-approved governance evidence.
-- Do not use missing sources, stale material, unresolved conflict, or model inference as a factual basis.
-- Route the output to the installed Knowledge Governance candidate location and process; if that capability is absent, return the candidate to the caller without persistence.
-- Navigation publication remains the responsibility of `themis-context-navigation.sh` after the governed L3 Item and Catalog entry exist.
+- 不发明 ID、status、digest、revision、approval 或 Catalog entry。
+- 不直接写入正式知识、经验区、Catalog、L1/L2 projection 或 cache。
+- 当前代码行为只有直接代码/配置/Schema/执行证据可以证明；候选中的转述不是实现事实源。
+- 缺少来源、材料 stale、冲突未解决或仅有模型推断时，不得形成事实性正文。
+- 只把候选交给实际存在的独立治理流程；不存在时返回调用方并标记未持久化。

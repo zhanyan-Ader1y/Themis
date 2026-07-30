@@ -2,34 +2,32 @@
 
 ## Purpose
 
-Resolve only the governed Context needed for the current Spec, Plan, Review, or Task. Semantic selection is allowed; discovery, validation, persistence, digest calculation, and Bundle publication remain deterministic executor responsibilities.
+选择当前能力真正需要的受治理 Context，并明确它只提供设计约束、背景、历史或核验线索。当前实现事实必须回到代码、配置、Schema 或实际可执行行为。
 
 ## Required Flow
 
-1. Read the installed Context Protocols under `core/protocols/context/`.
-2. Use `themis-context-search.sh query` to discover candidates, then create a request and use `themis-context-assemble.sh prepare` to freeze the candidate set.
-3. Read only the prepared Bundle manifest and the candidate metadata it contains. Do not add an ID, path, digest, or fact that is absent from that manifest.
-4. Classify every candidate as selected or excluded. Selection is semantic relevance, not a freshness or authority override.
-5. Write only the selection YAML below and pass it to `themis-context-assemble.sh select`; the executor must validate membership, uniqueness, digests, and budgets.
-6. Use `themis-context-assemble.sh finalize` before relying on the resolved Context.
+1. 读取 manifest 声明的 Context 入口和实际存在的 Context 文件。
+2. 仅选择与当前 Current Request 或能力输入直接相关的条目。
+3. 对每个条目记录 selected/excluded 与理由，不增加来源中不存在的 ID、digest 或事实。
+4. 标出 missing、stale、conflict、context-code drift 和 unavailable。
+5. 将选择结果作为输入引用返回调用能力；不得把它转换为当前实现证据。
 
 ## Output
 
 ```yaml
 selected:
-  - id: CTX-001
-    reason: <why this governed item is required>
+  - reference: <existing path or governed id>
+    reason: <why this constraint or context is required>
 excluded:
-  - id: CTX-002
-    reason: <why this candidate is not required>
+  - reference: <existing path or governed id>
+    reason: <why it is not required>
+limitations: []
 ```
-
-Both arrays are required. Each candidate ID must appear exactly once, and no ID outside the prepared candidate set is allowed. Reasons must describe relevance only; they must not introduce project facts.
 
 ## Fail-Closed Rules
 
-- An empty candidate set is missing Context, not permission to infer the answer.
-- If the Bundle or relevant Signal reports `missing`, `stale`, `context_conflict`, `context_code_drift`, `conflict`, or `unavailable`, stop factual conclusions that depend on the affected claim and surface the blocker.
-- Governed Context describes intended rules and decisions; current code, configuration, and Schema describe current implementation. Record disagreement as drift or conflict rather than choosing a global winner.
-- Do not edit Catalog, L3 Items, L1/L2 projections, Signal disposition, lifecycle state, or source code from this Prompt.
-- Do not treat ranking, Cache content, conversation memory, or model inference as authoritative Context.
+- 不存在搜索、装配或验证能力时，使用有界人工读取并明确 assurance unavailable；不得引用已删除命令。
+- 空候选集表示没有可用 Context，不授权推断事实。
+- Governed Context 可以约束可接受方案，但不能静默改写 Current Request。
+- Context、Specification、Plan、Summary、知识库和 Agent 推断都不能证明当前实现行为。
+- 不从本模板编辑 Catalog、Context、lifecycle state、Plan 或项目实现。

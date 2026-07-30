@@ -2,50 +2,38 @@
 
 ## Responsibility
 
-Specification 把用户目标转为可审阅、可批准、可追踪的需求语义。它负责 Spec 前追问和轻松 Spec Review，不拥有实现设计或 Task ordering。
+Specification 只在完整路径中细化已完成需求追问的 Current Request，形成临时、非权威 Planning handoff。它不持久化需求权威，不拥有复杂度判断、Plan、Review 或实现事实。
 
-## Owned assets
+## Capability mapping
 
-- `rules.md`：当前 Specification 边界。
-- `../../policies/specification.yaml`：复杂度、追问、对抗检查和 readiness 策略输入。
-- `../../templates/spec.yaml`：Spec 语义源模板。
-- `../../protocols/artifact/spec-schema.yaml` 与 `spec-projection.yaml`：待 Plan 36 收敛的结构和投影合同输入。
-- 外部 `themis-q` Skill：只提供提问方法，不拥有流程、持久化或 handoff。
+- `themis-q`：在路径选择前收敛 Why 与抽象 What；不属于 Specification 内部步骤。
+- `themis-spec`：完整路径的范围、可观察行为、业务/外部合同、不变量、验收、风险和 Planning 不变量 refinement。
 
-## Semantic artifacts
+## Inputs and outputs
 
-```text
-workspace/specs/<spec-id>/spec.yaml  # 唯一语义权威
-workspace/specs/<spec-id>/spec.md    # Human projection
+输入为 Requirement Input Bundle 与直接实现事实证据。`ready` 输出只存在于 active control context：
+
+```markdown
+## 动机与目标
+## 核心链路
+## 范围
+## 行为与合同
+## 验收要求
+## 当前实现事实与证据
+## 推导假设
+## 风险与未解决事项
+## Planning 不变量
 ```
 
-候选、批准和 currentness records 的最终结构由 Plans 35/36 确认。Markdown 不得反向解析为 YAML 或 machine evidence。
+中断后从相同 bundle 重新生成，不恢复为持久 authority。
 
-## Prompt flow and handoff
+## Authority boundary
 
-1. 读取受治理 Context 与相关当前代码/配置/Schema。
-2. 需要澄清时调用 `themis-q` 方法，记录问题、假设和未决项。
-3. 向用户展示 normalized summary；明确确认后创建或修订 `spec.yaml`。
-4. 从语义源生成 reviewable `spec.md`，但在 runtime 缺失时不声称 byte-identical projection。
-5. 用户审阅 current projection；反馈只修改语义源并使旧批准失效。
-6. current semantic revision 获得明确批准后 handoff 到 Planning。
-
-## Assurance boundary
-
-Prompt 可以记录明确人工决定，但不能伪造 schema validation、digest、Git OID、currentness 或 lifecycle transition。Plans 36/37 分别定义并实现这些 assurance。
-
-## Safe degradation
-
-`themis-q`、必要 Context 或工具缺失时保持 Specification 并报告 blocker。投影器缺失时可生成标明 assurance `unavailable` 的 review copy，但不得称为 canonical publisher output。
-
-## Workspace interaction
-
-只写当前 Spec artifact area 和声明的 candidate/decision records；不修改 Core、Plan、代码或 lifecycle state。
-
-## Non-ownership
-
-不拥有 Plan decomposition、pre-Implementation Review、Implementation、Verification、Human Acceptance 或 Summary。
+- Current Request Revision 始终是目标语义来源。
+- Specification 不能证明当前实现、覆盖用户纠正或被其他需求当事实引用。
+- 不生成 `spec.yaml`、`spec.md`、独立批准或 Spec currentness。
+- Planning 发现事实或语义缺口时必须回到 owning capability，不能静默补齐。
 
 ## Current status
 
-rules、policy、template 和协议草案存在；旧 Shell publisher 已移除。当前没有 deterministic validator/projector、批准 currentness、transition recorder 或可执行 Spec regression suite。Plan 35 将实现 Prompt flow，Plan 36 固定 machine contracts，Plan 37 实现 runtime。
+Plan 35 provides the internal `themis-spec` Capability contract and its temporary handoff shape. There is no Specification artifact, public Specification Skill, validator, projector, publisher, approval recorder, or executable regression suite.
