@@ -1,17 +1,18 @@
 # Impl Result
 
-> Records one implementation invocation against an approved Plan task. It is not a Verification verdict.
+> Human-readable half of one immutable implementation-result revision against an approved Plan task. It is not a Verification verdict; the paired machine record owns identity, bindings, digest, attempt, and materialization observation.
 
 ## Bindings
 
-- Lifecycle:
-- Current Request Revision:
-- Review Approval reference:
-- Plan identity, revision, and digest:
-- Plan execution task identity:
-- Invocation identity:
-- Attempt:
+- Lifecycle identity:
+- Impl Result revision identity:
+- Current Request revision:
+- Review Approval revision:
+- Plan revision and task identity:
+- Task Execution Identity:
+- Invocation and attempt identities:
 - Approved implementation baseline:
+- Expected delta reference:
 
 ## Result
 
@@ -40,3 +41,7 @@
 - Failure assertion:
 - Tool or command failures:
 - Recommended route:
+
+## Boundary
+
+A writer cannot issue a Verification verdict or make this revision current without observed policy-controlled materialization and a separate pointer update.

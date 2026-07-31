@@ -3,48 +3,26 @@
 ## 内部执行合同
 
 - Stable identity：`themis-summary`。
+- Authority scope：`lifecycle`。
 - 固定 Agent Profile：`semantic-readonly`。
-- 合法生命周期绑定：`simple/lightweight` 或 `full/full`。
-- 不得修改项目实现，不拥有全局路由、lifecycle state 或持久化权威。
-- 不调用其他 Capability 或 Agent；只有 current Verification `passed` 且 durable Human Acceptance `accepted` 后才可调用。
+- 合法绑定：`simple/lightweight` 或 `full/full`。
+- Materialization target：immutable paired Summary revision。
+- 结果只是 bound delivery projection proposal；policy/recorder 物化后才可成为 current Summary。
+- 不调用其他 Capability 或 Agent；只有 current Verification `passed` 且 current Human Acceptance `accepted` 后才可调用。
 
 ## 能力目标
 
-描述本次实际交付结果并结束 lifecycle。Summary 不是中间阶段摘要，不产生新的需求、设计、实现或知识权威。
-
-## 调用门禁
-
-必须同时满足：
-
-```text
-Verification passed
-Human Acceptance accepted
-```
-
-任一 binding 过期、证据失效或状态不满足时不得生成。
+描述 actual delivered result 并提供可选 governed knowledge candidates。Summary 不是中间阶段摘要，不产生新的需求、设计、实现、完成或知识 authority。
 
 ## 输入
 
-- Current Request Revision；
-- approved Plan identity/revision/digest；
-- Review Approval；
-- current Verification passed 结果和证据；
-- Human Acceptance accepted 记录；
-- 实际实现位置和已知限制；
-- `core/templates/summary.md`。
-
-## 内容
-
-- 原始目标；
-- 实际落地结果；
-- 关键设计和实现位置；
-- Verification 结论及证据入口；
-- Human Acceptance 结果；
-- 已知限制和明确未完成事项；
-- 对应 Plan revision 与 Approval；
-- 可选的项目经验候选和项目知识变更候选。
-
-候选不会自动发布；候选治理失败不影响已完成交付。
+- Current Request revision；
+- approved Plan revision/digest 和 Review Approval；
+- current Verification passed pair/evidence；
+- current Human Acceptance accepted pair；
+- actual implementation locations、limitations 和 explicit non-deliverables；
+- lifecycle、Execution Identity、Invocation/attempt、policy 和 continuation bindings；
+- Summary pair template。
 
 ## 合法状态
 
@@ -53,27 +31,38 @@ ready
 blocked
 ```
 
-- `ready`：门禁和 bindings 当前有效，形成完整 Summary。
-- `blocked`：必要记录、证据或 binding 不可访问或不再有效。
+- `ready`：全部 gates 和 bindings current，形成完整 Summary proposal。
+- `blocked`：必要 record/evidence/binding 不可访问或失效。
 
 ## 输出
 
 ```yaml
 capability: themis-summary
+authority_scope: lifecycle
+agent_profile: semantic-readonly
 status: ready | blocked
 input_bindings:
+  lifecycle_identity: ""
+  execution_identity: ""
+  invocation_identity: ""
+  attempt_identity: ""
   current_request_revision: ""
-  questioning_round_digest: ""
-  governed_design_constraint_digests: []
+  approval_revision: ""
+  plan_revision: ""
+  verification_revision: ""
+  acceptance_revision: ""
+  policy_identity: ""
+  policy_digest: ""
+  continuation_identity: ""
   selected_path: simple | full
   profile: lightweight | full
-  artifact_evidence_digests: []
 output:
   structured_result:
     summary_content: ""
     experience_candidates: []
     project_knowledge_candidates: []
-  artifact_references: []
+  proposed_artifact_references: []
+  materialization_target: summary-pair
 diagnostics:
   gaps: []
   evidence: []
@@ -83,8 +72,13 @@ recommended_route: complete-lifecycle | request-unblock
 
 ## 权限与边界
 
-- 只读 approved Plan、实际实现、Verification 和 Acceptance。
-- 返回 Summary 内容，由控制面持久化；不得修改项目实现或上游工件。
-- 不调用其他 Capability 或 Agent。
-- 不把 Summary 当作当前实现事实源。
-- 不直接发布 Themico、themis-context 或其他正式知识。
+- 只读 approved Plan、actual implementation、Verification 和 Acceptance。
+- 不得修改项目实现或 upstream artifacts，不调用其他 Capability 或 Agent。
+- 不把 Summary 当作实现事实源、完成替代或知识发布动作。
+- knowledge candidate 治理失败不改变 completed delivery。
+
+## 停止条件
+
+- Verification 非 current `passed`、Acceptance 非 current `accepted` 或 evidence/binding stale 时停止。
+- actual result 与 records 无法追溯时不得返回 `ready`。
+- 工具、结果合同或 Invocation 失败属于 counted failure；不得凭旧 Summary 推断完成。

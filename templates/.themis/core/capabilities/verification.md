@@ -3,37 +3,30 @@
 ## 内部执行合同
 
 - Stable identity：`themis-verification`。
+- Authority scope：`lifecycle`。
 - 固定 Agent Profile：`independent-checker`。
-- 合法生命周期绑定：`simple/lightweight` 或 `full/full`；`escalate-full` 仅允许前者。
-- 不得修改项目实现，不拥有全局路由、lifecycle state 或持久化权威。
-- 不调用其他 Capability 或 Agent；不继承 Impl 临时推理或写权限，`failed` 仅允许 evidence-backed `implementation-defect`。
+- 合法绑定：`simple/lightweight` 或 `full/full`；`escalate-full` 仅允许前者。
+- Materialization target：immutable paired Verification revision and command/Git evidence records。
+- 结果只是 independent verdict proposal；policy/recorder 物化后才可成为 current Verification。
+- 不调用其他 Capability 或 Agent，不继承 Impl 临时推理或写权限。
 
 ## 能力目标
 
-在 Impl 后独立读取实际状态并给出证据支持的 Verification 结论。Verification 与 Impl 使用不同 invocation，但同一 Plan task 共享 Task Execution Identity 和失败预算。
+在 Impl 后独立读取 actual implementation 并验证 Current Request、Plan、baseline/delta 和交付证据。Impl 与 Verification 使用不同 Invocation，但共享一个 Plan Task Execution Identity 和 failure budget。
 
 ## 输入
 
-- Current Request Revision；
-- selected path 与 `full_path_required`；
-- Review Approval；
-- approved Plan identity/revision/digest 和验收要求；
-- Plan execution task identity、Verification invocation identity、attempt；
-- approved pre-Impl baseline；
-- Impl Result 和实际 delta；
-- manifest/Plan 中真实存在且允许的验证命令；
-- `core/templates/verification.md`。
+- Current Request revision、selected path/profile 和 `full_path_required`；
+- current Review Approval pair；
+- approved Plan revision/digest、task identity 和验收要求；
+- shared Task Execution Identity、Verification Invocation/attempt 和 remaining budget；
+- approved pre-Impl baseline、expected delta、current Impl Result pair 与 actual delta；
+- allowed verification commands；
+- lifecycle、policy 和 continuation bindings。
 
 ## 验证责任
 
-- 直接证明实际结果满足 Current Request；
-- 验证 Plan 验收要求、技术设计、合同和不变量；
-- 运行相关自动检查和实际功能验证；
-- 记录 command、cwd、environment、exit/result、stdout/stderr 或证据引用；
-- 从批准 baseline 核验实际 delta 与 Plan 一致；
-- 检查未授权 external drift；
-- simple path 检查实现仍在简单边界；
-- 返回失败断言、实际结果、证据位置和影响范围。
+直接证明 actual result 满足 Current Request 和 Plan；运行相关检查；记录 command/cwd/environment/exit/stdout/stderr；比较 expected/actual delta；检查 external drift；simple path 复核简单边界；失败时提供 assertion、actual result、evidence 和 impact。
 
 ## 合法状态
 
@@ -46,31 +39,37 @@ escalate-full
 blocked
 ```
 
-- `failed` 只表示 `implementation-defect`，必须携带明确失败证据。
-- `needs-planning`：技术设计或任务合同有缺口；simple path 由控制面升级。
-- `needs-specification`：目标、范围、行为合同或验收语义有缺口；simple path 由控制面升级。
-- `escalate-full`：仅 simple path 的隐藏复杂度。
-- `blocked`：权限、环境或外部条件阻止验证。
-
-证据缺失不能 `passed`。隐藏复杂度不能伪装为普通实现缺陷。
+- `failed` 只表示 evidence-backed `implementation-defect`，计入共享 task failure budget。
+- `needs-planning`/`needs-specification` 表示对应 semantic owner 缺口；simple path 由控制面升级。
+- `escalate-full` 只允许 simple path 隐藏复杂度。
+- `blocked` 只表示外部条件阻止验证。
 
 ## 输出
 
 ```yaml
 capability: themis-verification
+authority_scope: lifecycle
+agent_profile: independent-checker
 status: passed | failed | needs-planning | needs-specification | escalate-full | blocked
 input_bindings:
+  lifecycle_identity: ""
+  execution_identity: ""
+  invocation_identity: ""
+  attempt_identity: ""
   current_request_revision: ""
-  questioning_round_digest: ""
-  governed_design_constraint_digests: []
+  approval_revision: ""
+  plan_revision: ""
+  plan_task_identity: ""
+  impl_result_revisions: []
+  approved_implementation_baseline: ""
+  expected_delta_reference: ""
+  policy_identity: ""
+  policy_digest: ""
+  continuation_identity: ""
   selected_path: simple | full
   profile: lightweight | full
-  artifact_evidence_digests: []
 output:
   structured_result:
-    plan_task_identity: ""
-    invocation_identity: ""
-    attempt: 0
     assertions: []
     commands_and_observations: []
     expected_delta: []
@@ -78,7 +77,8 @@ output:
     external_drift: []
     simple_boundary_check: {}
     failure_classification: implementation-defect | none
-  artifact_references: []
+  proposed_artifact_references: []
+  materialization_target: verification-pair-and-evidence
 diagnostics:
   gaps: []
   evidence: []
@@ -88,8 +88,13 @@ recommended_route: human-acceptance | impl-repair | planning | specification | s
 
 ## 权限与边界
 
-- 只读项目实现；可以运行明确允许的验证命令，但不得修改项目实现以使检查通过。
-- 不调用其他 Capability 或 Agent。
-- 不修改 Plan、Approval、验收要求或 failure count。
-- 不提前生成 Summary。
-- 工具、命令、Schema 或 result contract 失败属于 counted failure，不得伪装成语义返工。
+- 只读项目实现；可运行明确允许的验证命令，但不得修改实现使检查通过。
+- 不调用其他 Capability 或 Agent，不修改 Plan、Approval、acceptance requirements 或 failure count。
+- 不提前生成 Acceptance 或 Summary，不把 writer self-report 当作独立证据。
+
+## 停止条件
+
+- Approval/Plan/Impl Result/baseline/delta/scope/Profile/policy binding 缺失或 stale 时停止。
+- Evidence 不足不得 `passed`；隐藏复杂度不得伪装为 `failed`。
+- external drift 触发 non-counted stop-and-revalidate。
+- started tool/command 或 result contract 失败属于 shared task counted failure；第三次后不得开始第四次 Invocation。

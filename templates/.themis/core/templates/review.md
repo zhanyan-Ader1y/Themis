@@ -1,19 +1,20 @@
-# Review
+# Review Projection
 
-> Read-only projection from the current Plan revision after the required Plan Check passes. Feedback changes the owning semantic artifact, then regenerates this file; never edit this projection manually.
+> Human-readable half of one immutable projection from a checked Plan. It is not a second execution contract, and feedback never edits it in place.
 
 ## Source bindings
 
-- Current Request Revision:
-- Selected path:
+- Lifecycle identity:
+- Review revision identity:
+- Current Request revision:
+- Selected path/profile:
 - Full path required:
-- Plan revision and digest:
-- Plan Check profile and result:
-- Projection digest: `<control-plane supplied digest | unavailable>`
+- Plan revision and content digest:
+- Plan Check reference:
 
 ## Overview
 
-> Add a Mermaid flowchart or sequence diagram only when it materially reduces review effort. The diagram must preserve the Plan's core flow.
+> Add a Mermaid flowchart or sequence diagram only when it materially reduces review effort. Preserve the Plan's core flow and do not add semantics.
 
 ## Goal and overall approach
 
@@ -38,4 +39,8 @@
 
 ## Reviewer expansion points
 
-> List Plan locations that can be expanded through Review Dialogue without copying them into this projection.
+> List Plan locations that Review Dialogue can explain without copying or patching the Plan.
+
+## Revision boundary
+
+Any Plan or Plan Check change makes this projection stale and requires a new immutable Review pair.

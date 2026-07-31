@@ -1,5 +1,7 @@
 # Plan 35 Core Prompt Flow 设计
 
+> 历史状态：本文已被 `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md` 取代，仅保留为历史记录，不是 current authority。
+
 ## 1. 目标
 
 Plan 35 建立 Themis 的 Prompt-first 交付主流程，使全局控制面能够按需调用独立语义能力，并根据需求复杂度选择快速路径或完整路径，通过共同门禁完成从需求追问到交付摘要的完整生命周期。

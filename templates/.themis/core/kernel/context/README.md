@@ -2,25 +2,26 @@
 
 ## Responsibility
 
-Context 提供受治理设计约束、背景、历史和可复用经验入口，并保持这些内容与当前实现事实严格分离。当前代码、配置、Schema 和实际可执行行为必须由直接证据核验。
+Context supplies governed design constraints, background, history, and reusable experience while keeping them separate from current implementation facts. Code, configuration, Schema, and observed executable behavior must be checked directly for every current claim.
 
 ## Capability mapping
 
-- `themis-grounding`：核验调用方提出的具体实现事实请求。
-- `core/templates/context-resolution.md`：有界选择相关 Context。
-- `core/templates/context-summary.md`：形成待独立治理的 Context candidate。
+- `themis-grounding`: verifies bounded implementation-fact requests and proposes a structured Grounding result.
+- `core/templates/context-resolution.md`: supports bounded selection of relevant Context.
+- `core/templates/context-summary.md`: structures a candidate for separate knowledge governance.
 
 ## Authority boundary
 
-- Governed Context 可以约束可接受方案或提供搜索线索。
-- Context、Themico、Specification、Plan、Review、Summary 和经验都不能证明当前实现事实。
-- Context 与实现冲突时保留双方，标记 drift/conflict，不静默选择全局赢家。
-- `themis-context` 只收录可复用经验，不收录项目架构、设计决定或当前实现事实。
+- Exact Source Event fragments and user-confirmed Current Request claim revisions own lifecycle target semantics.
+- Governed Context may constrain acceptable solutions or provide search leads, but it cannot rewrite user claims.
+- Context, Themico, Specification, Plan, Review, Summary, external references, and experience cannot prove current implementation facts.
+- When Context conflicts with observed implementation, retain the evidence and identify drift/conflict rather than silently choosing a global winner.
+- `themis-context` records reusable experience only; it does not publish project architecture, design decisions, or current code facts as experience.
 
 ## Workspace interaction
 
-正式受治理内容位于 `workspace/context/`；候选和 disposition 位于 `workspace/knowledge/`；cache 永非 authority。Plan 35 不实现 Catalog mutation、index、freshness、Signal transition 或 governed apply runtime。
+Governed Context lives under `workspace/context/`. Intake- and lifecycle-scoped candidates and dispositions live under their respective `workspace/knowledge/` roots. Cache remains rebuildable and non-authoritative.
 
 ## Current status
 
-Context 的历史结构声明、Catalog scaffold 和人工模板存在。旧 Shell executors 已移除；当前没有 deterministic search/assemble/lint/navigation 或事实 validator。
+Plan 35 provides Prompt-level boundaries and existing human-readable Context scaffolding. It does not provide deterministic search, assembly, freshness, validation, Catalog mutation, or governed apply. Strict contracts belong to Plan 36; any native apply/runtime support belongs to Plan 37.

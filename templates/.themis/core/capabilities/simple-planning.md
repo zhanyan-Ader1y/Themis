@@ -3,39 +3,32 @@
 ## 内部执行合同
 
 - Stable identity：`themis-simple-plan`。
+- Authority scope：`lifecycle`。
 - 固定 Agent Profile：`semantic-readonly`。
-- 唯一合法生命周期绑定：`selected_path: simple`、`profile: lightweight`。
-- 不得修改项目实现，不拥有全局路由、lifecycle state 或持久化权威。
-- 不调用其他 Capability 或 Agent；与完整路径生成同一个 unified Plan 合同。
+- 唯一合法绑定：`selected_path: simple`、`profile: lightweight`。
+- Materialization target：immutable paired unified Plan revision。
+- 结果只是完整 Plan content proposal；policy/recorder 才能建立 revision 和 current pointer。
+- 不调用其他 Capability 或 Agent，不拥有 route、state 或持久化权威。
 
 ## 能力目标
 
-在 `simple-qualified` 且 `full_path_required = false` 时，直接形成与完整路径同路径、同结构、同语义地位的 Plan 候选。
+在 `simple-qualified` 且 `full_path_required = false` 时，形成与 full path 同结构、同语义地位的 unified Plan proposal。
 
 ## 输入
 
 - Requirement Input Bundle；
-- Complexity Assessment 结果、逐项证据和 digest；
-- 当前代码、配置、Schema、实际可执行行为与 baseline；
-- 当前需求直接相关的用户约束；
-- 统一 `core/templates/plan.md` 结构。
+- Current Request revision、active claims 和 completed Questioning round；
+- Complexity Assessment record 与逐项证据；
+- Grounding/current implementation fact evidence 与 baseline；
+- governed design constraints；
+- lifecycle、Execution Identity、Invocation/attempt、policy 和 continuation bindings；
+- unified Plan pair template。
 
-不得读取 Specification handoff，不调用完整 Planning。
+不得读取 temporary Specification handoff，也不得执行 full Planning。
 
 ## Plan 要求
 
-至少包含：
-
-- 当前需求、核心链路和预期结果；
-- 范围与明确排除项；
-- 行为和验收要求；
-- 当前实现事实与直接证据位置；
-- 拟修改位置；
-- 可执行步骤、依赖和完成条件；
-- Verification 方法和预期证据；
-- 风险、失败处理和回滚；
-- Current Request 覆盖映射；
-- 对不适用深层设计项的证据化 `not-applicable` 说明。
+至少包含目标、核心链路、范围/排除项、行为/验收、实现事实证据、拟修改位置、步骤/依赖/完成条件、Verification 方案、风险/失败/恢复、claim 覆盖映射，以及深层设计项 `not-applicable` 的直接证据。
 
 ## 合法状态
 
@@ -45,30 +38,39 @@ escalate-full
 blocked
 ```
 
-- `ready`：在简单边界内形成完整统一 Plan 候选。
-- `escalate-full`：需要合同、架构、跨模块、权限、数据、状态或其他完整设计才能形成执行合同。
+- `ready`：在已证明简单边界内形成完整 unified Plan proposal。
+- `escalate-full`：需要合同、架构、跨模块、权限、数据、状态或其他完整设计。
 - `blocked`：必要事实或访问条件不可获得。
-
-不得通过扩张成隐藏的完整 Planning 来避免 `escalate-full`。
 
 ## 输出
 
 ```yaml
 capability: themis-simple-plan
+authority_scope: lifecycle
+agent_profile: semantic-readonly
 status: ready | escalate-full | blocked
 input_bindings:
+  lifecycle_identity: ""
+  execution_identity: ""
+  invocation_identity: ""
+  attempt_identity: ""
   current_request_revision: ""
-  questioning_round_digest: ""
-  governed_design_constraint_digests: []
+  active_claim_revisions: []
+  questioning_round_revision: ""
+  complexity_assessment_reference: ""
+  implementation_baseline: ""
+  policy_identity: ""
+  policy_digest: ""
+  continuation_identity: ""
   selected_path: simple
   profile: lightweight
-  artifact_evidence_digests: []
 output:
   structured_result:
     plan_content: ""
     coverage_summary: []
     not_applicable_evidence: []
-  artifact_references: []
+  proposed_artifact_references: []
+  materialization_target: plan-pair
 diagnostics:
   gaps: []
   evidence: []
@@ -78,8 +80,13 @@ recommended_route: plan-check | set-full-path-required | request-unblock
 
 ## 权限与边界
 
-- 可只读调查项目；不得修改项目实现。
-- 返回完整 Plan 内容，由控制面持久化；Capability 不创建第二个 `simple-plan`。
-- 不修改 Current Request，不创造外部合同或架构目标。
-- 不调用其他 Capability 或 Agent，不批准 Plan，不执行实现。
-- 不计算或发明 Plan digest、Assessment digest 或 currentness。
+- 可只读调查项目；不得修改项目实现、Current Request 或 Assessment。
+- 不创建第二个 `simple-plan` artifact，不调用其他 Capability 或 Agent。
+- 不批准 Plan，不执行实现，不计算或发明 digest/currentness。
+
+## 停止条件
+
+- Assessment 不是 current `simple-qualified`、`full_path_required = true` 或任一 binding stale 时停止。
+- 形成 Plan 需要扩张简单边界时必须返回 `escalate-full`。
+- Plan coverage 不完整时不得返回 `ready`。
+- 工具、结果合同或 Invocation 失败属于 counted failure；external drift 单独 stop-and-revalidate。

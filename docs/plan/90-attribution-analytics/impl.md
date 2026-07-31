@@ -320,3 +320,16 @@ Outcome observation 可按一次性或周期性窗口运行，但调度是可选
 - 可选 connector/scheduler 不可用时核心流程不受影响。
 - privacy、security、retention 和 cross-project isolation 已验证。
 - 用户审阅实际 evidence 并单独接受 Plan 90。
+
+## 16. 启动前重基线声明
+
+本节只登记当前审计发现，不修改、补充或批准上文设计。Plan 90 保持可选、交付后且未获实施授权；在其正式规划或实施启动时，必须以届时已接受的 Plan 35–37 合同、实际 Workspace/runtime 和已完成 lifecycle records 为权威，对全文进行一次完整重基线，并在获得用户单独批准后再修改正文。
+
+当前已知、不得直接沿用的候选漂移包括：
+
+- Attribution nodes、edges、Outcome observations 和 analytics runs 必须保留来源 lifecycle identity；跨 lifecycle aggregation 只能是显式只读 query，不得建立共享权威动态状态或覆盖 `outcomes/<lifecycle-id>/` 的 Acceptance/Summary ownership；
+- Analytics 只能投影已观察到的 currentness/invalidation，不得决定或执行 route、gate、failure count/classification、invalidation、Verification verdict、Acceptance、Summary 或 lifecycle currentness；
+- “不阻塞 Plan 36/37”不得解释为“实施时不依赖 Plan 36/37”；strict artifact/currentness contracts 和 durable observed lifecycle records 的生产依赖应在重基线时重新确认，Plan 80 仍不是依赖；
+- `completed`-only 范围与 Verification 非 `passed`、Acceptance 非 `accepted` 的验证场景必须重新定性：默认作为不合格 root 的拒绝测试，除非届时另行批准扩展到 terminated unsuccessful lifecycle。
+
+这些条目不是当前 Plan 90 的已批准需求、实现任务或验收条件，也不得用于提前实现 Plan 90。后续 Plan 35–37 的规划和落地变化只需在 Plan 90 启动时统一复核，不为保持本文件实时同步而反复改写上文。

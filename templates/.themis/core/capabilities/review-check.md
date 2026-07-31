@@ -3,34 +3,29 @@
 ## 内部执行合同
 
 - Stable identity：`themis-review-check`。
+- Authority scope：`lifecycle`。
 - 固定 Agent Profile：`independent-checker`。
-- 合法生命周期绑定：`simple/lightweight` 或 `full/full`；`profile` 只绑定上游 Plan，不改变检查标准。
-- 不得修改项目实现，不拥有全局路由、lifecycle state 或持久化权威。
-- 不调用其他 Capability 或 Agent；不继承投影生成者的临时推理。
+- 合法绑定：`simple/lightweight` 或 `full/full`。
+- Materialization target：immutable structured Review Check record。
+- 结果只是 checker proposal；policy/recorder 物化后才可进入 Human Review。
+- 不调用其他 Capability 或 Agent，不继承 projection producer 的临时推理。
 
 ## 能力目标
 
-检查 Review Projection 的忠实度和呈现质量。该能力不评价 Plan 方案优劣，也不形成额外人工审批关卡。
+独立检查 Review Projection 的忠实度、可追溯性和呈现负担，不评价 Plan 方案优劣，也不形成额外人工审批关卡。
 
 ## 输入
 
-- Current Request Revision binding；
-- 当前 Plan 内容、revision/digest；
-- Plan Check profile 和 pass 结果；
-- 当前 `review.md` 内容和 projection map；
-- selected path。
-
-Checker 必须与投影生成过程隔离，不继承生成者临时上下文。
+- Current Request revision；
+- current Plan pair revision/digest；
+- current passed Plan Check；
+- current Review Projection pair 和 projection map；
+- selected path/profile；
+- lifecycle、Execution Identity、Invocation/attempt、policy 和 continuation bindings。
 
 ## 检查项
 
-- 需要人工批准的关键决策是否呈现；
-- 压缩是否改变 Plan 原意；
-- 图形 Overview 是否与核心链路一致；
-- 内容是否从抽象到具体、影响从高到低；
-- 推荐是否附主要依据；
-- 是否暴露过量低价值细节；
-- projection map 是否可追溯到真实 Plan 内容。
+关键决定是否呈现、压缩是否改变原意、图形是否符合核心链路、顺序是否由抽象到具体/影响由高到低、推荐是否有依据、是否暴露过量细节、projection map 是否追溯真实 Plan。
 
 ## 合法状态
 
@@ -39,29 +34,34 @@ pass
 needs-projection
 ```
 
-检查失败只允许重新生成投影，不得修改 Plan。
+`needs-projection` 只允许重新生成 projection，不得修改 Plan。
 
 ## 输出
 
 ```yaml
 capability: themis-review-check
+authority_scope: lifecycle
+agent_profile: independent-checker
 status: pass | needs-projection
 input_bindings:
+  lifecycle_identity: ""
+  execution_identity: ""
+  invocation_identity: ""
+  attempt_identity: ""
   current_request_revision: ""
-  questioning_round_digest: ""
-  governed_design_constraint_digests: []
+  plan_revision: ""
+  plan_check_reference: ""
+  review_revision: ""
+  policy_identity: ""
+  policy_digest: ""
+  continuation_identity: ""
   selected_path: simple | full
   profile: lightweight | full
-  artifact_evidence_digests: []
 output:
   structured_result:
-    checks:
-      - check: ""
-        conclusion: pass | fail
-        plan_reference: ""
-        review_reference: ""
-        reason: ""
-  artifact_references: []
+    checks: []
+  proposed_artifact_references: []
+  materialization_target: review-check-structured-record
 diagnostics:
   gaps: []
   evidence: []
@@ -71,7 +71,12 @@ recommended_route: human-review | regenerate-projection
 
 ## 权限与边界
 
-- 只读 Plan、Review 和检查结果；不得修改项目实现或任何工件。
-- 不调用其他 Capability 或 Agent。
-- 不把 Plan 质量问题包装为 projection 问题；只能判断真实投影缺陷。
-- 缺少或过期 binding 时不得报告 `pass`。
+- 只读 Plan、Projection 和 checks；不得修改实现或任何 artifact。
+- 不调用其他 Capability 或 Agent，不把 Plan quality defect 包装为 projection defect。
+- 不批准 Plan，不记录 Approval。
+
+## 停止条件
+
+- Plan、Projection、Plan Check、scope、Profile、policy 或 continuation binding 缺失/过期时停止。
+- Evidence 不足或 projection map 不可验证时不得 `pass`。
+- 工具、结果合同或 Invocation 失败属于 counted failure；不得伪装为 `needs-projection`。

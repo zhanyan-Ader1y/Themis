@@ -1,0 +1,26 @@
+template_status: prompt-level-not-machine-validated
+record_class: paired-semantic-artifact
+authority_scope: request-intake | lifecycle
+artifact:
+  family: failure-learning
+  revision_identity: ""
+  scope_identity: ""
+  authority_scope: request-intake | lifecycle
+  task_execution_identity: ""
+  invocation_identity: ""
+  attempt_identity: ""
+  failure_reference: ""
+  main_route_continuation: ""
+  explicitly_linked_success_reference: null
+  status: candidate-ready | not-reusable | needs-more-evidence | blocked
+content:
+  path: "knowledge/<scope-family>/<scope-id>/<opaque-revision-id>/failure-learning.md"
+  digest: ""
+materialization_observation:
+  operation_identity: ""
+  recorder_result_reference: ""
+  observed_complete: false
+  reread_record_reference: ""
+  reread_content_reference: ""
+observed_disposition: candidate | stale | superseded | invalid
+current_pointer_observation_reference: null

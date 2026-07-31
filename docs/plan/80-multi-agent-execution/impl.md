@@ -160,3 +160,17 @@ Aggregator 不生成新的 semantic status，不以多数票覆盖 owner decisio
 - Review、Verification、Acceptance、Summary、failure budget and knowledge gates 未被并行绕过。
 - 不存在 general locks/transactions/rollback/automatic recovery、automatic merge、voting、consensus 或 persistent shared Agent authority。
 - 用户审阅实际验证 evidence 并单独接受 Plan 80。
+
+## 13. 启动前重基线声明
+
+本节只登记当前审计发现，不修改、补充或批准上文设计。Plan 80 保持可选且未获实施授权；在其正式规划或实施启动时，必须以届时已接受的 Plan 35–37 合同和实际 runtime 为权威，对全文进行一次完整重基线，并在获得用户单独批准后再修改正文。
+
+当前已知、不得直接沿用的候选漂移包括：
+
+- worker aggregation 后必须只有一个可路由一次的权威 Capability Invocation Result，或将 workers 明确定义为各自独立路由的 Task Execution；
+- budget exhaustion 必须终止对应 Task Execution Identity，不能降级、换 worker 或换执行拓扑后形成第四次 invocation；
+- 并行只能跨不同 Task Execution Identity，同一 identity 的 active invocation、attempt reservation 和 duplicate/stale result 处理必须确定且唯一；
+- worktree 最终整合必须受 current Approval、approved Plan Task、`implementation-writer`、baseline/delta 和独立 Verification 约束，否则作为 external drift 重新验证；
+- “不阻塞 Plan 36/37”不得解释为“实施时不依赖 Plan 36/37”；生产实施所需的 strict contracts、evaluator、recorder 和 write-safety 依赖应在重基线时重新确认。
+
+这些条目不是当前 Plan 80 的已批准需求、实现任务或验收条件，也不得用于提前实现 Plan 80。后续 Plan 35–37 的规划和落地变化只需在 Plan 80 启动时统一复核，不为保持本文件实时同步而反复改写上文。

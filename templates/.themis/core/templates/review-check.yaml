@@ -1,0 +1,22 @@
+template_status: prompt-level-not-machine-validated
+record_class: structured-semantic-result
+authority_scope: lifecycle
+result:
+  record_identity: ""
+  lifecycle_identity: ""
+  execution_identity: ""
+  invocation_identity: ""
+  capability: themis-review-check
+  agent_profile: independent-checker
+  status: passed | needs-projection | blocked
+  input_bindings:
+    plan_revision: ""
+    plan_check_reference: ""
+    review_revision: ""
+  fidelity_findings: []
+  presentation_burden_findings: []
+materialization_observation:
+  operation_identity: ""
+  recorder_result_reference: ""
+  observed_complete: false
+  reread_reference: ""

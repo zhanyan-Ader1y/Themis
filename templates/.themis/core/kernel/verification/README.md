@@ -2,36 +2,29 @@
 
 ## Responsibility
 
-Verification 在 Impl 后以独立 invocation 读取实际实现，直接证明 Current Request 和 Plan 验收要求，核验 baseline/delta、external drift 与 simple-path 边界。它不得修改实现来使检查通过。
+Verification runs after Impl in an independent read-only Invocation. It reads the actual implementation and exact evidence to judge Current Request and Plan acceptance requirements, baseline/delta, external drift, and simple-path boundaries. It cannot modify the implementation to make checks pass.
 
 ## Capability mapping
 
-- `themis-verification`：独立 read-only 验证能力。
-- `core/templates/verification.md`：断言、命令、stdout/stderr、delta 与 verdict 记录结构。
+- `themis-verification`: fixed `independent-checker` Capability.
+- `core/templates/verification.yaml` and `verification.md`: paired immutable Verification structure.
 
-## Evidence
+## Evidence and binding
 
-每次 attempt 记录实际 command/observation、cwd/environment、exit/result、stdout/stderr 或证据引用、覆盖范围和限制。没有配置的命令不得猜测；缺失证据不得 `passed`。
+A complete Verification revision binds current Approval and Plan, current Impl Result and exact implementation delta, independent Invocation/attempt identities, commands/observations, cwd/environment, exit/result, stdout/stderr or evidence references, coverage, verdict, and residual risk.
 
-## Status contract
+Missing configured evidence cannot produce `passed`. Unconfigured commands cannot be guessed. A file write, Agent assertion, Review Markdown, or stale result is not implementation evidence.
 
-```text
-passed
-failed
-needs-planning
-needs-specification
-escalate-full
-blocked
-```
+## Status boundary
 
-`failed` 只表示有明确证据的 `implementation-defect`。隐藏合同、权限、数据、跨模块、状态或设计复杂度必须路由到 owning semantics，不能伪装为实现缺陷。
+`failed` means an evidence-backed `implementation-defect`. Requirement/design/path complexity returns to its semantic owner through the corresponding policy status; external drift stops and revalidates without consuming a failure as an implementation defect.
 
-Impl 与 Verification 使用不同 Invocation Identity，但共享一个 Plan execution task identity 和累计三次失败预算。普通实现修复不修改 Plan，可直接重跑受影响 Verification；设计/需求/路径变化使 Approval 失效。
+Impl and Verification have different Invocation identities but share one Plan Task Execution Identity and cumulative three-failure budget. A bounded implementation repair keeps the approved Plan only when policy confirms the Approval bindings remain current.
 
 ## Workspace interaction
 
-invocation metadata belongs under `workspace/runs/<lifecycle-id>/`; direct evidence belongs under `workspace/evidence/<lifecycle-id>/`. Current templates do not prove machine persistence, currentness, or collection.
+Task Execution/Invocation/attempt/Impl/Verification records belong under `workspace/runs/<lifecycle-id>/`; direct command and Git evidence belongs under `workspace/evidence/<lifecycle-id>/`. Each complete Verification is an immutable revision with a separate current pointer.
 
 ## Current status
 
-Plan 35 provides the internal Verification Capability contract, fixed `independent-checker` Profile, and human-readable evidence template. Strict evidence/result contracts and fixtures belong to Plan 36; command execution, per-lifecycle attempt recording, completion markers, and reread verification belong to Plan 37. General transactions, locks, rollback journals, and automatic recovery are out of scope.
+Plan 35 provides the Capability/Profile, evidence semantics, and paired templates. Strict evidence/result validation belongs to Plan 36; native command execution, recording, completion markers, digesting, and reread enforcement belong to Plan 37.

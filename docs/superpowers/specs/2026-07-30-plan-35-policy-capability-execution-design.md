@@ -1,5 +1,7 @@
 # Plan 35 收尾与 Capability 执行模型设计
 
+> 历史状态：本文已被 `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md` 取代，仅保留为历史记录，不是 current authority。
+
 ## 1. 背景
 
 Plan 35 已建立 Prompt-first 双路径生命周期、唯一 Global Control Rule、十五项语义能力、统一 Plan、Review-before-Impl、独立 Verification、Human Acceptance、Summary、粘性完整路径升级和三次失败预算。

@@ -1,0 +1,29 @@
+template_status: prompt-level-not-machine-validated
+record_class: paired-semantic-artifact
+authority_scope: lifecycle
+artifact:
+  family: verification
+  revision_identity: ""
+  lifecycle_identity: ""
+  task_execution_identity: ""
+  invocation_identity: ""
+  attempt_identity: ""
+  approval_revision: ""
+  plan_revision: ""
+  plan_task_identity: ""
+  pre_impl_baseline: ""
+  impl_result_revisions: []
+  implementation_revision_or_delta_reference: ""
+  status: passed | failed | needs-planning | needs-specification | escalate-full | blocked
+  failure_classification: implementation-defect | none
+content:
+  path: "runs/<lifecycle-id>/verification-results/<opaque-revision-id>/verification.md"
+  digest: ""
+materialization_observation:
+  operation_identity: ""
+  recorder_result_reference: ""
+  observed_complete: false
+  reread_record_reference: ""
+  reread_content_reference: ""
+observed_disposition: candidate | current | stale | superseded | invalid
+current_pointer_observation_reference: null

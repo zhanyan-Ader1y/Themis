@@ -1,0 +1,22 @@
+template_status: prompt-level-not-machine-validated
+record_class: operational-source-event
+authority_scope: request-intake
+source_event:
+  event_identity: ""
+  intake_identity: ""
+  observed_at: ""
+  transport: ""
+  actor_reference: ""
+  raw_bytes_path: ""
+  raw_bytes_digest: ""
+  raw_byte_length: 0
+  normalization: none
+intake_attachment:
+  mode: new-intake | confirmation-continuation | restart-unblock-continuation
+  continuation_identity: null
+  observed_reason: ""
+materialization_observation:
+  operation_identity: ""
+  recorder_result_reference: ""
+  observed_complete: false
+  reread_reference: ""

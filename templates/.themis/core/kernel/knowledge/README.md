@@ -2,26 +2,30 @@
 
 ## Responsibility
 
-Knowledge 接收交付与失败流程产生的候选，并通过独立核验、Review 和人工授权决定是否发布。候选永远不是正式知识，不能改变原 lifecycle 结果。
+Knowledge receives governed candidates produced by failure and completion flows. Candidates never become formal knowledge automatically and cannot alter the Intake/lifecycle route, failure budget, verdict, Acceptance, Summary, or completion state that produced them.
 
 ## Capability mapping
 
-- `themis-failure-learning`：counted failure 后的非阻塞经验候选分析。
-- `themis-summary`：完成交付时识别可选项目经验和项目知识变更候选。
-- `core/templates/context-summary.md`：来源支撑的治理候选结构。
+- `themis-failure-learning`: proposes a scope-bound candidate after every counted failure and after an explicitly linked later success.
+- `themis-summary`: may propose optional project-experience or project-knowledge changes after delivery completion.
+- `core/templates/failure-learning.yaml` and `failure-learning.md`: paired immutable candidate structure.
+- `core/templates/context-summary.md`: source-supported candidate structure for separate governance.
 
-## Boundaries
+## Scope and failure boundary
 
-- Failure Learning 不改变 task state、attempt、重试决定或第三次失败终止；自身失败不递归。
-- Summary 和失败记录不会自动发布为正式知识。
-- 正式发布必须经过来源核验、重复/冲突检查、Review、明确授权、实际 apply 和 reread。
-- `themis-context` 只收录可复用经验，不收录项目架构、设计决策或当前实现事实。
-- 项目知识和项目经验必须进入各自治理区域；两者都不是当前代码事实源。
+Failure Learning runs in exactly one `request-intake | lifecycle` authority scope per Invocation:
 
-## Workspace interaction
+- `request-intake` candidates live under `workspace/knowledge/intakes/<intake-id>/`.
+- `lifecycle` candidates live under `workspace/knowledge/lifecycles/<lifecycle-id>/`.
 
-`workspace/knowledge/` stores candidate, review, decision, and disposition. Governed project Context lives under `workspace/context/`. Plan 35 does not implement actual publication, Catalog updates, atomic apply, or interruption handling.
+It is non-blocking and non-recursive. Its failure cannot consume or reset the main route's budget. A later success association requires explicit identity linkage; prose similarity is insufficient.
+
+## Publication boundary
+
+Summary and Failure Learning only propose candidates. Formal publication requires separate source verification, duplicate/conflict checks, Review, explicit authorization, observed apply, and reread. Plan 35 does not implement this publication flow.
+
+`themis-context` records reusable experience only. It does not turn project architecture, design decisions, user claims, or current implementation facts into experience authority. Governed project knowledge and experience remain distinct from direct implementation evidence.
 
 ## Current status
 
-Plan 35 provides internal Failure Learning and Summary Capability contracts plus candidate templates. Plan 36 owns strict candidate/apply contracts and fixtures; Plan 37 may implement only approved apply, atomic replacement, completion markers, and reread verification. Neither plan introduces a general transaction, lock, rollback, or automatic-recovery subsystem.
+Plan 35 provides scope-aware Failure Learning/Summary contracts and candidate templates. Strict candidate/apply contracts belong to Plan 36. Any native approved apply, deterministic write, completion observation, and reread enforcement belongs to Plan 37; neither plan supplies a general transaction, lock, rollback, or automatic-recovery subsystem.

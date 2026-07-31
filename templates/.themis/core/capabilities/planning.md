@@ -3,37 +3,32 @@
 ## 内部执行合同
 
 - Stable identity：`themis-planning`。
+- Authority scope：`lifecycle`。
 - 固定 Agent Profile：`semantic-readonly`。
-- 唯一合法生命周期绑定：`selected_path: full`、`profile: full`。
-- 不得修改项目实现，不拥有全局路由、lifecycle state 或持久化权威。
-- 不调用其他 Capability 或 Agent；与简单路径生成同一个 unified Plan 合同。
+- 唯一合法绑定：`selected_path: full`、`profile: full`。
+- Materialization target：immutable paired unified Plan revision。
+- 结果只是完整 Plan content proposal；policy/recorder 才能建立 revision 和 current pointer。
+- 不调用其他 Capability 或 Agent，不拥有 route、state 或持久化权威。
 
 ## 能力目标
 
-把 Current Request、设计约束、临时 Specification refinement 和直接实现事实转化为完整、持久化的统一执行 Plan。
+把 Current Request、governed design constraints、temporary Specification handoff 和直接实现事实转化为 full path 的 unified Plan proposal。
 
 ## 输入
 
-- Current Request Revision；
-- Current Questioning Pointer 与有效 round；
-- 受治理设计约束 revisions/digests；
-- `ready` Specification handoff；
-- 直接绑定的当前实现事实证据和 baseline；
-- `core/templates/plan.md`。
+- Current Request revision 与 active confirmed claims；
+- current completed Questioning round；
+- governed design constraint refs；
+- `ready` temporary Specification handoff；
+- Grounding/current implementation fact evidence 与 baseline；
+- lifecycle、Execution Identity、Invocation/attempt、policy 和 continuation bindings；
+- unified Plan pair template。
 
-Planning 必须直接读取事实证据，不得只信任 Specification 的转述。
+Planning 必须直接读取事实证据，不得只信任 Specification 转述。
 
 ## 责任
 
-- 调查代码、配置、Schema 和实际行为；
-- 比较可行方案并记录关键取舍；
-- 设计架构、模块边界、组件职责和依赖；
-- 定义数据流、状态转换、接口和错误模型；
-- 设计持久化、一致性、权限、失败处理和中断边界；
-- 分析影响与潜在回归；
-- 将验收要求转换为 Verification 方法与证据；
-- 分解依赖就绪的 Impl 与 Verification 任务；
-- 建立四类来源的覆盖映射。
+调查实现事实；比较方案与取舍；设计架构、边界、依赖、数据流、状态、接口和错误模型；分析权限、一致性、失败/恢复和回归；为每项验收设计 Verification；分解依赖就绪的 Impl/Verification 任务；建立来源覆盖映射。
 
 ## 合法状态
 
@@ -44,30 +39,41 @@ needs-grounding
 blocked
 ```
 
-- `ready`：形成完整统一 Plan 候选。
-- `needs-specification`：Current Request 与 handoff 冲突，或需求范围、合同、验收语义不完整。
-- `needs-grounding`：实现事实缺失、过期或无法支撑设计；一次返回全部事实请求。
+- `ready`：形成完整 unified Plan proposal。
+- `needs-specification`：Current Request 与 handoff 冲突，或需求范围/合同/验收语义不完整。
+- `needs-grounding`：实现事实缺失、过期或不足，一次返回全部事实请求。
 - `blocked`：必要权限、环境或外部条件不可获得。
 
 ## 输出
 
 ```yaml
 capability: themis-planning
+authority_scope: lifecycle
+agent_profile: semantic-readonly
 status: ready | needs-specification | needs-grounding | blocked
 input_bindings:
+  lifecycle_identity: ""
+  execution_identity: ""
+  invocation_identity: ""
+  attempt_identity: ""
   current_request_revision: ""
-  questioning_round_digest: ""
-  governed_design_constraint_digests: []
+  active_claim_revisions: []
+  questioning_round_revision: ""
+  specification_handoff_reference: ""
+  implementation_baseline: ""
+  policy_identity: ""
+  policy_digest: ""
+  continuation_identity: ""
   selected_path: full
   profile: full
-  artifact_evidence_digests: []
 output:
   structured_result:
     plan_content: ""
     alternatives_and_tradeoffs: []
     fact_requests: []
     coverage_summary: []
-  artifact_references: []
+  proposed_artifact_references: []
+  materialization_target: plan-pair
 diagnostics:
   gaps: []
   evidence: []
@@ -77,8 +83,14 @@ recommended_route: plan-check | specification | grounding | request-unblock
 
 ## 权限与边界
 
-- 可只读调查项目，不得修改项目实现。
-- 生成与简单路径相同的 Plan，不生成第二套 full-plan artifact。
-- 不改写 Current Request，不批准 Plan，不执行任务。
-- 不调用其他 Capability 或 Agent。
-- 不计算或发明 Plan digest、currentness 或 machine-valid 结论。
+- 可只读调查项目；不得修改项目实现或 Current Request。
+- 生成与 simple path 相同的 Plan family，不生成第二套 full-plan artifact。
+- 不批准 Plan，不执行任务，不调用其他 Capability 或 Agent。
+- 不计算或发明 digest、currentness 或 machine-valid 结论。
+
+## 停止条件
+
+- temporary handoff 缺失、full path/profile 不匹配或 current binding stale 时停止。
+- 需求语义缺口返回 `needs-specification`；实现事实缺口返回 `needs-grounding`，不得混淆 owner。
+- coverage、任务或 Verification 设计不完整时不得返回 `ready`。
+- 工具、结果合同或 Invocation 失败属于 counted failure；external drift 单独 stop-and-revalidate。

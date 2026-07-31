@@ -3,36 +3,31 @@
 ## 内部执行合同
 
 - Stable identity：`themis-impl`。
+- Authority scope：`lifecycle`。
 - 固定 Agent Profile：`implementation-writer`。
-- 合法生命周期绑定：`simple/lightweight` 或 `full/full`；`escalate-full` 仅允许前者。
-- 这是唯一允许在 current Review Approval 与 Plan Task 范围内修改项目实现的 Capability。
-- 不拥有全局路由、lifecycle state 或持久化权威，不调用其他 Capability 或 Agent。
+- 合法绑定：`simple/lightweight` 或 `full/full`；`escalate-full` 仅允许前者。
+- Materialization target：approved implementation delta、immutable paired Impl Result revision 和 operational evidence records。
+- 这是唯一允许在 current Review Approval 与 Plan Task 范围内修改项目实现的 Capability；文件变化本身不等于 governance artifact/state 已物化。
+- 不调用其他 Capability 或 Agent，不拥有 route、governance state、pointer 或 Verification authority。
 
 ## 能力目标
 
-在 Review Approval 当前有效时执行批准 Plan 中一个依赖就绪的 Impl 任务。Plan 是执行合同；Current Request 的目标和验收语义不得被降低。
+在 Review Approval current 且 bindings 完整时执行 approved Plan 中一个依赖就绪的 Impl task。Plan 是执行合同，Current Request 的目标和验收语义不得降低。
 
 ## 输入
 
-- Current Request Revision；
-- selected path 与 `full_path_required`；
-- 当前 Review Approval 及全部 bindings；
-- approved Plan identity/revision/digest；
-- 一个依赖就绪的 Plan task identity；
-- Task Execution Identity、Invocation Identity、attempt 和共享失败预算；
-- 批准前实现 baseline、预期 delta 和允许写入范围；
-- `core/templates/impl-result.md`。
+- Current Request revision、selected path/profile 和 `full_path_required`；
+- current Review Approval pair 及全部 bindings；
+- approved Plan revision/digest 与一个依赖就绪 task identity；
+- shared Plan Task Execution Identity、Impl Invocation/attempt 和 remaining failure budget；
+- approved pre-Impl implementation baseline、expected delta、allowed write/command scope；
+- lifecycle、policy 和 continuation bindings。
 
-进入前重新校验 Approval currentness。`review.md`、Review 对话和临时 Specification handoff 不是执行输入。
+`review.md`、Review 对话和 temporary Specification handoff 不是执行输入。
 
 ## 执行规则
 
-- 只完成批准任务和范围内的代码、配置或交付变更。
-- 不做无关重构，不扩张需求，不修改 Plan。
-- 记录实际文件/资源变化、完成条件、偏差和命令结果。
-- simple path 持续检查工作是否仍在已证明的简单边界。
-- 计划授权的预期 delta 不自行使 Approval 失效。
-- 未授权工作区、依赖、配置、Schema 或行为变化属于 external drift，立即停止并报告。
+只完成批准任务；不做无关重构、不扩张需求、不修改 Plan。记录 actual changes、completion evidence、deviations、commands 和 external drift。simple path 持续核验简单边界。批准的 expected delta 不自行使 Approval stale；未授权工作区、依赖、配置、Schema 或行为变化立即停止。
 
 ## 合法状态
 
@@ -43,33 +38,43 @@ escalate-full
 blocked
 ```
 
-- `implemented`：任务完成并记录实际 delta；不代表 Verification 通过。
-- `needs-planning`：批准 Plan 在完整路径中不足或不可执行。
-- `escalate-full`：simple path 发现隐藏合同、跨模块、权限、数据、状态或设计复杂度。
-- `blocked`：权限、环境或外部条件阻止执行。
+- `implemented`：任务完成并形成 Impl Result proposal；不代表 Verification passed。
+- `needs-planning`：approved Plan 在 full path 中不足或不可执行。
+- `escalate-full`：simple path 发现隐藏复杂度。
+- `blocked`：权限、环境或外部条件阻止开始/继续。
 
 ## 输出
 
 ```yaml
 capability: themis-impl
+authority_scope: lifecycle
+agent_profile: implementation-writer
 status: implemented | needs-planning | escalate-full | blocked
 input_bindings:
+  lifecycle_identity: ""
+  execution_identity: ""
+  invocation_identity: ""
+  attempt_identity: ""
   current_request_revision: ""
-  questioning_round_digest: ""
-  governed_design_constraint_digests: []
+  approval_revision: ""
+  plan_revision: ""
+  plan_task_identity: ""
+  approved_implementation_baseline: ""
+  expected_delta_reference: ""
+  policy_identity: ""
+  policy_digest: ""
+  continuation_identity: ""
   selected_path: simple | full
   profile: lightweight | full
-  artifact_evidence_digests: []
 output:
   structured_result:
-    plan_task_identity: ""
-    invocation_identity: ""
-    attempt: 0
     actual_changes: []
     completion_results: []
     deviations: []
     external_drift: []
-  artifact_references: []
+    command_evidence_references: []
+  proposed_artifact_references: []
+  materialization_target: implementation-delta-and-impl-result-pair
 diagnostics:
   gaps: []
   evidence: []
@@ -79,8 +84,14 @@ recommended_route: verification | planning | set-full-path-required | request-un
 
 ## 权限与边界
 
-- 这是唯一可按 Plan 修改项目实现的生命周期 Capability。
-- 可运行批准 Plan 或 manifest 中实际存在且允许的实现命令。
-- 不调用其他 Capability 或 Agent。
-- 不给 Verification verdict，不生成 Summary，不修改 Approval。
-- 工具、命令或 result contract 失败属于 counted failure；不得用 `blocked` 隐藏执行失败。
+- 只按 Approval、Plan task、allowed paths/commands 修改项目实现。
+- 不得修改 Current Request、Plan、Review、Approval、Core policy 或 Workspace governance authority。
+- 不调用其他 Capability 或 Agent，不给 Verification verdict，不生成 Acceptance/Summary。
+- 不把写入成功等同于 Impl Result pair、state 或 pointer 已持久化。
+
+## 停止条件
+
+- Approval stale、task 非依赖就绪、baseline/bindings 不匹配、scope 不明或写权限不足时停止。
+- external drift 触发 non-counted stop-and-revalidate，不继续写入。
+- started tool/command/write 或 result contract 失败属于 shared task counted failure，不得用 `blocked` 隐藏。
+- 第三次 counted failure 后不得开始第四次 Invocation。

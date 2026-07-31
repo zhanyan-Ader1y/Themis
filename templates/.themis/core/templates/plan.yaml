@@ -1,0 +1,29 @@
+template_status: prompt-level-not-machine-validated
+record_class: paired-semantic-artifact
+authority_scope: lifecycle
+artifact:
+  family: plan
+  revision_identity: ""
+  lifecycle_identity: ""
+  current_request_revision: ""
+  active_claim_revisions: []
+  questioning_round_revision: ""
+  governed_design_constraint_references: []
+  grounding_reference: null
+  complexity_assessment_reference: ""
+  selected_path: simple | full
+  profile: lightweight | full
+  full_path_required: false
+  temporary_specification_handoff_reference: null
+  implementation_fact_baseline: ""
+content:
+  path: "plan/<opaque-revision-id>/plan.md"
+  digest: ""
+materialization_observation:
+  operation_identity: ""
+  recorder_result_reference: ""
+  observed_complete: false
+  reread_record_reference: ""
+  reread_content_reference: ""
+observed_disposition: candidate | current | stale | superseded | invalid
+current_pointer_observation_reference: null

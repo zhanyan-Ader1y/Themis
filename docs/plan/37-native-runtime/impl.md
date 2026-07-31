@@ -1,6 +1,6 @@
 # Plan 37：Native Runtime
 
-> 状态：待 Plan 36 实施结果被用户单独接受后，再由用户单独确认。依赖满足不构成实施授权。
+> 状态：暂停。等待 replacement Plan 35 重新接受、Plan 36 完整重基线并实施接受后，再对本文重基线并由用户单独确认。依赖满足不构成实施授权；以下正文仅作为未来设计输入。
 
 ## 1. 目标
 
@@ -23,12 +23,13 @@ Runtime 不拥有 Questioning、Complexity Assessment、Specification、Planning
 - 不实现 upgrade、migration、Core 原地更新或 Workspace conversion。
 - 不实现 persistent Agents、Agent-to-Agent delegation、shared Agent memory、voting、consensus 或 Plan 80 orchestration。
 - 不实现 Plan 90 analytics。
-- 不提供通用 installer；future fresh Init 若另行批准，只能复用本计划的最小写入 primitive，并必须在已有 `.themis` 时写前失败。
+- 不提供通用 installer；future fresh Init 若另行批准，只能复用本计划的最小写入 primitive，并必须在已有 `.themis` 或 conflicting managed target 时于任何写入前失败，且 observed result 必须证明没有 partial managed write。
 
 ## 3. 执行模型
 
 ```text
-public themis Skill / host request
+public themis Skill or explicitly approved host adapter
+→ invokes the themis CLI/runtime as a machine backend
 → runtime loads current lifecycle and bound policy
 → strict Plan 36 validation
 → transitions.yaml selects one Capability and fixed Profile
@@ -38,6 +39,8 @@ public themis Skill / host request
 → runtime matches exactly one route
 → runtime records observed action/invalidation/next
 ```
+
+Public `themis` Skill remains the sole public lifecycle entry. An approved host adapter may transport an already-authorized request to the CLI/runtime, but neither the adapter nor CLI/runtime may independently start, continue, restore, route or reinterpret a lifecycle.
 
 Runtime 不解析 diagnostics 或 `recommended_route` 来覆盖政策，也不从聊天或 Agent summary 重建 state。
 
@@ -160,9 +163,14 @@ The command runner does not invent missing commands or semantic assertions. Veri
 
 - maintain capability task and Plan execution task identities；
 - record counted attempt before Failure Learning side path；
+- after each observed counted failure, create a lifecycle-bound non-blocking Failure Learning request and preserve the main-route continuation；
 - Impl and Verification share one Plan task failure count；
 - restart, model change, retry, resume and worktree replacement do not reset count；
 - third counted failure records termination and rejects a fourth invocation；
+- when later success is observed for the same Task Execution Identity or an explicitly linked replacement task, create another lifecycle-bound non-blocking Failure Learning request；
+- prose similarity alone never creates replacement linkage；
+- Failure Learning result cannot alter route, count, verdict, Acceptance or lifecycle result；
+- Failure Learning invocation failure does not recursively schedule Failure Learning；
 - Failure Learning remains semantic and non-blocking。
 
 ## 11. 任务拆分
@@ -174,8 +182,8 @@ The command runner does not invent missing commands or semantic assertions. Veri
 5. 实现 lifecycle-scoped state recorder and currentness checks。
 6. 实现 safepath、Git baseline/status/diff observations。
 7. 实现 worktree ownership validation and serial-writer fallback。
-8. 实现 temp write、atomic single-file replacement、markers and reread verification。
-9. 实现 constrained command/evidence runner and failure budget recording。
+8. 实现 temp write、atomic single-file replacement、markers、reread verification and fresh-publish precondition rejection evidence。
+9. 实现 constrained command/evidence runner、failure budget recording and Failure Learning dispatch bookkeeping。
 10. 执行 unit、contract、integration、security and supported-platform validation。
 11. 将实际证据交给用户并获得 Plan 37 单独接受。
 
@@ -193,6 +201,7 @@ The command runner does not invent missing commands or semantic assertions. Veri
 
 至少覆盖：
 
+- public `themis` Skill authorization reaches the machine backend, while an unbound direct CLI/host request cannot start, continue, restore or route a lifecycle；
 - one Capability per invocation；
 - valid/invalid/stale/wrong-profile Capability Invocation Result；
 - simple/full route and sticky escalation；
@@ -202,8 +211,12 @@ The command runner does not invent missing commands or semantic assertions. Veri
 - serial writer fallback；
 - interruption with complete/incomplete markers；
 - third failure termination and no fourth attempt；
+- counted failure is recorded before a non-blocking Failure Learning request；
+- explicitly linked later success schedules Failure Learning again, while prose-only similarity does not create linkage；
+- Failure Learning self-failure is non-recursive and never changes the main route or failure count；
 - non-passed Acceptance rejection and Summary gate；
-- existing `.themis` remains untouched by any future fresh-publish call path。
+- existing `.themis` or a conflicting managed target rejects any future fresh-publish call path before its first write；
+- rejected fresh-publish preconditions leave no partial managed write and return observed proof。
 
 ### Security and platform
 
@@ -214,7 +227,10 @@ The command runner does not invent missing commands or semantic assertions. Veri
 - 一个无功能版本 Go module 和一个 `themis` CLI 可构建。
 - Plan 36 contracts and fixtures are implemented and pass。
 - policy evaluator, temporary Capability invocation, per-lifecycle recorder and minimal write safety are operational。
+- public `themis` Skill remains the sole public lifecycle entry；CLI/runtime and approved host adapters are machine transports without independent lifecycle authority。
 - one-Capability/fixed-Profile boundary、route uniqueness、sticky full、Review-before-Impl、Verify order、shared failure budget and Summary gate are enforced。
+- counted-failure and explicitly linked later-success Failure Learning dispatches are recorded as non-blocking side paths, and Failure Learning self-failure is non-recursive。
+- future fresh-publish preconditions reject existing `.themis` or conflicting managed targets before any write and prove no partial managed write。
 - only `implementation-writer` can modify project implementation。
 - no persistent Specification、Delivery、Shell fallback、upgrade/migration、general locks/transactions/rollback/automatic recovery or multi-Agent orchestration exists。
 - supported-platform evidence, `go test ./...`, build, contract corpus and `git diff --check` pass。

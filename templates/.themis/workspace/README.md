@@ -2,67 +2,102 @@
 
 ## Responsibility
 
-Workspace 是项目持有的语义工件、治理记录、执行证据和派生数据边界。Core 保持只读；Workspace 以 lifecycle identity 隔离实际记录，但不实现控制逻辑。
+Workspace is the project-owned boundary for durable Request Intake records, lifecycle artifacts, control facts, execution evidence, outcomes, and governed knowledge candidates. Core is read-only. Workspace stores observed records and references but does not decide routes, semantic judgments, currentness, or completion.
 
 ## Directory ownership
 
 | Path | Ownership |
 |---|---|
-| `manifest.yaml` | 项目标识、显式 commands/Gates、paths、adapters 和受限 policy overrides |
-| `context/` | 受治理 Context 输入；不能证明当前代码实现 |
-| `changes/<lifecycle-id>/` | Current Request 引用、append-only questioning、统一 Plan、review 与 Approval 引用 |
-| `state/<lifecycle-id>/` | current gate、Questioning Pointer、attempt/termination、invalidation、replacement、incomplete operation 与 last proven gate |
-| `runs/<lifecycle-id>/` | Capability、Impl 与 Verification invocation metadata |
-| `evidence/<lifecycle-id>/` | 实际命令输出、事实证据、coverage、Git observation 与写后核验结果 |
-| `outcomes/<lifecycle-id>/` | Human Acceptance 与 Summary |
-| `knowledge/` | Failure Learning、Summary 候选和独立治理 disposition |
-| `cache/` | 可重建索引、bundle 和 projection；永非 authority |
-| `policies/` | 受限制的 project override，不得绕过 global invariants |
+| `manifest.yaml` | Project identity, explicit commands/Gates, paths, adapters, and restricted policy overrides |
+| `context/` | Governed Context inputs; never proof of current implementation |
+| `intakes/<intake-id>/` | Source Events, claim/assignment proposals, confirmation decisions, Intake state, Intake-local continuations, and post-completion retention facts |
+| `changes/<lifecycle-id>/` | Immutable Current Request, Questioning, Plan, Review Projection, Approval, and Review Feedback revision families |
+| `state/<lifecycle-id>/` | Minimal lifecycle control facts, current pointers, invalidations, markers, incomplete operations, and last proven gate |
+| `runs/<lifecycle-id>/` | Task Execution, Invocation, attempt, Impl Result, and Verification records |
+| `evidence/<lifecycle-id>/` | Command evidence, Git observations, and external evidence |
+| `outcomes/<lifecycle-id>/` | Immutable Human Acceptance and Summary revision families |
+| `knowledge/intakes/<intake-id>/` | Intake-scoped Failure Learning candidates and dispositions |
+| `knowledge/lifecycles/<lifecycle-id>/` | Lifecycle-scoped Failure Learning/Summary candidates and dispositions |
+| `cache/` | Rebuildable indexes, bundles, and projections; never authority |
+| `policies/` | Restricted project overrides that cannot bypass global invariants |
 
-## Lifecycle layout
+## Approved shape
 
 ```text
 workspace/
-├── changes/<lifecycle-id>/
-│   ├── questioning.md
-│   ├── plan.md
-│   ├── review.md
-│   └── review-approval.md
-├── state/<lifecycle-id>/
-├── runs/<lifecycle-id>/
-├── evidence/<lifecycle-id>/
-└── outcomes/<lifecycle-id>/
+  intakes/<intake-id>/
+    source-events/
+    proposals/
+    decisions/
+    state/
+
+  changes/<lifecycle-id>/
+    current-request/
+    questioning/
+    plan/
+    review/
+    approval/
+    feedback/
+
+  state/<lifecycle-id>/
+    lifecycle-state
+    current-pointers/
+    invalidations/
+    markers/
+
+  runs/<lifecycle-id>/
+    task-executions/
+    invocations/
+    attempts/
+    impl-results/
+    verification-results/
+
+  evidence/<lifecycle-id>/
+    commands/
+    git-observations/
+    external-evidence/
+
+  outcomes/<lifecycle-id>/
+    acceptance/
+    summary/
+
+  knowledge/
+    intakes/<intake-id>/
+    lifecycles/<lifecycle-id>/
 ```
 
-Current Request Revision 可以由控制面记录在 lifecycle state 中或由引用指向真实用户输入；不得把 Agent 总结写成用户原话。临时 Specification handoff 不持久化到 Workspace。
+The fresh scaffold creates family roots only. It does not pre-create example Intake, lifecycle, or revision identities.
 
-多个 lifecycle 可以绑定同一只读 Core policy identity/digest，但其 Current Request、continuation、sticky state、Task Execution Identity、worktree identity、attempt、artifact、evidence、Acceptance、Summary、incomplete operation 和 last proven gate 不得交叉。
+## Artifact and state model
 
-## Authority and interaction
+Paired semantic revisions use an opaque revision directory containing one machine record and one governed Markdown document. Structured-only judgments and operational/evidence records remain separate families. A path or file does not prove authority: identity, bindings, complete materialization, completion observation, reread, immutable revision observation, and separate pointer update are required where applicable.
 
-- Current Request Revision 定义本次交付目标语义。
-- 代码、配置、Schema 与实际可执行行为是当前实现事实的唯一来源。
-- Plan 是首个持久化执行合同，但始终从属于 Current Request Revision。
-- `review.md` 是 checked Plan 的只读压缩投影，不能作为 Impl 输入。
-- state/runs/evidence/outcomes 记录流程事实，不改写需求或 Plan 语义。
-- record 或目录存在不证明写入完成；只有观察到的 recorder/result 和重读事实可支撑状态声明。
+A completed Questioning exchange is one immutable `questioning/<round-revision>/` pair. An unanswered question remains proposal/continuation state and is not a completed round.
 
-## Write isolation and interruption
+Lifecycle state stores only control facts and references: current gate and pointers, policy identity/digest, sticky flags, Execution Identity and attempt references, currentness, markers, invalidations, incomplete operations, and last proven gate. It must not copy Current Request claims, Plan content, design, Acceptance semantics, or artifact prose.
 
-- mutating invocation 绑定 lifecycle/task/invocation、exclusive worktree、allowed paths、pre-Impl baseline 与 expected state。
-- 并发时一个写入任务独占一个 worktree；宿主不支持时只能串行唯一 writer，不能模拟隔离。
-- 每次写入前核验 path containment、bindings、baseline 和 expected state。
-- 适用时先完整写同目录临时文件，再原子替换单个目标。
-- 关键多步记录使用 completion/incomplete marker；完成声明前重读实际文件、Git status/diff 和记录。
-- 中断后从 `state/<lifecycle-id>/` 的实际记录与最后已证明 gate 重新判断；不从部分文件、聊天或 Agent summary 重建完成。
-- Workspace 不提供或暗示跨 worktree locks、通用 transactions、rollback journals、automatic recovery、cross-worktree merge 或 conflict adjudication。
+## Scope isolation
 
-## Installation safety
+Request Intake and lifecycle records may reference the same immutable Source Event or assignment decision but cannot share dynamic state, Execution Identity, failure budget, continuation authority, current pointer, or completion state.
 
-- Fresh Init 前必须在任何写入前拒绝已有 `.themis/` 或冲突受管目标。
-- 不支持 Core 原地更新、Workspace Migration、重复 Init 或复制模板覆盖。
-- project commands 必须显式配置；`null` 不得被猜成默认命令。
+A confirmed and fully materialized Intake assignment decision must exist before lifecycle creation or update. Target operations are exactly `create-lifecycle | update-current-request | no-change`. Each target has its own decision-bound continuation, materialization status, and observation. Partial success remains `open + incomplete`; successful targets remain authoritative, `remaining_target_identities` identifies unfinished work, and recovery resumes only those remaining targets without automatic rollback.
 
-## Current status
+## Post-completion Intake retention
 
-manifest、目录 scaffold 和 Prompt-level ownership/write-safety contracts 存在。没有 installer、Workspace validator、state recorder、atomic writer、Gate runner 或 executable contract suite；目录和文本合同不代表机器能力已经执行。
+When a lifecycle Summary pair is fully materialized and lifecycle completion is observed, the completion observation is recorded against every immutable Intake assignment target bound to that lifecycle identity under each `intakes/<intake-id>/state/`. Each matching target binding becomes read-only without changing other targets.
+
+An assigned Intake enters derived retention mode `dormant-read-only` only after every associated lifecycle-bearing target is observed completed. Its disposition remains `assigned`; all Intake-local continuations become inactive and non-attachable. Source Events, proposals, confirmation and assignment decisions, target materialization observations, lifecycle completion observations, and historical bindings remain immutable read-only records. They are not deleted, rewritten, or used to schedule an Invocation or recover execution. Only rebuildable cache may be cleaned.
+
+While any associated lifecycle target remains incomplete, the Intake stays `active`; completed target bindings are frozen independently and cannot block, roll back, or mutate unfinished targets. A future external message never attaches to a `dormant-read-only` Intake and must create a new Intake identity.
+
+## Evidence and recovery
+
+Code, configuration, Schema, and observed executable behavior are the only current implementation fact sources. Plan, Review, Context, Specification, Summary, and Agent prose cannot substitute for direct evidence.
+
+Recovery rereads scope state, pointers, completion/incomplete markers, every required artifact component, Invocation/attempt records, and applicable Git facts to determine the last proven gate. It does not infer completion or automatically repair, roll back, merge, or continue partial writes.
+
+## Installation and runtime boundary
+
+Fresh installation must refuse an existing `.themis/` or conflicting managed target before writing. There is no upgrade, migration, or compatibility path.
+
+Plan 35 provides this scaffold and Prompt-level ownership contracts only. It does not provide an installer, validator, evaluator, recorder, digest service, deterministic writer, command runner, transaction system, lock manager, or automatic recovery runtime.

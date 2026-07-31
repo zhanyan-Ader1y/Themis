@@ -17,6 +17,7 @@ policy_overrides: {}
 paths:
   policies: workspace/policies
   context: workspace/context
+  intakes: workspace/intakes
   changes: workspace/changes
   state: workspace/state
   runs: workspace/runs

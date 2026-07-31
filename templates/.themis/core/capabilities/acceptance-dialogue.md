@@ -3,35 +3,26 @@
 ## 内部执行合同
 
 - Stable identity：`themis-acceptance-dialogue`。
+- Authority scope：`lifecycle`。
 - 固定 Agent Profile：`human-dialogue`。
-- 合法生命周期绑定：`simple/lightweight` 或 `full/full`；`escalate-full` 仅允许前者。
-- 不得修改项目实现，不拥有全局路由、lifecycle state 或持久化权威。
+- 合法绑定：`simple/lightweight` 或 `full/full`；`escalate-full` 仅允许前者。
+- Materialization target：immutable paired Human Acceptance revision。
+- 结果只是 source-bound Acceptance proposal；policy/recorder 物化后才可成为 current Acceptance。
 - 不调用其他 Capability 或 Agent；只有 current Verification `passed` 后才可调用。
 
 ## 能力目标
 
-让用户验收实际结果，而不是重复技术 Verification。只有 current Verification `passed` 时调用。
+向用户展示实际交付和精简验收证据，保存用户对 actual result 的明确观察与分类，而不是重复技术 Verification。
 
 ## 输入
 
-- Current Request Revision；
-- selected path 与 `full_path_required`；
-- approved Plan 与 Review Approval；
-- current Verification passed 结果和证据；
-- 精简验收视图；
-- 用户对实际结果的反馈；
-- `core/templates/acceptance.md`。
+- Current Request revision、selected path/profile 和 `full_path_required`；
+- approved Plan、Review Approval 和 current Verification passed pair/evidence；
+- 精简 acceptance view；
+- 经 Intake interception 后交给本 continuation 的 user Source Event refs；
+- lifecycle、Execution Identity、Invocation/attempt、policy 和 continuation bindings。
 
-## 验收视图
-
-```text
-已实现结果
-验收要求及结论
-关键证据入口
-已知限制
-```
-
-保持用户观察到的差异和原话，不把 Agent 解释写成用户结论。
+保持用户原话与 Source Event refs，不把 Agent 解释写成用户结论。
 
 ## 合法状态
 
@@ -43,33 +34,41 @@ needs-specification
 escalate-full
 ```
 
-- `accepted`：用户明确接受当前实际结果。
-- `implementation-defect`：Plan 仍有效，返回批准范围内 Impl 修复并重新 Verification；计入共享失败预算。
-- `needs-planning`：设计或执行合同需要改变；simple path 由控制面升级。
-- `needs-specification`：目标、范围、合同或验收语义需要改变；simple path 由控制面升级。
-- `escalate-full`：只在 simple 且 `full_path_required = false` 时合法。
-
-拒绝验收时必须有用户指出的实际差异，不能从沉默推断失败类型。
+- `accepted`：用户明确接受 current actual result。
+- `implementation-defect`：Plan 仍有效，返回 approved scope 内 Impl repair 并重新 Verification；计入 shared task budget。
+- `needs-planning`/`needs-specification`：对应技术或需求语义需改变。
+- `escalate-full`：只在 simple 且 sticky upgrade 未设置时合法。
 
 ## 输出
 
 ```yaml
 capability: themis-acceptance-dialogue
+authority_scope: lifecycle
+agent_profile: human-dialogue
 status: accepted | implementation-defect | needs-planning | needs-specification | escalate-full
 input_bindings:
+  lifecycle_identity: ""
+  execution_identity: ""
+  invocation_identity: ""
+  attempt_identity: ""
   current_request_revision: ""
-  questioning_round_digest: ""
-  governed_design_constraint_digests: []
+  approval_revision: ""
+  plan_revision: ""
+  verification_revision: ""
+  acceptance_source_event_references: []
+  policy_identity: ""
+  policy_digest: ""
+  continuation_identity: ""
   selected_path: simple | full
   profile: lightweight | full
-  artifact_evidence_digests: []
 output:
   structured_result:
     acceptance_view: {}
-    user_feedback: ""
+    preserved_user_feedback: []
     observed_difference: ""
     classification_reason: ""
-  artifact_references: []
+  proposed_artifact_references: []
+  materialization_target: human-acceptance-pair
 diagnostics:
   gaps: []
   evidence: []
@@ -79,8 +78,14 @@ recommended_route: summary | impl-repair | planning | specification | set-full-p
 
 ## 权限与边界
 
-- 可以与用户交互并解释验收证据。
-- 不得修改项目实现、Plan、Review、Approval 或验收要求。
-- 不调用其他 Capability 或 Agent。
-- 不记录 machine state 或 failure count；由控制面处理。
-- full path 返回 `escalate-full` 是非法结果，不能用自由文本绕过。
+- 可以与用户交互并解释 acceptance evidence。
+- 不得修改项目实现、Plan、Review、Approval、Verification 或 acceptance requirements。
+- 不调用其他 Capability 或 Agent，不记录 machine state 或 failure count。
+- 不从沉默、模糊肯定或没有 Source Event 的聊天推断 accepted/rejection classification。
+
+## 停止条件
+
+- Verification 非 current `passed` 或任一 binding stale 时停止。
+- 用户没有明确观察/决定时不得返回 `accepted` 或 defect classification。
+- full path 返回 `escalate-full` 是 invalid result。
+- 工具、结果合同或 Invocation 失败属于 counted failure；external drift 单独 stop-and-revalidate。

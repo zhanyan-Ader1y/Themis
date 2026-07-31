@@ -1,54 +1,160 @@
-# Prompt-level lifecycle policy
+# Prompt-level dual-scope control policy.
 # This file is semantic input for the Global Control Rule.
-# Current checkout has no evaluator, state recorder, digest service, validator, or transition runtime.
+# Current checkout has no strict validator, evaluator, recorder, digest service,
+# invocation host, or deterministic write runtime.
 
-contract: themis-prompt-lifecycle
+contract: themis-core-control
 
 policy_binding:
-  identity: themis-prompt-lifecycle
-  lifecycle_must_bind_observed_digest: true
-  digest_change_action: stop-and-revalidate
+  identity: themis-core-control
+  route_key: "capability + selected_path + profile + status"
+  invocation_must_bind_observed_digest: true
+  changed_digest_action: stop-and-revalidate
+  fixed_route_count_is_product_identity: false
 
-authority:
-  target_semantics: current-request-revision
+authority_model:
+  external_input: immutable-source-event-bytes
+  target_semantics: user-confirmed-source-bound-current-request-claims
   implementation_facts: [code, configuration, schema, observed-executable-behavior]
   governed_design_constraints: constrain-solutions-only
   specification_handoff: temporary-non-authoritative
-  execution_contract: approved-plan
+  execution_contract: current-approved-plan
+  capability_result: proposed-output-only
+  authority_requires: [policy-control, complete-persistence, completion-observation, reread, current-pointer-update]
 
-lifecycle:
-  stages:
-    - questioning
-    - complexity-assessment
-    - plan-formation
-    - plan-check
-    - review
-    - verify
-    - human-acceptance
-    - summary
-    - completed
-  paths:
-    simple: [themis-q, themis-complexity-assessment, themis-simple-plan, themis-plan-check]
-    full: [themis-q, themis-complexity-assessment, themis-spec, themis-planning, themis-plan-check]
-  shared_after_plan_check:
-    - themis-review-projection
-    - themis-review-check
-    - themis-review-dialogue
-    - record-review-approval
-    - themis-impl
-    - themis-verification
-    - themis-acceptance-dialogue
-    - themis-summary
+authority_scopes:
+  request-intake:
+    owns:
+      - source-event-references
+      - claim-and-assignment-proposals
+      - user-confirmation-decisions
+      - intake-execution-identity
+      - intake-local-continuation
+      - intake-current-pointers
+      - intake-disposition
+      - intake-retention-facts
+    dispositions: [open, assigned, rejected, abandoned]
+    retention_modes: [active, dormant-read-only]
+    dormant-read-only-is-disposition: false
+    selected_path: null
+    profile: null
+    lifecycle_creation_before_confirmed_assignment: forbidden
+  lifecycle:
+    owns:
+      - current-request-revisions
+      - questioning-rounds
+      - path-and-plan-state
+      - review-and-approval-state
+      - plan-task-execution-identities
+      - verification-acceptance-summary-state
+      - lifecycle-local-continuations
+      - lifecycle-current-pointers
+    stages:
+      - questioning
+      - complexity-assessment
+      - plan-formation
+      - plan-check
+      - review
+      - verify
+      - human-acceptance
+      - summary
+      - completed
+  isolation:
+    shared_dynamic_state: forbidden
+    shared_execution_identity: forbidden
+    shared_failure_budget: forbidden
+    shared_continuation_authority: forbidden
+    shared_current_pointer: forbidden
+    shared_completion_state: forbidden
+    allowed_cross_scope_data: stable-immutable-references-only
+
+external_message_interception:
+  required_before_lifecycle_semantics: true
+  first_action: record-immutable-source-event
+  attachment_decision_sources:
+    confirmation-continuation: active-durable-intake-local-record
+    restart-unblock-continuation: active-durable-intake-local-record
+    otherwise: create-new-intake
+  forbidden_attachment_signals: [wording, adjacency, open-intake-existence, dormant-read-only-intake, chat-history, agent-summary]
+  lifecycle_continuation_after_intake:
+    requires: materialized-assignment-decision
+    no-change: resume-original-durable-dialogue-continuation
+    changed-assignment: follow-decision-bound-continuations
+  target_operations: [create-lifecycle, update-current-request, no-change]
+  multi_target_materialization:
+    assignment-decision: immutable
+    execute-observe-and-record: per-target
+    assigned_requires: all-targets-completed
+    partial_result: open-plus-incomplete
+    completed_target_rollback: forbidden
+    recovery_action: reread-target-status-and-resume-remaining-target-operations-only
+  host_observed_abandonment:
+    signal: explicit-host-session-termination-or-leave-event
+    control_action: record-intake-abandoned
+    capability_status: none
+    inferred-from-silence: forbidden
+
+lifecycle_completion_retention:
+  trigger:
+    source_control_action: materialize-summary-pair-and-complete-lifecycle
+    requires: [summary-pair-fully-materialized-and-reread, lifecycle-completion-observed]
+  applicable_targets: all-assigned-intake-targets-bound-to-completed-lifecycle-identity
+  per_completed_target:
+    action: record-completion-observation-and-freeze-target-binding-read-only
+    changes-intake-disposition: false
+    changes-other-targets: false
+  whole_intake_gate: all-associated-lifecycle-targets-observed-completed
+  while-gate-unsatisfied:
+    retention_mode: active
+    unfinished-targets-remain-operable: true
+  when-gate-satisfied:
+    intake-disposition: preserve-assigned
+    retention_mode: dormant-read-only
+    deactivate-all-intake-continuations: true
+    future-message-attachment: forbidden-create-new-intake
+    new-invocation: forbidden
+    recovery-or-reactivation: forbidden
+    mutation: forbidden
+  retain-read-only:
+    - source-events
+    - claim-and-assignment-proposals
+    - confirmation-decisions
+    - assignment-decisions
+    - target-materialization-observations
+    - lifecycle-completion-observations
+    - historical-bindings-and-continuations
+  delete: none
+  rebuildable-cache-cleanup: allowed
+  route-key-dimension: false
+  capability-status: none
+  cross-scope-transfer: stable-immutable-references-only
 
 vocabulary:
-  agent_profiles:
-    - semantic-readonly
-    - independent-checker
-    - human-dialogue
-    - implementation-writer
+  agent_profiles: [semantic-readonly, independent-checker, human-dialogue, implementation-writer]
+  authority_scopes: [request-intake, lifecycle]
   selected_paths: [simple, full, null]
   profiles: [lightweight, full, null]
+  failure_classes: [none, non-counted, counted]
+  lifecycle_affected_owners:
+    - current-request-dialogue
+    - questioning
+    - specification
+    - simple-planning
+    - planning
+    - plan-check
+    - review-projection
   route_targets:
+    - human-request-confirmation
+    - intake-closed
+    - decision-bound-continuation
+    - human-questioning
+    - human-review
+    - human-acceptance
+    - human-unblock
+    - requesting-capability
+    - resume-scope-main-route
+    - failure-control
+    - themis-current-request-dialogue
     - themis-q
     - themis-grounding
     - themis-complexity-assessment
@@ -64,1017 +170,428 @@ vocabulary:
     - themis-acceptance-dialogue
     - themis-failure-learning
     - themis-summary
-    - human-questioning
-    - human-review
-    - human-unblock
-    - requesting-capability
-    - resume-main-route
-    - failure-control
     - completed
-  control_actions:
-    - present-questioning-questions
-    - persist-questioning-round-and-pointer
-    - return-grounding-evidence
-    - return-partial-grounding-evidence
-    - request-unblock
-    - select-simple-path
-    - set-sticky-full-path
-    - persist-unified-plan
-    - use-temporary-specification-handoff
-    - return-to-questioning
-    - ground-and-resume-specification
-    - return-to-specification
-    - ground-and-resume-planning
-    - record-plan-check-pass
-    - return-to-simple-planning
-    - return-to-planning
-    - ground-and-resume-plan-check
-    - persist-review-projection
-    - record-review-check-pass
-    - regenerate-review-projection
-    - continue-human-review
-    - record-review-approval
-    - ground-and-resume-affected-owner
-    - record-implementation-result
-    - record-verification-pass
-    - bounded-implementation-repair
-    - record-human-acceptance
-    - enqueue-optional-knowledge-governance
-    - record-not-reusable
-    - retain-learning-for-later
-    - record-learning-unavailable
-    - persist-summary-and-complete-lifecycle
-    - fail-closed
   invalidation_categories:
-    - quick-plan
+    - intake-proposal
+    - intake-decision
+    - current-request
+    - questioning
     - complexity-assessment
+    - quick-plan
     - plan
     - plan-check
     - review-projection
     - review-check
+    - review-feedback
     - review-approval
     - unfinished-downstream
     - affected-verification-evidence
     - human-acceptance
     - summary
-  failure_classes: [none, non-counted, counted]
-  affected_owner_values:
-    - themis-q
-    - themis-spec
-    - themis-simple-plan
-    - themis-planning
-    - themis-plan-check
-    - themis-review-projection
 
-capability_profiles:
-  themis-q: human-dialogue
-  themis-grounding: semantic-readonly
-  themis-complexity-assessment: semantic-readonly
-  themis-simple-plan: semantic-readonly
-  themis-spec: semantic-readonly
-  themis-planning: semantic-readonly
-  themis-plan-check: independent-checker
-  themis-review-projection: semantic-readonly
-  themis-review-check: independent-checker
-  themis-review-dialogue: human-dialogue
-  themis-impl: implementation-writer
-  themis-verification: independent-checker
-  themis-acceptance-dialogue: human-dialogue
-  themis-failure-learning: semantic-readonly
-  themis-summary: semantic-readonly
+capabilities:
+  themis-current-request-dialogue:
+    authority_scopes: [request-intake]
+    agent_profile: human-dialogue
+    selected_path_profile_domain: [[null, null]]
+    legal_statuses: [needs-request-confirmation, assignment-confirmed, rejected]
+    materialization_targets: [request-intake-proposal, request-intake-decision]
+  themis-q:
+    authority_scopes: [lifecycle]
+    agent_profile: human-dialogue
+    selected_path_profile_domain: [[null, null]]
+    legal_statuses: [needs-questioning, converged]
+    materialization_targets: [questioning-proposal, questioning-round-pair]
+  themis-grounding:
+    authority_scopes: [lifecycle]
+    agent_profile: semantic-readonly
+    selected_path_profile_domain: [[null, null]]
+    legal_statuses: [ready, partial, blocked]
+    materialization_targets: [grounding-structured-record]
+  themis-complexity-assessment:
+    authority_scopes: [lifecycle]
+    agent_profile: semantic-readonly
+    selected_path_profile_domain: [[null, null]]
+    legal_statuses: [simple-qualified, full-required, blocked]
+    materialization_targets: [complexity-assessment-structured-record]
+  themis-simple-plan:
+    authority_scopes: [lifecycle]
+    agent_profile: semantic-readonly
+    selected_path_profile_domain: [[simple, lightweight]]
+    legal_statuses: [ready, escalate-full, blocked]
+    materialization_targets: [plan-pair]
+  themis-spec:
+    authority_scopes: [lifecycle]
+    agent_profile: semantic-readonly
+    selected_path_profile_domain: [[full, null]]
+    legal_statuses: [ready, needs-questioning, needs-grounding, blocked]
+    materialization_targets: [temporary-specification-handoff]
+  themis-planning:
+    authority_scopes: [lifecycle]
+    agent_profile: semantic-readonly
+    selected_path_profile_domain: [[full, full]]
+    legal_statuses: [ready, needs-specification, needs-grounding, blocked]
+    materialization_targets: [plan-pair]
+  themis-plan-check:
+    authority_scopes: [lifecycle]
+    agent_profile: independent-checker
+    selected_path_profile_domain: [[simple, lightweight], [full, full]]
+    legal_statuses:
+      simple/lightweight: [pass, needs-simple-planning, escalate-full, blocked]
+      full/full: [pass, needs-planning, needs-specification, needs-grounding, blocked]
+    materialization_targets: [plan-check-structured-record]
+  themis-review-projection:
+    authority_scopes: [lifecycle]
+    agent_profile: semantic-readonly
+    selected_path_profile_domain: [[simple, lightweight], [full, full]]
+    legal_statuses: [ready, blocked]
+    materialization_targets: [review-projection-pair]
+  themis-review-check:
+    authority_scopes: [lifecycle]
+    agent_profile: independent-checker
+    selected_path_profile_domain: [[simple, lightweight], [full, full]]
+    legal_statuses: [pass, needs-projection]
+    materialization_targets: [review-check-structured-record]
+  themis-review-dialogue:
+    authority_scopes: [lifecycle]
+    agent_profile: human-dialogue
+    selected_path_profile_domain: [[simple, lightweight], [full, full]]
+    legal_statuses:
+      simple/lightweight: [continue, approved, needs-current-request, needs-questioning, needs-simple-planning, needs-planning, needs-specification, needs-grounding, escalate-full]
+      full/full: [continue, approved, needs-current-request, needs-questioning, needs-planning, needs-specification, needs-grounding]
+    materialization_targets: [review-dialogue-continuation, review-feedback-pair, review-approval-pair]
+  themis-impl:
+    authority_scopes: [lifecycle]
+    agent_profile: implementation-writer
+    selected_path_profile_domain: [[simple, lightweight], [full, full]]
+    legal_statuses:
+      simple/lightweight: [implemented, needs-planning, escalate-full, blocked]
+      full/full: [implemented, needs-planning, blocked]
+    materialization_targets: [implementation-delta-and-impl-result-pair]
+  themis-verification:
+    authority_scopes: [lifecycle]
+    agent_profile: independent-checker
+    selected_path_profile_domain: [[simple, lightweight], [full, full]]
+    legal_statuses:
+      simple/lightweight: [passed, failed, needs-planning, needs-specification, escalate-full, blocked]
+      full/full: [passed, failed, needs-planning, needs-specification, blocked]
+    materialization_targets: [verification-pair-and-evidence]
+  themis-acceptance-dialogue:
+    authority_scopes: [lifecycle]
+    agent_profile: human-dialogue
+    selected_path_profile_domain: [[simple, lightweight], [full, full]]
+    legal_statuses:
+      simple/lightweight: [accepted, implementation-defect, needs-planning, needs-specification, escalate-full]
+      full/full: [accepted, implementation-defect, needs-planning, needs-specification]
+    materialization_targets: [human-acceptance-pair]
+  themis-failure-learning:
+    authority_scopes: [request-intake, lifecycle]
+    agent_profile: semantic-readonly
+    selected_path_profile_domain: [[null, null], [simple, lightweight], [full, full]]
+    legal_statuses: [candidate-ready, not-reusable, needs-more-evidence, blocked]
+    materialization_targets: [failure-learning-pair]
+  themis-summary:
+    authority_scopes: [lifecycle]
+    agent_profile: semantic-readonly
+    selected_path_profile_domain: [[simple, lightweight], [full, full]]
+    legal_statuses: [ready, blocked]
+    materialization_targets: [summary-pair]
 
-guards:
-  simple_path:
-    assessment_status: simple-qualified
-    full_path_required: false
-    when_full_path_required_true:
-      preserve_capability_status: true
-      suppress_route_control_action: select-simple-path
-      control_action: set-sticky-full-path
-      next: themis-spec
-      invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-      failure_class: none
-  full_path_required:
-    sticky_within_lifecycle: true
-    clear_on_reassessment: false
-  questioning_reentry:
-    next_after_converged: themis-complexity-assessment
-    preserve_full_path_required: true
-  dynamic_continuations:
-    requesting_capability:
-      require_lifecycle_identity: true
-      require_current_continuation_identity: true
-    affected_owner:
-      require_lifecycle_identity: true
-      require_closed_vocabulary: affected_owner_values
-    main_route_continuation:
-      require_lifecycle_identity: true
-      failure_learning_may_replace: false
-  counted_failure_order:
-    - record-attempt
-    - dispatch-non-blocking-failure-learning
-    - terminate-on-third-or-continue-route
-  persistence:
-    completion_requires_observed_recorder_result: true
-    unavailable_action: stop-at-current-gate
-  policy_currentness:
-    require_observed-policy-binding: true
-    changed_digest_action: stop-and-revalidate
+materialization:
+  capability_result_is_authority: false
+  ordered_steps:
+    - validate-proposed-result-identity-scope-profile-status-and-bindings
+    - match-exactly-one-policy-route
+    - execute-declared-control-action
+    - persist-every-required-component
+    - record-completion-or-incomplete-observation
+    - reread-record-content-identity-digest-and-bindings
+    - create-immutable-revision-observation
+    - update-separate-current-pointer
+  pair_requirements:
+    indivisible_components: [machine-record, markdown-content]
+    invalid_when: [component-missing, identity-mismatch, digest-mismatch, authority-scope-mismatch, binding-mismatch]
+  structured_requirements:
+    immutable-record: true
+    typed-bindings: required
+    observation: required
+  temporary_handoff_exception:
+    target: temporary-specification-handoff
+    semantic_authority: false
+    persistent-current-pointer: forbidden
+    recovery: regenerate-from-current-bindings
+  incomplete_action: remain-at-last-proven-gate
+  pointer_update_failure:
+    revision_may-remain-valid: true
+    revision_becomes-current: false
+  stale_duplicate_late_or_wrong-scope-result: reject-and-count-failure
+  file-existence-implies-success: false
 
-review_gate:
-  before_impl: true
-  approval_binds:
-    - current-request-revision
-    - questioning-round-id
-    - questioning-round-digest
-    - governed-design-constraint-revisions-and-digests
-    - complexity-assessment-digest
-    - selected-path
-    - full-path-required
-    - plan-identity-revision-and-digest
-    - plan-check-profile-and-result
-    - review-digest
-    - review-check-result
-    - approver
-    - decision
-    - approval-time
-    - approved-pre-impl-implementation-baseline
+currentness:
+  require:
+    - observed-policy-binding
+    - current-source-and-artifact-bindings
+    - matching-authority-scope
+    - matching-execution-and-invocation-identities
+    - matching-agent-profile
+    - matching-selected-path-and-profile
+    - observed-recorder-result
+    - reread-identity-content-digest-and-bindings
+  policy-change: stop-and-revalidate
+  source-or-artifact-change: invalidate-dependents
+  external-drift: non-counted-stop-and-revalidate
 
-verify:
-  order: [themis-impl, themis-verification]
-  review-markdown-is-execution-input: false
-  implementation-and-verification-use-separate-invocations: true
-  plan-task-identity-shared: true
-  expected-approved-delta-invalidates-approval: false
-  unauthorized-external-drift-action: stop-and-revalidate
+recovery:
+  authoritative_inputs:
+    - scope-state
+    - current-pointers
+    - completion-and-incomplete-markers
+    - artifact-components
+    - invocation-and-attempt-records
+    - applicable-git-facts
+  result: last-proven-gate
+  forbidden_sources: [chat, agent-summary, temporary-reasoning, temporary-specification-handoff]
+  automatic_repair: forbidden
+  automatic_rollback: forbidden
+  automatic_merge: forbidden
+  inferred_completion: forbidden
 
 failure_control:
-  maximum_counted_failures: 3
-  identity_survives: [agent-restart, model-change, tool-retry, session-resume]
+  request-intake:
+    identity: intake-execution-identity
+    maximum_counted_failures: 3
+    third_failure: [record-termination, forbid-fourth-invocation, preserve-intake-open, require-explicit-restart-unblock-continuation]
+  lifecycle:
+    identity: plan-task-execution-identity
+    maximum_counted_failures: 3
+    shared_by: [themis-impl, themis-verification, acceptance-implementation-defect-repair]
+    third_failure: [record-termination, forbid-fourth-invocation, invalidate-unfinished-task-downstream]
   counted:
-    - agent-failure-without-valid-capability-result
-    - tool-or-command-failure
+    - started-invocation-agent-failure
+    - started-tool-or-command-failure
+    - missing-invalid-wrong-profile-wrong-scope-or-stale-result
     - result-contract-failure
     - declared-execution-failure
+    - recorder-or-materialization-failure
     - implementation-defect
   not_counted:
-    - full-required
-    - escalate-full
+    - waiting-for-user-confirmation
+    - waiting-for-question-answer
+    - waiting-for-human-review
+    - waiting-for-human-acceptance
+    - needs-request-confirmation
+    - needs-questioning
     - needs-simple-planning
     - needs-planning
     - needs-specification
     - needs-grounding
     - blocked
     - partial
-  after_each_counted_failure: themis-failure-learning
-  after_related_later_success: themis-failure-learning
-  later_success_requires_explicit_task_link: true
-  failure_learning_is_non_blocking: true
-  failure_learning_failure_recurses: false
-  third_failure:
-    - record-attempt-limit-reached
-    - forbid-same-task-execution-identity
-    - invalidate-unfinished-downstream
-    - close-affected-execution-paths
+    - full-required
+    - escalate-full
+    - external-drift-stop-and-revalidate
+  ordered_counted_failure_actions:
+    - record-attempt-and-observed-failure
+    - dispatch-scope-bound-non-blocking-failure-learning
+    - terminate-on-third-or-preserve-exact-continuation
+  identity_survives: [agent-restart, model-change, tool-retry, session-resume, simple-to-full-escalation]
+  failure_learning:
+    after_each_counted_failure: required
+    after_explicitly-linked-later-success: required
+    scope_bound: true
+    non_blocking: true
+    self_failure_recurses: false
+    prose_similarity-establishes-link: false
 
-summary_gate:
-  requires:
-    verification: passed
-    human_acceptance: accepted
-  knowledge_candidates_block_completion: false
+lifecycle_control:
+  paths:
+    simple: [themis-q, themis-complexity-assessment, themis-simple-plan, themis-plan-check]
+    full: [themis-q, themis-complexity-assessment, themis-spec, themis-planning, themis-plan-check]
+  shared_after_plan_check:
+    - themis-review-projection
+    - themis-review-check
+    - themis-review-dialogue
+    - review-approval-materialization
+    - themis-impl
+    - themis-verification
+    - themis-acceptance-dialogue
+    - themis-summary
+  full_path_required:
+    sticky_within-lifecycle: true
+    initial: false
+    allowed_transition: false-to-true-only
+    preserved_by: [questioning-reentry, reassessment, agent-restart, session-resume, task-retry]
+    simple-route-guard: "full_path_required == false"
+    simple-qualified-when-true:
+      control_action: materialize-assessment-preserve-sticky-full-and-select-full
+      next: themis-spec
+      invalidation: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream]
+      failure_class: non-counted
+    clears-failure-budget: false
+  review_gate:
+    before-impl: true
+    approval_requires-empty-unresolved-feedback: true
+    approval_binds:
+      - lifecycle-identity
+      - confirmed-intake-assignment-decision
+      - current-request-revision-and-active-claims
+      - current-questioning-round
+      - governed-design-constraints
+      - grounding-and-complexity-assessment
+      - selected-path-profile-and-full-path-required
+      - checked-plan-revision-and-plan-check
+      - shown-review-projection-and-review-check
+      - approval-decision-source-event
+      - approval-time
+      - pre-impl-implementation-baseline
+  verify:
+    order: [themis-impl, themis-verification]
+    separate-invocations: true
+    shared-plan-task-execution-identity: true
+    writer-self-verification: forbidden
+    review-markdown-is-execution-input: false
+    expected-approved-delta-invalidates-approval: false
+  acceptance_gate:
+    requires-current-verification: passed
+  summary_gate:
+    requires-current-verification: passed
+    requires-current-human-acceptance: accepted
+    knowledge-candidate-failure-blocks-completion: false
 
 invalidation:
-  current-request-revision-change: [questioning-pointer, complexity-assessment, plan, unfinished-downstream]
-  questioning-pointer-change: [complexity-assessment, plan, unfinished-downstream]
+  intake-proposal-change: [intake-decision]
+  confirmed-assignment-change: [current-request, questioning, complexity-assessment, plan, unfinished-downstream]
+  current-request-revision-change: [questioning, complexity-assessment, plan, unfinished-downstream]
+  questioning-round-change: [complexity-assessment, plan, unfinished-downstream]
   governed-design-constraint-change: [complexity-assessment, plan, unfinished-downstream]
-  pre-approval-baseline-drift: [assessment-currentness, plan-currentness, unfinished-downstream]
-  plan-change: [plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-  approval-invalid: [verify]
+  pre-approval-baseline-drift: [complexity-assessment, plan, unfinished-downstream]
+  plan-change: [plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream]
+  review-projection-change: [review-check, review-approval, unfinished-downstream]
+  unresolved-review-feedback: [review-approval, unfinished-downstream]
+  approval-invalid: [verify, human-acceptance, summary]
   implementation-change: [affected-verification-evidence, human-acceptance, summary]
   verification-not-passed: [human-acceptance, summary]
+  sticky-full-escalation: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream]
 
 routes:
-  - capability: themis-q
-    selected_path: null
-    profile: null
-    status: needs-questioning
-    next: human-questioning
-    control_action: present-questioning-questions
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-q
-    selected_path: null
-    profile: null
-    status: converged
-    next: themis-complexity-assessment
-    control_action: persist-questioning-round-and-pointer
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-grounding
-    selected_path: null
-    profile: null
-    status: ready
-    next: requesting-capability
-    control_action: return-grounding-evidence
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-grounding
-    selected_path: null
-    profile: null
-    status: partial
-    next: requesting-capability
-    control_action: return-partial-grounding-evidence
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-grounding
-    selected_path: null
-    profile: null
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-complexity-assessment
-    selected_path: null
-    profile: null
-    status: simple-qualified
-    next: themis-simple-plan
-    control_action: select-simple-path
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-complexity-assessment
-    selected_path: null
-    profile: null
-    status: full-required
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-complexity-assessment
-    selected_path: null
-    profile: null
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-simple-plan
-    selected_path: simple
-    profile: lightweight
-    status: ready
-    next: themis-plan-check
-    control_action: persist-unified-plan
-    invalidate: [plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: none
-
-  - capability: themis-simple-plan
-    selected_path: simple
-    profile: lightweight
-    status: escalate-full
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-simple-plan
-    selected_path: simple
-    profile: lightweight
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-spec
-    selected_path: full
-    profile: null
-    status: ready
-    next: themis-planning
-    control_action: use-temporary-specification-handoff
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-spec
-    selected_path: full
-    profile: null
-    status: needs-questioning
-    next: themis-q
-    control_action: return-to-questioning
-    invalidate: [complexity-assessment, plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-spec
-    selected_path: full
-    profile: null
-    status: needs-grounding
-    next: themis-grounding
-    control_action: ground-and-resume-specification
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-spec
-    selected_path: full
-    profile: null
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-planning
-    selected_path: full
-    profile: full
-    status: ready
-    next: themis-plan-check
-    control_action: persist-unified-plan
-    invalidate: [plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: none
-
-  - capability: themis-planning
-    selected_path: full
-    profile: full
-    status: needs-specification
-    next: themis-spec
-    control_action: return-to-specification
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-planning
-    selected_path: full
-    profile: full
-    status: needs-grounding
-    next: themis-grounding
-    control_action: ground-and-resume-planning
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-planning
-    selected_path: full
-    profile: full
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-plan-check
-    selected_path: simple
-    profile: lightweight
-    status: pass
-    next: themis-review-projection
-    control_action: record-plan-check-pass
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-plan-check
-    selected_path: simple
-    profile: lightweight
-    status: needs-simple-planning
-    next: themis-simple-plan
-    control_action: return-to-simple-planning
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-plan-check
-    selected_path: simple
-    profile: lightweight
-    status: escalate-full
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-plan-check
-    selected_path: simple
-    profile: lightweight
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-plan-check
-    selected_path: full
-    profile: full
-    status: pass
-    next: themis-review-projection
-    control_action: record-plan-check-pass
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-plan-check
-    selected_path: full
-    profile: full
-    status: needs-planning
-    next: themis-planning
-    control_action: return-to-planning
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-plan-check
-    selected_path: full
-    profile: full
-    status: needs-specification
-    next: themis-spec
-    control_action: return-to-specification
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-plan-check
-    selected_path: full
-    profile: full
-    status: needs-grounding
-    next: themis-grounding
-    control_action: ground-and-resume-plan-check
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-plan-check
-    selected_path: full
-    profile: full
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-review-projection
-    selected_path: simple
-    profile: lightweight
-    status: ready
-    next: themis-review-check
-    control_action: persist-review-projection
-    invalidate: [review-check, review-approval, unfinished-downstream]
-    failure_class: none
-
-  - capability: themis-review-projection
-    selected_path: simple
-    profile: lightweight
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-review-projection
-    selected_path: full
-    profile: full
-    status: ready
-    next: themis-review-check
-    control_action: persist-review-projection
-    invalidate: [review-check, review-approval, unfinished-downstream]
-    failure_class: none
-
-  - capability: themis-review-projection
-    selected_path: full
-    profile: full
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-review-check
-    selected_path: simple
-    profile: lightweight
-    status: pass
-    next: themis-review-dialogue
-    control_action: record-review-check-pass
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-review-check
-    selected_path: simple
-    profile: lightweight
-    status: needs-projection
-    next: themis-review-projection
-    control_action: regenerate-review-projection
-    invalidate: [review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-review-check
-    selected_path: full
-    profile: full
-    status: pass
-    next: themis-review-dialogue
-    control_action: record-review-check-pass
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-review-check
-    selected_path: full
-    profile: full
-    status: needs-projection
-    next: themis-review-projection
-    control_action: regenerate-review-projection
-    invalidate: [review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-review-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: continue
-    next: human-review
-    control_action: continue-human-review
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-review-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: approved
-    next: themis-impl
-    control_action: record-review-approval
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-review-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: needs-simple-planning
-    next: themis-simple-plan
-    control_action: return-to-simple-planning
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-review-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: needs-planning
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-review-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: needs-specification
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-review-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: needs-grounding
-    next: themis-grounding
-    control_action: ground-and-resume-affected-owner
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-review-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: escalate-full
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-review-dialogue
-    selected_path: full
-    profile: full
-    status: continue
-    next: human-review
-    control_action: continue-human-review
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-review-dialogue
-    selected_path: full
-    profile: full
-    status: approved
-    next: themis-impl
-    control_action: record-review-approval
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-review-dialogue
-    selected_path: full
-    profile: full
-    status: needs-planning
-    next: themis-planning
-    control_action: return-to-planning
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-review-dialogue
-    selected_path: full
-    profile: full
-    status: needs-specification
-    next: themis-spec
-    control_action: return-to-specification
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-review-dialogue
-    selected_path: full
-    profile: full
-    status: needs-grounding
-    next: themis-grounding
-    control_action: ground-and-resume-affected-owner
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-impl
-    selected_path: simple
-    profile: lightweight
-    status: implemented
-    next: themis-verification
-    control_action: record-implementation-result
-    invalidate: [affected-verification-evidence, human-acceptance, summary]
-    failure_class: none
-
-  - capability: themis-impl
-    selected_path: simple
-    profile: lightweight
-    status: needs-planning
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-impl
-    selected_path: simple
-    profile: lightweight
-    status: escalate-full
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-impl
-    selected_path: simple
-    profile: lightweight
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-impl
-    selected_path: full
-    profile: full
-    status: implemented
-    next: themis-verification
-    control_action: record-implementation-result
-    invalidate: [affected-verification-evidence, human-acceptance, summary]
-    failure_class: none
-
-  - capability: themis-impl
-    selected_path: full
-    profile: full
-    status: needs-planning
-    next: themis-planning
-    control_action: return-to-planning
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-impl
-    selected_path: full
-    profile: full
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-verification
-    selected_path: simple
-    profile: lightweight
-    status: passed
-    next: themis-acceptance-dialogue
-    control_action: record-verification-pass
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-verification
-    selected_path: simple
-    profile: lightweight
-    status: failed
-    next: themis-impl
-    control_action: bounded-implementation-repair
-    invalidate: [affected-verification-evidence, human-acceptance, summary]
-    failure_class: counted
-
-  - capability: themis-verification
-    selected_path: simple
-    profile: lightweight
-    status: needs-planning
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-verification
-    selected_path: simple
-    profile: lightweight
-    status: needs-specification
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-verification
-    selected_path: simple
-    profile: lightweight
-    status: escalate-full
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-verification
-    selected_path: simple
-    profile: lightweight
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-verification
-    selected_path: full
-    profile: full
-    status: passed
-    next: themis-acceptance-dialogue
-    control_action: record-verification-pass
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-verification
-    selected_path: full
-    profile: full
-    status: failed
-    next: themis-impl
-    control_action: bounded-implementation-repair
-    invalidate: [affected-verification-evidence, human-acceptance, summary]
-    failure_class: counted
-
-  - capability: themis-verification
-    selected_path: full
-    profile: full
-    status: needs-planning
-    next: themis-planning
-    control_action: return-to-planning
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-verification
-    selected_path: full
-    profile: full
-    status: needs-specification
-    next: themis-spec
-    control_action: return-to-specification
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-verification
-    selected_path: full
-    profile: full
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-acceptance-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: accepted
-    next: themis-summary
-    control_action: record-human-acceptance
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-acceptance-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: implementation-defect
-    next: themis-impl
-    control_action: bounded-implementation-repair
-    invalidate: [affected-verification-evidence, human-acceptance, summary]
-    failure_class: counted
-
-  - capability: themis-acceptance-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: needs-planning
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-acceptance-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: needs-specification
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-acceptance-dialogue
-    selected_path: simple
-    profile: lightweight
-    status: escalate-full
-    next: themis-spec
-    control_action: set-sticky-full-path
-    invalidate: [quick-plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-acceptance-dialogue
-    selected_path: full
-    profile: full
-    status: accepted
-    next: themis-summary
-    control_action: record-human-acceptance
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-acceptance-dialogue
-    selected_path: full
-    profile: full
-    status: implementation-defect
-    next: themis-impl
-    control_action: bounded-implementation-repair
-    invalidate: [affected-verification-evidence, human-acceptance, summary]
-    failure_class: counted
-
-  - capability: themis-acceptance-dialogue
-    selected_path: full
-    profile: full
-    status: needs-planning
-    next: themis-planning
-    control_action: return-to-planning
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-acceptance-dialogue
-    selected_path: full
-    profile: full
-    status: needs-specification
-    next: themis-spec
-    control_action: return-to-specification
-    invalidate: [plan, plan-check, review-projection, review-check, review-approval, unfinished-downstream]
-    failure_class: non-counted
-
-  - capability: themis-failure-learning
-    selected_path: null
-    profile: null
-    status: candidate-ready
-    next: resume-main-route
-    control_action: enqueue-optional-knowledge-governance
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-failure-learning
-    selected_path: null
-    profile: null
-    status: not-reusable
-    next: resume-main-route
-    control_action: record-not-reusable
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-failure-learning
-    selected_path: null
-    profile: null
-    status: needs-more-evidence
-    next: resume-main-route
-    control_action: retain-learning-for-later
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-failure-learning
-    selected_path: null
-    profile: null
-    status: blocked
-    next: resume-main-route
-    control_action: record-learning-unavailable
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-failure-learning
-    selected_path: simple
-    profile: lightweight
-    status: candidate-ready
-    next: resume-main-route
-    control_action: enqueue-optional-knowledge-governance
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-failure-learning
-    selected_path: simple
-    profile: lightweight
-    status: not-reusable
-    next: resume-main-route
-    control_action: record-not-reusable
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-failure-learning
-    selected_path: simple
-    profile: lightweight
-    status: needs-more-evidence
-    next: resume-main-route
-    control_action: retain-learning-for-later
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-failure-learning
-    selected_path: simple
-    profile: lightweight
-    status: blocked
-    next: resume-main-route
-    control_action: record-learning-unavailable
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-failure-learning
-    selected_path: full
-    profile: full
-    status: candidate-ready
-    next: resume-main-route
-    control_action: enqueue-optional-knowledge-governance
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-failure-learning
-    selected_path: full
-    profile: full
-    status: not-reusable
-    next: resume-main-route
-    control_action: record-not-reusable
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-failure-learning
-    selected_path: full
-    profile: full
-    status: needs-more-evidence
-    next: resume-main-route
-    control_action: retain-learning-for-later
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-failure-learning
-    selected_path: full
-    profile: full
-    status: blocked
-    next: resume-main-route
-    control_action: record-learning-unavailable
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-summary
-    selected_path: simple
-    profile: lightweight
-    status: ready
-    next: completed
-    control_action: persist-summary-and-complete-lifecycle
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-summary
-    selected_path: simple
-    profile: lightweight
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
-
-  - capability: themis-summary
-    selected_path: full
-    profile: full
-    status: ready
-    next: completed
-    control_action: persist-summary-and-complete-lifecycle
-    invalidate: []
-    failure_class: none
-
-  - capability: themis-summary
-    selected_path: full
-    profile: full
-    status: blocked
-    next: human-unblock
-    control_action: request-unblock
-    invalidate: []
-    failure_class: non-counted
+  # Request Intake
+  - {capability: themis-current-request-dialogue, selected_path: null, profile: null, status: needs-request-confirmation, next: human-request-confirmation, control_action: persist-intake-proposal-and-await-confirmation, invalidate: [], failure_class: non-counted}
+  - {capability: themis-current-request-dialogue, selected_path: null, profile: null, status: assignment-confirmed, next: decision-bound-continuation, control_action: materialize-confirmed-assignment, invalidate: [intake-decision], failure_class: none}
+  - {capability: themis-current-request-dialogue, selected_path: null, profile: null, status: rejected, next: intake-closed, control_action: persist-intake-rejection, invalidate: [], failure_class: none}
+
+  # Questioning, grounding, and path selection
+  - {capability: themis-q, selected_path: null, profile: null, status: needs-questioning, next: human-questioning, control_action: persist-question-proposal-and-await-answer, invalidate: [], failure_class: non-counted}
+  - {capability: themis-q, selected_path: null, profile: null, status: converged, next: themis-complexity-assessment, control_action: materialize-questioning-round-and-pointer, invalidate: [complexity-assessment, plan, unfinished-downstream], failure_class: none}
+  - {capability: themis-grounding, selected_path: null, profile: null, status: ready, next: requesting-capability, control_action: materialize-grounding-and-resume-continuation, invalidate: [], failure_class: none}
+  - {capability: themis-grounding, selected_path: null, profile: null, status: partial, next: requesting-capability, control_action: materialize-partial-grounding-and-resume-continuation, invalidate: [], failure_class: non-counted}
+  - {capability: themis-grounding, selected_path: null, profile: null, status: blocked, next: human-unblock, control_action: preserve-continuation-and-request-unblock, invalidate: [], failure_class: non-counted}
+  - {capability: themis-complexity-assessment, selected_path: null, profile: null, status: simple-qualified, next: themis-simple-plan, control_action: materialize-assessment-and-select-simple, guard: full-path-not-required, guard_failure_action: materialize-assessment-preserve-sticky-full-and-select-full, guard_failure_next: themis-spec, invalidate: [], failure_class: none}
+  - {capability: themis-complexity-assessment, selected_path: null, profile: null, status: full-required, next: themis-spec, control_action: materialize-assessment-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-complexity-assessment, selected_path: null, profile: null, status: blocked, next: human-unblock, control_action: preserve-continuation-and-request-unblock, invalidate: [], failure_class: non-counted}
+
+  # Plan formation
+  - {capability: themis-simple-plan, selected_path: simple, profile: lightweight, status: ready, next: themis-plan-check, control_action: materialize-unified-plan-pair, invalidate: [plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: none}
+  - {capability: themis-simple-plan, selected_path: simple, profile: lightweight, status: escalate-full, next: themis-spec, control_action: set-sticky-full-and-invalidate-quick-downstream, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-simple-plan, selected_path: simple, profile: lightweight, status: blocked, next: human-unblock, control_action: preserve-continuation-and-request-unblock, invalidate: [], failure_class: non-counted}
+  - {capability: themis-spec, selected_path: full, profile: null, status: ready, next: themis-planning, control_action: bind-temporary-specification-handoff, invalidate: [], failure_class: none}
+  - {capability: themis-spec, selected_path: full, profile: null, status: needs-questioning, next: themis-q, control_action: return-to-questioning-and-invalidate-downstream, invalidate: [questioning, complexity-assessment, plan, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-spec, selected_path: full, profile: null, status: needs-grounding, next: themis-grounding, control_action: ground-and-resume-specification, invalidate: [], failure_class: non-counted}
+  - {capability: themis-spec, selected_path: full, profile: null, status: blocked, next: human-unblock, control_action: preserve-continuation-and-request-unblock, invalidate: [], failure_class: non-counted}
+  - {capability: themis-planning, selected_path: full, profile: full, status: ready, next: themis-plan-check, control_action: materialize-unified-plan-pair, invalidate: [plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: none}
+  - {capability: themis-planning, selected_path: full, profile: full, status: needs-specification, next: themis-spec, control_action: return-to-specification-and-invalidate-plan, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-planning, selected_path: full, profile: full, status: needs-grounding, next: themis-grounding, control_action: ground-and-resume-planning, invalidate: [], failure_class: non-counted}
+  - {capability: themis-planning, selected_path: full, profile: full, status: blocked, next: human-unblock, control_action: preserve-continuation-and-request-unblock, invalidate: [], failure_class: non-counted}
+
+  # Plan Check
+  - {capability: themis-plan-check, selected_path: simple, profile: lightweight, status: pass, next: themis-review-projection, control_action: materialize-plan-check-pass, invalidate: [], failure_class: none}
+  - {capability: themis-plan-check, selected_path: simple, profile: lightweight, status: needs-simple-planning, next: themis-simple-plan, control_action: materialize-plan-check-and-return-to-simple-planning, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-plan-check, selected_path: simple, profile: lightweight, status: escalate-full, next: themis-spec, control_action: materialize-plan-check-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-plan-check, selected_path: simple, profile: lightweight, status: blocked, next: human-unblock, control_action: materialize-plan-check-and-request-unblock, invalidate: [], failure_class: non-counted}
+  - {capability: themis-plan-check, selected_path: full, profile: full, status: pass, next: themis-review-projection, control_action: materialize-plan-check-pass, invalidate: [], failure_class: none}
+  - {capability: themis-plan-check, selected_path: full, profile: full, status: needs-planning, next: themis-planning, control_action: materialize-plan-check-and-return-to-planning, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-plan-check, selected_path: full, profile: full, status: needs-specification, next: themis-spec, control_action: materialize-plan-check-and-return-to-specification, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-plan-check, selected_path: full, profile: full, status: needs-grounding, next: themis-grounding, control_action: materialize-plan-check-ground-and-resume, invalidate: [], failure_class: non-counted}
+  - {capability: themis-plan-check, selected_path: full, profile: full, status: blocked, next: human-unblock, control_action: materialize-plan-check-and-request-unblock, invalidate: [], failure_class: non-counted}
+
+  # Review Projection and Check
+  - {capability: themis-review-projection, selected_path: simple, profile: lightweight, status: ready, next: themis-review-check, control_action: materialize-review-projection-pair, invalidate: [review-check, review-feedback, review-approval, unfinished-downstream], failure_class: none}
+  - {capability: themis-review-projection, selected_path: simple, profile: lightweight, status: blocked, next: human-unblock, control_action: preserve-continuation-and-request-unblock, invalidate: [], failure_class: non-counted}
+  - {capability: themis-review-projection, selected_path: full, profile: full, status: ready, next: themis-review-check, control_action: materialize-review-projection-pair, invalidate: [review-check, review-feedback, review-approval, unfinished-downstream], failure_class: none}
+  - {capability: themis-review-projection, selected_path: full, profile: full, status: blocked, next: human-unblock, control_action: preserve-continuation-and-request-unblock, invalidate: [], failure_class: non-counted}
+  - {capability: themis-review-check, selected_path: simple, profile: lightweight, status: pass, next: themis-review-dialogue, control_action: materialize-review-check-pass, invalidate: [], failure_class: none}
+  - {capability: themis-review-check, selected_path: simple, profile: lightweight, status: needs-projection, next: themis-review-projection, control_action: materialize-review-check-and-regenerate-projection, invalidate: [review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-review-check, selected_path: full, profile: full, status: pass, next: themis-review-dialogue, control_action: materialize-review-check-pass, invalidate: [], failure_class: none}
+  - {capability: themis-review-check, selected_path: full, profile: full, status: needs-projection, next: themis-review-projection, control_action: materialize-review-check-and-regenerate-projection, invalidate: [review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+
+  # Human Review
+  - {capability: themis-review-dialogue, selected_path: simple, profile: lightweight, status: continue, next: human-review, control_action: persist-review-dialogue-continuation, invalidate: [], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: simple, profile: lightweight, status: approved, next: themis-impl, control_action: materialize-review-approval-pair, invalidate: [], failure_class: none}
+  - {capability: themis-review-dialogue, selected_path: simple, profile: lightweight, status: needs-current-request, next: themis-current-request-dialogue, control_action: materialize-review-feedback-and-return-to-current-request-dialogue, invalidate: [current-request, questioning, complexity-assessment, plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: simple, profile: lightweight, status: needs-questioning, next: themis-q, control_action: materialize-review-feedback-and-return-to-questioning, invalidate: [questioning, complexity-assessment, plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: simple, profile: lightweight, status: needs-simple-planning, next: themis-simple-plan, control_action: materialize-review-feedback-and-return-to-simple-planning, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: simple, profile: lightweight, status: needs-planning, next: themis-spec, control_action: materialize-review-feedback-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: simple, profile: lightweight, status: needs-specification, next: themis-spec, control_action: materialize-review-feedback-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: simple, profile: lightweight, status: needs-grounding, next: themis-grounding, control_action: materialize-review-feedback-ground-and-resume-owner, invalidate: [], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: simple, profile: lightweight, status: escalate-full, next: themis-spec, control_action: materialize-review-feedback-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: full, profile: full, status: continue, next: human-review, control_action: persist-review-dialogue-continuation, invalidate: [], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: full, profile: full, status: approved, next: themis-impl, control_action: materialize-review-approval-pair, invalidate: [], failure_class: none}
+  - {capability: themis-review-dialogue, selected_path: full, profile: full, status: needs-current-request, next: themis-current-request-dialogue, control_action: materialize-review-feedback-and-return-to-current-request-dialogue, invalidate: [current-request, questioning, complexity-assessment, plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: full, profile: full, status: needs-questioning, next: themis-q, control_action: materialize-review-feedback-and-return-to-questioning, invalidate: [questioning, complexity-assessment, plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: full, profile: full, status: needs-planning, next: themis-planning, control_action: materialize-review-feedback-and-return-to-planning, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: full, profile: full, status: needs-specification, next: themis-spec, control_action: materialize-review-feedback-and-return-to-specification, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-review-dialogue, selected_path: full, profile: full, status: needs-grounding, next: themis-grounding, control_action: materialize-review-feedback-ground-and-resume-owner, invalidate: [], failure_class: non-counted}
+
+  # Impl and independent Verification
+  - {capability: themis-impl, selected_path: simple, profile: lightweight, status: implemented, next: themis-verification, control_action: materialize-impl-result-pair, invalidate: [affected-verification-evidence, human-acceptance, summary], failure_class: none}
+  - {capability: themis-impl, selected_path: simple, profile: lightweight, status: needs-planning, next: themis-spec, control_action: materialize-impl-result-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-impl, selected_path: simple, profile: lightweight, status: escalate-full, next: themis-spec, control_action: materialize-impl-result-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-impl, selected_path: simple, profile: lightweight, status: blocked, next: human-unblock, control_action: materialize-impl-result-and-request-unblock, invalidate: [], failure_class: non-counted}
+  - {capability: themis-impl, selected_path: full, profile: full, status: implemented, next: themis-verification, control_action: materialize-impl-result-pair, invalidate: [affected-verification-evidence, human-acceptance, summary], failure_class: none}
+  - {capability: themis-impl, selected_path: full, profile: full, status: needs-planning, next: themis-planning, control_action: materialize-impl-result-and-return-to-planning, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-impl, selected_path: full, profile: full, status: blocked, next: human-unblock, control_action: materialize-impl-result-and-request-unblock, invalidate: [], failure_class: non-counted}
+  - {capability: themis-verification, selected_path: simple, profile: lightweight, status: passed, next: themis-acceptance-dialogue, control_action: materialize-verification-pair, invalidate: [], failure_class: none}
+  - {capability: themis-verification, selected_path: simple, profile: lightweight, status: failed, next: themis-impl, control_action: materialize-verification-and-bounded-implementation-repair, invalidate: [affected-verification-evidence, human-acceptance, summary], failure_class: counted}
+  - {capability: themis-verification, selected_path: simple, profile: lightweight, status: needs-planning, next: themis-spec, control_action: materialize-verification-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-verification, selected_path: simple, profile: lightweight, status: needs-specification, next: themis-spec, control_action: materialize-verification-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-verification, selected_path: simple, profile: lightweight, status: escalate-full, next: themis-spec, control_action: materialize-verification-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-verification, selected_path: simple, profile: lightweight, status: blocked, next: human-unblock, control_action: materialize-verification-and-request-unblock, invalidate: [], failure_class: non-counted}
+  - {capability: themis-verification, selected_path: full, profile: full, status: passed, next: themis-acceptance-dialogue, control_action: materialize-verification-pair, invalidate: [], failure_class: none}
+  - {capability: themis-verification, selected_path: full, profile: full, status: failed, next: themis-impl, control_action: materialize-verification-and-bounded-implementation-repair, invalidate: [affected-verification-evidence, human-acceptance, summary], failure_class: counted}
+  - {capability: themis-verification, selected_path: full, profile: full, status: needs-planning, next: themis-planning, control_action: materialize-verification-and-return-to-planning, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-verification, selected_path: full, profile: full, status: needs-specification, next: themis-spec, control_action: materialize-verification-and-return-to-specification, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-verification, selected_path: full, profile: full, status: blocked, next: human-unblock, control_action: materialize-verification-and-request-unblock, invalidate: [], failure_class: non-counted}
+
+  # Human Acceptance and Summary
+  - {capability: themis-acceptance-dialogue, selected_path: simple, profile: lightweight, status: accepted, next: themis-summary, control_action: materialize-human-acceptance-pair, invalidate: [], failure_class: none}
+  - {capability: themis-acceptance-dialogue, selected_path: simple, profile: lightweight, status: implementation-defect, next: themis-impl, control_action: materialize-acceptance-and-bounded-implementation-repair, invalidate: [affected-verification-evidence, human-acceptance, summary], failure_class: counted}
+  - {capability: themis-acceptance-dialogue, selected_path: simple, profile: lightweight, status: needs-planning, next: themis-spec, control_action: materialize-acceptance-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-acceptance-dialogue, selected_path: simple, profile: lightweight, status: needs-specification, next: themis-spec, control_action: materialize-acceptance-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-acceptance-dialogue, selected_path: simple, profile: lightweight, status: escalate-full, next: themis-spec, control_action: materialize-acceptance-and-set-sticky-full, invalidate: [quick-plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-acceptance-dialogue, selected_path: full, profile: full, status: accepted, next: themis-summary, control_action: materialize-human-acceptance-pair, invalidate: [], failure_class: none}
+  - {capability: themis-acceptance-dialogue, selected_path: full, profile: full, status: implementation-defect, next: themis-impl, control_action: materialize-acceptance-and-bounded-implementation-repair, invalidate: [affected-verification-evidence, human-acceptance, summary], failure_class: counted}
+  - {capability: themis-acceptance-dialogue, selected_path: full, profile: full, status: needs-planning, next: themis-planning, control_action: materialize-acceptance-and-return-to-planning, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-acceptance-dialogue, selected_path: full, profile: full, status: needs-specification, next: themis-spec, control_action: materialize-acceptance-and-return-to-specification, invalidate: [plan, plan-check, review-projection, review-check, review-feedback, review-approval, unfinished-downstream], failure_class: non-counted}
+  - {capability: themis-summary, selected_path: simple, profile: lightweight, status: ready, next: completed, control_action: materialize-summary-pair-and-complete-lifecycle, invalidate: [], failure_class: none}
+  - {capability: themis-summary, selected_path: simple, profile: lightweight, status: blocked, next: human-unblock, control_action: preserve-continuation-and-request-unblock, invalidate: [], failure_class: non-counted}
+  - {capability: themis-summary, selected_path: full, profile: full, status: ready, next: completed, control_action: materialize-summary-pair-and-complete-lifecycle, invalidate: [], failure_class: none}
+  - {capability: themis-summary, selected_path: full, profile: full, status: blocked, next: human-unblock, control_action: preserve-continuation-and-request-unblock, invalidate: [], failure_class: non-counted}
+
+  # Scope-bound non-blocking Failure Learning. The route resumes the bound scope-local continuation.
+  - {capability: themis-failure-learning, selected_path: null, profile: null, status: candidate-ready, next: resume-scope-main-route, control_action: materialize-failure-learning-candidate, invalidate: [], failure_class: none}
+  - {capability: themis-failure-learning, selected_path: null, profile: null, status: not-reusable, next: resume-scope-main-route, control_action: materialize-failure-learning-disposition, invalidate: [], failure_class: none}
+  - {capability: themis-failure-learning, selected_path: null, profile: null, status: needs-more-evidence, next: resume-scope-main-route, control_action: retain-failure-learning-proposal, invalidate: [], failure_class: non-counted}
+  - {capability: themis-failure-learning, selected_path: null, profile: null, status: blocked, next: resume-scope-main-route, control_action: record-failure-learning-unavailable, invalidate: [], failure_class: non-counted}
+  - {capability: themis-failure-learning, selected_path: simple, profile: lightweight, status: candidate-ready, next: resume-scope-main-route, control_action: materialize-failure-learning-candidate, invalidate: [], failure_class: none}
+  - {capability: themis-failure-learning, selected_path: simple, profile: lightweight, status: not-reusable, next: resume-scope-main-route, control_action: materialize-failure-learning-disposition, invalidate: [], failure_class: none}
+  - {capability: themis-failure-learning, selected_path: simple, profile: lightweight, status: needs-more-evidence, next: resume-scope-main-route, control_action: retain-failure-learning-proposal, invalidate: [], failure_class: non-counted}
+  - {capability: themis-failure-learning, selected_path: simple, profile: lightweight, status: blocked, next: resume-scope-main-route, control_action: record-failure-learning-unavailable, invalidate: [], failure_class: non-counted}
+  - {capability: themis-failure-learning, selected_path: full, profile: full, status: candidate-ready, next: resume-scope-main-route, control_action: materialize-failure-learning-candidate, invalidate: [], failure_class: none}
+  - {capability: themis-failure-learning, selected_path: full, profile: full, status: not-reusable, next: resume-scope-main-route, control_action: materialize-failure-learning-disposition, invalidate: [], failure_class: none}
+  - {capability: themis-failure-learning, selected_path: full, profile: full, status: needs-more-evidence, next: resume-scope-main-route, control_action: retain-failure-learning-proposal, invalidate: [], failure_class: non-counted}
+  - {capability: themis-failure-learning, selected_path: full, profile: full, status: blocked, next: resume-scope-main-route, control_action: record-failure-learning-unavailable, invalidate: [], failure_class: non-counted}
 
 invalid_result:
-  control_action: fail-closed
+  control_action: fail-closed-and-apply-scope-failure-control
   failure_class: counted
   next: failure-control
   applies_to:
@@ -1082,18 +599,24 @@ invalid_result:
     - multiple-route-matches
     - unknown-status
     - capability-invocation-mismatch
-    - missing-binding
-    - stale-binding-or-digest
+    - missing-or-invalid-binding
+    - stale-duplicate-or-late-result
+    - wrong-profile
+    - wrong-scope
     - policy-binding-mismatch
     - wrong-selected-path-or-profile
     - quick-only-status-on-full-path
     - illegal-capability-payload
+    - competing-terminal-results
     - tool-command-agent-or-result-contract-failure
+    - recorder-or-materialization-failure
 
 assurance:
-  evaluator: unavailable
-  state_recorder: unavailable
-  digest_service: unavailable
-  validator: unavailable
-  production_invocation_runtime: unavailable
-  transition_claim_without_observed_runtime: forbidden
+  strict_schema_and_validator: unavailable-plan-36
+  canonical_serialization_and-digest: unavailable-plan-36
+  semantic_oracle_and-fixtures: unavailable-plan-36
+  evaluator: unavailable-plan-37
+  state_recorder: unavailable-plan-37
+  invocation_host: unavailable-plan-37
+  deterministic_write_runtime: unavailable-plan-37
+  transition_claim_without-observed-runtime: forbidden

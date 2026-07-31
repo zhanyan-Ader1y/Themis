@@ -2,36 +2,38 @@
 
 ## Responsibility
 
-Review 在任何项目实现变更前，把 checked Plan 压缩为低负担投影，独立检查投影，再通过渐进对话获得对特定 Plan revision 的明确整体批准。
+Review occurs before project implementation. It projects a current checked Plan into a low-burden immutable view, independently checks projection fidelity, and uses governed dialogue to propose feedback or explicit approval of that Plan revision.
 
 ## Capability mapping
 
-- `themis-review-projection`：生成只读 `review.md`。
-- `themis-review-check`：检查关键决定覆盖、投影忠实度、图形一致性和信息负担。
-- `themis-review-dialogue`：解释、按需展开 Plan、记录反馈并分类影响。
-- Global Control Rule：在 `approved` 后记录独立 Review Approval bindings。
+- `themis-review-projection`: proposes a paired read-only Review Projection.
+- `themis-review-check`: proposes a structured fidelity/burden judgment.
+- `themis-review-dialogue`: explains the shown projection and proposes a continuation, immutable feedback, or immutable approval.
+- Global Control Rule and policy: materialize the matched result; the dialogue Capability cannot write authority directly.
 
 ## Review flow
 
 ```text
-checked Plan
+current checked Plan
 → Review Projection
 → Review Check
-→ Human Review Dialogue
-→ explicit overall approval
-→ independent Review Approval record
+→ user message intercepted as Source Event
+→ Review Dialogue
+   ├─ continuation
+   ├─ Review Feedback proposal → semantic owner
+   └─ Review Approval proposal
 ```
 
-`review.md` 按抽象到具体、高影响到低影响呈现，图形按需生成。它不要求自包含完整 Plan，不作为 Impl 输入，不允许人工直接编辑。
+Review Projection presents high-impact content first and moves from abstract to concrete, adding only diagrams that reduce understanding cost. It is a projection of the checked Plan, not a second Plan, execution input, or place for manual governance edits.
 
-## Approval boundary
+## Feedback and Approval
 
-Approval 绑定 Current Request、Questioning round、设计约束、Assessment、路径、Plan/Check、review/Check 和 baseline。任一绑定变化使旧 Approval 失效。批准 Plan 明确授权的 Impl delta 不自行使 Approval 失效；未授权 external drift 必须停止并重新核验。
+Review Feedback is an independent paired immutable revision. It preserves the user's source-bound meaning and selects exactly one semantic owner from Current Request Dialogue, `themis-q`, Specification, Simple Planning, Planning, Plan Check, or Review Projection. Claim/assignment feedback returns through Intake interception to Current Request Dialogue; Why/abstract-What feedback returns to `themis-q`. Grounding may collect evidence for a bound owner but is not a feedback owner. Review Dialogue cannot patch Plan or projection directly.
 
-## Non-ownership
+Approval approves the checked Plan while also binding the exact projection shown to the user. It binds the confirmed Intake assignment decision, Current Request and active claims, Questioning, governed constraints, Grounding/Assessment, path/profile and sticky flag, Plan/Plan Check, projection/Review Check, empty unresolved feedback, approval Source Event, approval time, and pre-Impl baseline.
 
-Review 不实现代码、不运行 post-Impl Verification、不修改 Plan、不记录 Human Acceptance 或 Summary。
+A dialogue `approved` result is still proposed output. Only complete policy-controlled materialization and reread creates current Approval. A changed bound input invalidates the old Approval.
 
 ## Current status
 
-Plan 35 provides internal Review Projection, Review Check, and Review Dialogue Capability contracts plus human-readable record templates. Strict projection/currentness contracts and fixtures belong to Plan 36; policy evaluation, per-lifecycle recording, atomic replacement, completion markers, and reread verification belong to Plan 37.
+Plan 35 provides the three internal Review Capability contracts and immutable template families. Strict projection/currentness validation belongs to Plan 36; policy evaluation, recording, deterministic writes, and reread enforcement belong to Plan 37.

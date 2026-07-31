@@ -1,101 +1,114 @@
 # Themis Project Guidance
 
-This managed guidance defines the installed project's cross-stage control boundary. The only permanently loaded lifecycle logic is `.themis/core/kernel/orchestrator/rules.md`. Claude Code exposes one public project Skill at `.claude/skills/themis/SKILL.md`; semantic contracts and execution permissions remain internal under `.themis/core/capabilities/` and `.themis/core/agent-profiles/`.
+This managed guidance defines the installed project's control boundary. `.claude/skills/themis/SKILL.md` is the only public project Skill, and `.themis/core/kernel/orchestrator/rules.md` is the only always-loaded control Rule. Semantic contracts and permission boundaries remain internal under `.themis/core/capabilities/` and `.themis/core/agent-profiles/`.
 
 ## Installation Boundary
 
 - `.themis/core/` is Themis-owned and read-only during normal project work.
-- `.themis/workspace/` is project-owned lifecycle records, Context, evidence, outcomes, and knowledge governance.
-- Preserve an existing `.themis/` byte-for-byte. Do not run Init over it, delete it as an update workaround, or copy a source template over it.
-- Source templates describe a fresh-only target and may be installed only by an actually available approved installer.
-- Do not edit project guidance to hide a Themis conflict; stop and surface it.
+- `.themis/workspace/` is project-owned Intake/lifecycle records, Context, evidence, outcomes, and knowledge governance.
+- Preserve an existing `.themis/` byte-for-byte. Fresh templates are not an upgrade, migration, or compatibility mechanism.
+- Use an installer or runtime operation only when it actually exists and its result can be observed. Do not edit guidance to hide a conflict.
+
+## Intake-First Entry
+
+Every external user message must first become an immutable Source Event under `request-intake`, preserving original bytes and exact fragment references. This includes new requests, Questioning answers, Review feedback/approval, Acceptance, and restart/unblock messages.
+
+Attach a Source Event to an existing Intake only through a matching active durable Intake-local confirmation or restart/unblock continuation. A `dormant-read-only` Intake is never attachable. Wording, adjacency, chat history, an open Intake, or Agent inference cannot choose attachment; otherwise create a new Intake.
+
+```text
+Source Event
+→ themis-current-request-dialogue
+   ├─ needs-request-confirmation → persist proposal and await a new Source Event
+   ├─ rejected → persist explicit rejection
+   └─ assignment-confirmed → materialize decision and declared targets
+→ create/update source-bound Current Request revisions
+→ resume the exact decision-bound lifecycle continuation
+```
+
+Do not create, locate, update, split, merge, or continue a lifecycle before the confirmed assignment is fully materialized and reread.
 
 ## Product Flow
 
-Themis preserves questioning before detailed design, low-burden Plan Review, durable Agent Plans, and a governed evolving project knowledge base.
-
 ```text
-Current Request
+confirmed Current Request claims
 → Questioning
+→ optional Grounding
 → Complexity Assessment
-   ├─ simple → Simple Plan → Lightweight Plan Check
-   └─ full   → temporary Specification → Planning → Full Plan Check
-→ Review Projection → Review Check → Human Review → Review Approval
+   ├─ simple → Simple Plan → lightweight Plan Check
+   └─ full   → temporary Specification → Planning → full Plan Check
+→ Review Projection → Review Check → Review Dialogue → Review Approval
 → Verify [Impl → independent Verification]
 → Human Acceptance
 → Summary
 → optional governed knowledge candidates
 ```
 
-The two paths differ only before the unified Plan is checked. Review always happens before project implementation. Summary is allowed only after current Verification `passed` and Human Acceptance `accepted`.
+Both paths create the same immutable paired Plan family and converge before Review. Review occurs before project implementation. Summary requires current Verification `passed` and current Acceptance `accepted`. After the Summary pair and lifecycle completion are observed, policy freezes the bound Intake target; once all associated lifecycle targets complete, the assigned Intake becomes `dormant-read-only`, retains its immutable authority records, and cannot be attached, invoked, mutated, reactivated, or recovered.
 
 ## Authority Model
 
-- Current Request Revision governs the current delivery target.
-- Governed design constraints constrain acceptable solutions but do not rewrite the request or prove implementation facts.
-- Code, configuration, Schema, and observed executable behavior are the only sources of current implementation facts.
-- Temporary Specification is a full-path handoff, not a persisted authority or fact source.
-- The checked and explicitly approved unified Plan is the execution contract.
-- Workspace state and evidence prove lifecycle events only when the responsible operation was observed.
-- Documentation, Context, Themico, experience, Plans, summaries, Agent inference, and conversation memory may provide guidance or lookup leads but cannot replace direct current implementation evidence.
+- Source Event original bytes own external input authority.
+- User-confirmed source-bound claim revisions own lifecycle target semantics.
+- Governed design constraints constrain solutions but cannot rewrite claims or prove implementation.
+- Code, configuration, Schema, and observed executable behavior are the only current implementation fact sources.
+- Temporary Specification is a full-path handoff with no persistent artifact/current pointer.
+- The current checked and explicitly approved unified Plan is the execution contract.
+- Review Projection is a bound read-only view of the checked Plan, not execution input.
+- Context, Themico, experience, documentation, Plans, summaries, Agent inference, conversation memory, and file existence cannot replace direct implementation evidence or observed materialization.
 
-When sources disagree, preserve the disagreement and return it to the owning Capability. Missing evidence is never success.
+When sources disagree, preserve the disagreement and return it to the semantic owner. Missing evidence is never success.
 
 ## Control Architecture
 
 ```text
 public themis Skill
 → Global Control Rule
-→ transitions.yaml selects one internal Capability
-→ fixed Agent Profile
-→ one temporary Agent invocation
-→ validate Capability Invocation Result
-→ match one legal route and execute its generic action
+→ one transitions.yaml across request-intake and lifecycle
+→ one internal Capability + fixed Agent Profile
+→ one temporary Invocation in one authority scope
+→ proposed result
+→ exactly one route and declared control action
+→ complete materialization, observation, reread, and pointer update
 ```
 
-- `transitions.yaml` is the sole `capability + selected_path + profile + status` route source.
-- Fifteen internal Capabilities own semantic judgments; they are not public Skills or persistent Agents.
-- Four Agent Profiles constrain permission and isolation only; they do not own semantics or routing.
-- One invocation loads exactly one Capability and its fixed Profile. Capability-to-Capability, Agent-to-Agent, shared memory, voting, and consensus are forbidden.
-- Only `implementation-writer` may modify project implementation. Independent checkers and Verification are read-only.
-- The control plane routes only from legal structured statuses and current bindings; diagnostics and `recommended_route` are advisory.
+- `transitions.yaml` is the sole `capability + selected_path + profile + status` route/control source.
+- Sixteen internal Capabilities own individual proposed semantic judgments; they are not public Skills or persistent Agents.
+- Four fixed Agent Profiles constrain tools, permission, and isolation. No governance-writer Profile exists.
+- One Invocation binds one scope, scope-local Execution Identity, Capability/Profile, policy digest, current evidence/artifacts, exact continuation, and allowed operations.
+- Capability-to-Capability and Agent-to-Agent calls, shared authority, voting, and consensus are forbidden.
+- Only `implementation-writer` may modify project implementation within current Approval/Plan scope. All governance outputs remain proposals until policy-controlled persistence and reread.
 
-## Review and Approval
+## Scope and Artifact Isolation
 
-`review.md` is a read-only compression of a checked Plan, not an execution input. It presents an optional flow/sequence Overview and high-impact review items from abstract to concrete.
+`request-intake` and `lifecycle` may exchange immutable stable references only. They cannot share dynamic state, Execution Identity, failure budget, continuation authority, current pointer, or completion state.
 
-Human feedback is handled through the internal Review Dialogue Capability and routed to the semantic owner. Neither dialogue nor the reviewer directly edits Plan or `review.md`. Explicit overall approval is recorded separately and binds the Current Request, Questioning round, design constraints, Assessment, path, Plan, checks, projection, and implementation baseline.
+Logical artifacts use immutable revisions and separate current pointers. Paired semantic artifacts require a matching machine record and Markdown; a missing or mismatched component invalidates the whole revision. Completed Questioning exchanges use per-round immutable pairs, while unanswered questions remain proposal/continuation state.
 
-Any bound input change invalidates Approval. Plan-authorized implementation delta does not invalidate it by itself; unauthorized external drift does.
+Lifecycle state stores minimal control facts and references, not copied claim, Plan, Review, Acceptance, or Summary prose.
 
-## Verify, Acceptance, and Summary
+## Review, Verify, Acceptance, and Summary
 
-- Impl executes one dependency-ready approved Plan task and records actual delta; it cannot declare Verification success.
-- Verification independently reads the implementation and records actual commands, observations, evidence, coverage, limitations, and verdict.
-- Impl and Verification use different Invocation Identities but share one Plan task identity and cumulative three-failure budget.
-- Human Acceptance records the user's observed result only after Verification passed.
-- Summary describes actual delivered behavior only after Acceptance is accepted.
-- Failure Learning and Summary may produce governed candidates, but candidates are never published automatically and never alter the completed lifecycle result.
+- Review Projection presents high-impact material from abstract to concrete and uses diagrams only when they reduce burden.
+- Review Dialogue proposes immutable Feedback or Approval and never patches Plan/Projection directly.
+- Approval binds the checked Plan, exact projection shown, user decision Source Event, resolved feedback, and pre-Impl baseline.
+- Impl records actual approved delta and cannot issue a Verification verdict.
+- Independent Verification binds the exact implementation result and direct commands/observations/evidence.
+- Impl and Verification use different Invocations but share one Plan Task Execution Identity and failure budget.
+- Human Acceptance records source-bound user observation after Verification passed. Summary is a bound delivery projection after Acceptance accepted.
 
-## Write Isolation and Interruption
+## Sticky Full Path, Failure, and Recovery
 
-A mutating invocation binds lifecycle, Task Execution, Invocation, worktree, allowed paths, pre-Impl baseline, and expected write state. Concurrent writers require exclusive worktrees. If exclusive ownership is unavailable, use one serial writer or stop fail closed.
+`full_path_required` is lifecycle-local and one-way. A legal quick-path complexity signal invalidates declared quick downstream state and restarts the full Specification/Planning/Review path; retries and restarts cannot clear it.
 
-Before writing, revalidate bindings, path, baseline, and expected state. Where applicable, complete a same-directory temporary write before atomically replacing one target. Critical multi-step writes require completion or incomplete markers and post-write reread of files, Git status/diff, and records.
+Intake Execution Identity and lifecycle Plan Task Execution Identity each allow at most three counted failures. The third terminates that identity and forbids a fourth Invocation. Intake failure never consumes lifecycle budget; Impl, Verification, and Acceptance implementation-defect repair share the lifecycle Plan task budget.
 
-After interruption, reread actual state and continue only from the last proven gate. Do not infer success from partial files and do not claim cross-worktree locks, general transactions, rollback journals, automatic recovery, cross-worktree merge, or conflict adjudication.
-
-## Sticky Full Path and Failure Limit
-
-When a simple-path Capability returns `escalate-full` or exposes hidden requirement, contract, permission, data, state, cross-module, or design complexity, set `full_path_required = true`, invalidate quick-path downstream results, and rerun the full Specification → Planning → Review path. The flag never clears within the lifecycle.
-
-A Task Execution Identity has at most three counted failures. Agent/tool/command/result-contract failures and evidence-backed implementation defects count; semantic routes do not. Each counted failure may trigger non-blocking Failure Learning. The third failure terminates the same identity and forbids a fourth attempt.
+Failure Learning is scope-bound, non-blocking, non-recursive, and candidate-only. Recovery rereads active scope state, pointers, markers, artifact components, Invocation/attempt records, and applicable Git facts, then resumes only from the last proven gate. Never infer completion or automatically repair, roll back, merge, or continue partial writes. Dormant Intake records remain historical source/decision evidence but never supply a recovery continuation.
 
 ## Safe Degradation
 
-Before invoking a Capability, Agent, command, recorder, validator, digest operation, installer, or runtime operation, confirm it exists and observe its result. If absent, remain at the current proven gate and report exactly what is unavailable.
+Plan 35 provides Prompt/template/policy contracts, static checks, and manual replay semantics. Plan 36 owns strict Schema, canonical serialization, validation, issue taxonomy, semantic oracle, and fixtures. Plan 37 owns native policy evaluation, Invocation hosting, recording, digest/write services, and command execution.
 
-Never invent artifacts, evidence, digests, currentness, transitions, worktree isolation, atomic replacement, completion, invalidation, attempts, Approval, or success. A Rule, Capability, Profile, policy, template, directory, or example does not prove deterministic enforcement exists.
+If an evaluator, recorder, validator, digest service, command runner, installer, or deterministic writer is unavailable, remain at the current proven gate and state the missing assurance. Never invent Source Events, artifacts, evidence, digests, currentness, transitions, attempts, invalidations, termination, recovery, atomicity, or completion.
 
 ## Key Paths
 
@@ -103,15 +116,15 @@ Never invent artifacts, evidence, digests, currentness, transitions, worktree is
 |---|---|
 | Public entry | `.claude/skills/themis/SKILL.md` |
 | Global Control Rule | `.themis/core/kernel/orchestrator/rules.md` |
-| Sole route policy | `.themis/core/policies/transitions.yaml` |
-| Internal semantic contracts | `.themis/core/capabilities/` |
-| Fixed permission contracts | `.themis/core/agent-profiles/` |
+| Sole route/control policy | `.themis/core/policies/transitions.yaml` |
+| Internal Capability contracts | `.themis/core/capabilities/` |
+| Fixed Agent Profile contracts | `.themis/core/agent-profiles/` |
 | Project manifest | `.themis/workspace/manifest.yaml` |
-| Governed project Context | `.themis/workspace/context/` |
-| Request, Questioning, Plan, Review, Approval | `.themis/workspace/changes/<lifecycle-id>/` |
-| Lifecycle state and interruption records | `.themis/workspace/state/<lifecycle-id>/` |
-| Invocations and direct evidence | `.themis/workspace/runs/<lifecycle-id>/`, `.themis/workspace/evidence/<lifecycle-id>/` |
+| Request Intake records | `.themis/workspace/intakes/<intake-id>/` |
+| Lifecycle semantic revisions | `.themis/workspace/changes/<lifecycle-id>/` |
+| Lifecycle state and pointers | `.themis/workspace/state/<lifecycle-id>/` |
+| Invocations and evidence | `.themis/workspace/runs/<lifecycle-id>/`, `.themis/workspace/evidence/<lifecycle-id>/` |
 | Acceptance and Summary | `.themis/workspace/outcomes/<lifecycle-id>/` |
-| Knowledge candidates and disposition | `.themis/workspace/knowledge/` |
+| Scope-separated knowledge candidates | `.themis/workspace/knowledge/intakes/`, `.themis/workspace/knowledge/lifecycles/` |
 
-Attribution analytics remains optional post-delivery observation and is never a lifecycle gate.
+Multi-Agent execution and Attribution analytics remain optional future concerns and are never Plan 35 gates.

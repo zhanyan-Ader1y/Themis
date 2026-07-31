@@ -1,23 +1,24 @@
 # Verification
 
-> Independent, read-only verification of the actual implementation. Verification must not modify project implementation to make checks pass.
+> Human-readable half of one immutable independent Verification revision. Verification is read-only and cannot modify project implementation to make checks pass.
 
 ## Bindings
 
-- Lifecycle:
-- Current Request Revision:
-- Review Approval reference:
-- Plan identity, revision, and digest:
-- Plan execution task identity:
-- Verification invocation identity:
-- Attempt:
+- Lifecycle identity:
+- Verification revision identity:
+- Current Request revision:
+- Review Approval revision:
+- Plan revision and task identity:
+- Shared Plan Task Execution Identity:
+- Verification Invocation and attempt identities:
 - Approved pre-Impl baseline:
-- Impl Result references:
+- Impl Result revision references:
+- Actual implementation revision or delta reference:
 
 ## Verdict
 
 - Status: `passed | failed | needs-planning | needs-specification | escalate-full | blocked`
-- Failure classification: `<implementation-defect | none>`
+- Failure classification: `implementation-defect | none`
 
 ## Current Request and Plan assertions
 
@@ -48,3 +49,7 @@
 - Actual result:
 - Impacted scope:
 - Recommended route:
+
+## Boundary
+
+Only a complete, reread Verification pair can become current. A writer cannot verify itself, and this file alone cannot establish `passed`.

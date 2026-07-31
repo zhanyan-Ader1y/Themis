@@ -1,18 +1,17 @@
 # Failure Learning
 
-> Non-blocking analysis after a counted failure. This record cannot alter the original task state, retry budget, third-failure termination, or knowledge authority.
+> Human-readable half of one immutable, non-blocking scope-bound candidate revision. It cannot alter the original task state, continuation, failure budget, third-failure termination, or knowledge authority.
 
 ## Bindings
 
-- Lifecycle:
+- Authority scope: `request-intake | lifecycle`
+- Scope identity:
+- Failure Learning revision identity:
 - Task Execution Identity:
-- Invocation identity:
-- Attempt:
-- Failure type:
-- Authoritative input revisions/digests:
-- Failure evidence references:
-- Prior attempt references:
-- Known later result references:
+- Invocation and attempt identities:
+- Failure reference and evidence:
+- Scope-local main-route continuation:
+- Explicitly linked later-success reference: `<reference | none>`
 
 ## Result
 
@@ -37,10 +36,12 @@
 - Candidate type: `failure-experience | correction-experience | success-practice | none`
 - Related original failure:
 - Later successful correction or bounded resolution:
-- Success Verification evidence:
+- Success evidence:
 - Governance destination:
 
 ## Boundaries
 
-- This Capability invocation's own failure must not recursively trigger Failure Learning.
-- Candidate output requires separate verification, Review, and authorization before publication.
+- Scope-local state and continuation cannot cross between Intake and lifecycle.
+- Similar prose does not create replacement linkage.
+- This Invocation's own failure does not recursively trigger Failure Learning.
+- Candidate output requires separate governance before publication and never blocks the main route.

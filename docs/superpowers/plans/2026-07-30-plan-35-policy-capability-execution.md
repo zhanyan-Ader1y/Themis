@@ -1,5 +1,7 @@
 # Plan 35 Policy、Capability 与执行模型收尾实施计划
 
+> 历史状态：本文已被 `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md` 及其当前实施计划取代，仅保留为历史记录，不是 current authority。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 完成 Plan 35 的结构收尾，使 Core 身份最小化、`transitions.yaml` 成为唯一完整路由政策源、十五项能力成为内部 Capability、四个 Agent Profile 约束临时 invocation，并以实际静态检查和人工 replay 核验 Prompt-level 生命周期。

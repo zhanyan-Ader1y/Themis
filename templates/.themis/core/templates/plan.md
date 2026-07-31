@@ -1,19 +1,22 @@
 # Plan
 
-> The single persistent execution contract used by both simple and full paths. This structure is not proof of machine validation or currentness.
+> Human-readable half of the single immutable execution contract used by simple and full paths. The paired machine record owns identity, typed bindings, content digest, observed materialization, and currentness. This file alone is not authority.
 
 ## Bindings
 
-- Lifecycle:
-- Current Request Revision:
-- Questioning round and digest:
-- Governed design constraint revisions/digests:
-- Complexity Assessment digest:
+- Lifecycle identity:
+- Plan revision identity:
+- Confirmed Intake assignment decision:
+- Current Request revision and active claim revisions:
+- Questioning round revision:
+- Governed design constraint references:
+- Grounding result reference:
+- Complexity Assessment reference:
 - Selected path: `simple | full`
+- Profile: `lightweight | full`
 - Full path required: `false | true`
+- Temporary Specification handoff reference: `<full path only | none>`
 - Implementation fact baseline and evidence:
-- Plan revision and digest:
-- Plan Check profile: `lightweight | full`
 
 ## Current request, scope, and core flow
 
@@ -84,7 +87,11 @@
 
 | Source class | Source reference | Covered Plan sections | Treatment |
 |---|---|---|---|
-| Current Request target semantics | | | objective authority |
+| User-confirmed Current Request claims | | | objective authority |
 | Governed design constraints | | | constrains solution only |
 | Implementation fact evidence | | | current implementation fact |
-| Temporary Specification refinement | | | full path non-authoritative refinement |
+| Temporary Specification refinement | | | full-path non-authoritative refinement |
+
+## Revision boundary
+
+Changes create a new immutable Plan pair. A current pointer is updated only after complete materialization and reread; Review, Approval, or dialogue never patch this content in place.

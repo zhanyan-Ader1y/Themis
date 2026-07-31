@@ -14,13 +14,14 @@ Themis 让团队能够以更清晰、更易评审和更可追溯的方式使用 
 ## 核心流程
 
 ```text
-理解需求
+外部请求形成不可变 Intake Source Event
+→ 确认可追溯的 Current Request claims
 → 设计与评审
-→ 实现与验证
-→ 验收与知识沉淀
+→ 实现与独立验证
+→ 人工验收与知识候选
 ```
 
-- **理解需求**：收敛需求动机、期望结果和必要的核心链路，为后续 Specification 提供清晰输入。
+- **Intake 与需求理解**：先保存用户原始输入并确认 source-bound claims，再收敛需求动机、期望结果和必要的核心链路。
 - **设计与评审**：细化交付语义，调查项目事实，形成完整技术方案，并在实现前通过精简视图完成人工 Review。
 - **实现与验证**：在批准范围内完成实现，再由独立验证确认实际结果是否满足设计和验收要求。
 - **验收与知识沉淀**：由人类接受实际交付结果并生成交付摘要；有复用价值的项目知识和经验按需进入独立治理流程。
@@ -36,13 +37,13 @@ Themis 让团队能够以更清晰、更易评审和更可追溯的方式使用 
 
 ## 当前状态
 
-Themis 当前处于设计与安装包合同重建阶段，目标流程尚未形成可运行产品；详细实施状态请查看[活动实施计划](docs/plan/README.md)。
+Themis 当前处于设计与安装包合同重建阶段，目标流程尚未形成可运行产品。当前模板已表达 Intake-first、十六个内部 Capability、四个固定 Agent Profile 与双作用域单一 policy 的 Prompt-level 合同；严格校验和原生执行仍由后续计划负责。详细实施状态请查看[活动实施计划](docs/plan/README.md)。
 
 ## 文档
 
 - [安装包与模块合同](templates/.themis/README.md)
 - [活动实施计划](docs/plan/README.md)
-- [Core Prompt Flow 目标设计](docs/superpowers/specs/2026-07-29-plan-35-core-prompt-flow-design.md)
+- [Core Contract Replacement 目标设计](docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md)
 - [Themico 顶层设计](docs/superpowers/specs/2026-07-29-themico-design.md)
 - [更新日志](CHANGES.md)
 

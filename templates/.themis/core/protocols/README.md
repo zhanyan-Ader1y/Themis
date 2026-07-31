@@ -2,24 +2,30 @@
 
 ## Responsibility
 
-Protocols 为未来 deterministic assurance 定义结构化 handoff 的归属边界。Plan 35 只声明统一 Capability Invocation Result 和 Prompt-level 工件字段，不用未经验证的 YAML Schema 冒充机器合同。
+Protocols marks the boundary between Plan 35 Prompt-level structures and future machine-enforced contracts. Plan 35 names fields and relationships needed by the dual-scope policy, Capability results, artifact families, and evidence records without treating descriptive YAML/Markdown as validated Schema.
 
-## Owned assets
+## Contract categories
 
-- `context/` 下现有 Context 结构声明。
-- lifecycle、Plan、Review、Verification 等严格协议由 Plan 36 基于已接受的 Plan 35 语义统一建立。
+- Request Intake: Source Event metadata/raw-byte references, proposal, decision, Intake state, continuation bindings, and post-completion retention facts.
+- Lifecycle semantics: Current Request, Questioning, Plan, Review Projection/Feedback/Approval, Impl Result, Verification, Acceptance, Summary, and Failure Learning.
+- Structured judgments: Grounding, Complexity Assessment, Plan Check, Review Check, and route-affecting results.
+- Operational evidence: policy binding, Execution Identity, Invocation, attempt, recorder result, marker, pointer, command evidence, Git observation, and last proven gate.
+
+Temporary Specification is Invocation-local, non-persistent, and has no artifact protocol or current pointer.
 
 ## Boundaries
 
-- Protocol 不决定需求内容、复杂度、技术方案、Review 判断、实现选择、Human Acceptance 或知识价值。
-- 字段名称只表达唯一 current contract，不使用功能版本或版本目录。
-- Markdown template 不是 protocol authority。
-- Specification handoff 是临时非权威上下文，不拥有持久 artifact protocol。
+- Protocol does not decide claims, assignment, complexity, design, Review, implementation, Verification, Acceptance, or knowledge value.
+- Markdown templates are governed content shapes, not machine protocol authority.
+- A Capability result remains proposed output until policy matching, declared action, complete persistence, completion observation, reread, immutable revision observation, and pointer update.
+- No functional versions, compatibility contracts, upgrade paths, or migration protocols exist.
 
-## Safe degradation
+## Plan ownership
 
-声明字段存在但 validator 不存在时，只能称其为 Prompt contract。不得手工伪造 validator output、digest、OID、currentness、transition、completion marker 或 recorded operation result。
+Plan 36 owns strict Schema, canonical serialization, validation stages/issues, semantic oracle, and accepted/rejected fixtures. Plan 37 owns native evaluation, Invocation hosting, recording, digest/write services, and command execution.
+
+Without those observed implementations, do not claim machine-valid bindings, canonical digests, currentness, transition execution, completion, failure recording, or recovery.
 
 ## Current status
 
-Context 的历史 YAML 声明仍存在，但尚无 executable conformance suite。Plan 36 将决定保留、重写或替换的严格协议，并建立 accepted/rejected fixtures。
+Plan 35 supplies descriptive structures and static/manual verification only. Existing Context declarations remain non-executable until a later accepted plan explicitly validates or replaces them.

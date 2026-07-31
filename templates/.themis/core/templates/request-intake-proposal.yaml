@@ -1,0 +1,41 @@
+template_status: prompt-level-not-machine-validated
+record_class: structured-semantic-proposal
+authority_scope: request-intake
+proposal:
+  proposal_identity: ""
+  intake_identity: ""
+  execution_identity: ""
+  invocation_identity: ""
+  capability: themis-current-request-dialogue
+  agent_profile: human-dialogue
+  source_event_references: []
+  original_dialogue_continuation: ""
+  status: needs-request-confirmation
+changed_only_diff:
+  claim_changes:
+    - item_identity: ""
+      operation: add | rewrite | supersede | ambiguity
+      prior_claim_revision: null
+      proposed_claim_revision: ""
+      source_fragments:
+        - event_identity: ""
+          utf8_byte_start: 0
+          utf8_byte_end: 0
+          quoted_fragment_digest: ""
+      allowed_dispositions: [confirm, correct, keep-ambiguous]
+  assignment_changes:
+    - item_identity: ""
+      operation: assignment-change
+      proposed_target_operations:
+        - target_identity: ""
+          operation: create-lifecycle | update-current-request | no-change
+          lifecycle_identity: null
+          decision_bound_continuation: ""
+      allowed_dispositions: [confirm, correct, keep-ambiguous]
+  full_diff_digest: ""
+materialization_target: request-intake-proposal
+materialization_observation:
+  operation_identity: ""
+  recorder_result_reference: ""
+  observed_complete: false
+  reread_reference: ""

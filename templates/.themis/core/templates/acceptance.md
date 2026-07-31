@@ -1,14 +1,16 @@
 # Human Acceptance
 
-> Human gate after current Verification `passed`. This record captures the user's observed result without repeating technical Verification or changing the Plan.
+> Human-readable half of one immutable Acceptance revision after current Verification `passed`. It preserves the user's observed result and does not repeat technical Verification or modify the Plan.
 
 ## Bindings
 
-- Lifecycle:
-- Current Request Revision:
-- Plan identity, revision, and digest:
-- Review Approval reference:
-- Verification result and evidence references:
+- Lifecycle identity:
+- Acceptance revision identity:
+- Acceptance Source Event references:
+- Current Request revision:
+- Plan revision:
+- Review Approval revision:
+- Current Verification revision and evidence references:
 
 ## Acceptance view
 
@@ -17,9 +19,9 @@
 - Key evidence entry points:
 - Known limitations:
 
-## User feedback
+## Preserved user feedback
 
-> Preserve the user's feedback and observed differences without rewriting them as Agent conclusions.
+> Keep exact Source Event references and do not rewrite user observations as Agent conclusions.
 
 ## Classification
 
@@ -27,5 +29,8 @@
 - Observed difference:
 - Affected semantics:
 - Recommended route:
-- Accepted or classified by:
-- Recorded at:
+- Classified at:
+
+## Boundary
+
+This dialogue output is a proposal until the complete pair is persisted and reread. Silence cannot mean acceptance.

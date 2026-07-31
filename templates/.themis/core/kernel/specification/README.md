@@ -2,38 +2,26 @@
 
 ## Responsibility
 
-Specification 只在完整路径中细化已完成需求追问的 Current Request，形成临时、非权威 Planning handoff。它不持久化需求权威，不拥有复杂度判断、Plan、Review 或实现事实。
+Specification refines an already questioned, user-confirmed Current Request on the full path. It creates a temporary, non-authoritative handoff for Planning and does not own claims, assignment, lifecycle state, path selection, Plan, Review, or implementation facts.
 
 ## Capability mapping
 
-- `themis-q`：在路径选择前收敛 Why 与抽象 What；不属于 Specification 内部步骤。
-- `themis-spec`：完整路径的范围、可观察行为、业务/外部合同、不变量、验收、风险和 Planning 不变量 refinement。
+- `themis-q`: converges Why and abstract What before path selection; it is not a Specification sub-step.
+- `themis-spec`: refines scope, observable behavior, business/external contracts, invariants, acceptance, risks, and Planning invariants on the full path.
 
-## Inputs and outputs
+## Inputs and output
 
-输入为 Requirement Input Bundle 与直接实现事实证据。`ready` 输出只存在于 active control context：
+Inputs bind the confirmed Current Request revision and active claims, current Questioning round, governed design constraints, relevant Grounding/Assessment references, and directly observed implementation facts.
 
-```markdown
-## 动机与目标
-## 核心链路
-## 范围
-## 行为与合同
-## 验收要求
-## 当前实现事实与证据
-## 推导假设
-## 风险与未解决事项
-## Planning 不变量
-```
-
-中断后从相同 bundle 重新生成，不恢复为持久 authority。
+A `ready` result returns a temporary Invocation handoff containing motivation, core flow, scope, behavior/contracts, acceptance, implementation evidence, assumptions, risks, unresolved issues, and Planning invariants. It has no persistent artifact revision or current pointer. After interruption it must be regenerated from current bindings.
 
 ## Authority boundary
 
-- Current Request Revision 始终是目标语义来源。
-- Specification 不能证明当前实现、覆盖用户纠正或被其他需求当事实引用。
-- 不生成 `spec.yaml`、`spec.md`、独立批准或 Spec currentness。
-- Planning 发现事实或语义缺口时必须回到 owning capability，不能静默补齐。
+- Exact Source Event fragments and confirmed claim revisions own user semantics.
+- Specification cannot add or rewrite claims, confirm ambiguity, assign lifecycles, prove current implementation, or override user correction.
+- It does not generate `spec.yaml`, `spec.md`, independent approval, persistent currentness, or an implementation contract.
+- Planning must return factual or semantic gaps to the owning Capability rather than silently filling them.
 
 ## Current status
 
-Plan 35 provides the internal `themis-spec` Capability contract and its temporary handoff shape. There is no Specification artifact, public Specification Skill, validator, projector, publisher, approval recorder, or executable regression suite.
+Plan 35 provides the internal `themis-spec` Capability contract and temporary handoff shape. There is no public Specification Skill, persistent Specification artifact, validator, projector, publisher, approval recorder, or executable runtime.

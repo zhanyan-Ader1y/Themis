@@ -1,15 +1,16 @@
 # Delivery Summary
 
-> Final description of the actual delivery. Generate only when current Verification is `passed` and Human Acceptance is `accepted`. This summary creates no new requirement, design, implementation, or knowledge authority.
+> Human-readable half of one immutable Summary revision. Generate only when current Verification is `passed` and current Human Acceptance is `accepted`. This summary creates no new requirement, design, implementation, outcome, or knowledge authority.
 
 ## Bindings
 
-- Lifecycle:
-- Current Request Revision:
-- Plan identity, revision, and digest:
-- Review Approval reference:
-- Verification result and evidence references:
-- Human Acceptance reference:
+- Lifecycle identity:
+- Summary revision identity:
+- Current Request revision:
+- Plan revision:
+- Review Approval revision:
+- Current Verification revision and evidence references:
+- Current Human Acceptance revision:
 
 ## Original goal
 
@@ -30,3 +31,7 @@
 ### Project knowledge change candidates
 
 > Candidates are not published knowledge. Failure to govern or publish them does not change the completed delivery result.
+
+## Boundary
+
+A complete Summary pair is a bound delivery projection only. It cannot change completion, replace Verification/Acceptance, or create facts.
