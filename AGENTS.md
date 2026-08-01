@@ -35,8 +35,19 @@ Skill 的 description 是 Agent 的发现与路由入口，应优先描述：
 
 边界和“不做什么”应主要写在 Skill 正文中，不应占据 description 的核心位置。
 
+## 描述格式
+
+- 默认使用自然语言 Markdown 描述产品语义、流程、状态、合同、模板和示例。
+- 只有内容确实需要由 Go CLI 解析或执行时，才允许使用 YAML；YAML 必须对应明确的 Go 读取入口和执行用途，不能仅为结构化展示而存在。
+- 不需要 Go CLI 执行的场景禁止新增 YAML 文件、YAML 模板或 YAML 语义合同，也不得让 YAML 成为 Prompt 流程的权威源。
+- 外部宿主强制要求的最小元数据格式不属于产品语义；例如 `SKILL.md` frontmatter 只能保留宿主发现所需字段，流程与合同仍必须写在 Markdown 正文中。
+- 审查既有设计时，不能因为 YAML 已经存在就默认其合理；没有 Go CLI 消费者的 YAML 必须视为需要迁移到 Markdown 的设计债务。
+- 项目不使用 Python；不得新增 Python 源码、脚本、一次性验证程序或以 Python 作为计划执行依赖。
+- 需要自动执行的项目脚本必须由 Themis Go CLI 提供并通过其公开入口运行；在对应 CLI 能力尚未实现时，应明确标记 unavailable，不得用 Python、Shell 或其他临时脚本替代。
+
 ## 限制
 
 - 所有WIKI类文件不允许记录任务状态等
 - 项目中不允许添加版本概念，不允许出现版本形式的目录
 - 项目不需要upgrade与migration
+- 所有markdown内容使用中文呈现
