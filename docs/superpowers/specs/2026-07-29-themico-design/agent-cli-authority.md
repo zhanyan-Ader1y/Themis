@@ -49,12 +49,22 @@ CLI 不验证 `approved_by` 或 `confirmed_by` 背后人的真实身份。身份
 - revise：创建不可变 candidate 或 record revision；
 - digest：计算 canonical JSON 和原始内容 digest；
 - query：执行确定性 L1 filter 和受预算约束的读取；
+- index：维护 generation `manifest.json` 中的 current pointers/projection references，以及 `views.json` 中按 project、domain、architecture unit、feature 重建的 record-ID 索引；
 - commit：通过 generation-directory 完成可见提交；
 - invalidate：识别 revision 变化后的旧投影；
 - rebuild：从 current authority 重建索引和 view；
 - trace：记录可重放的机器事实。
 
 CLI 不判断自然语言内容是否正确、是否有价值、是否忠实概括来源或是否应被 Human 接受。它只证明机器可判定的结构、绑定、currentness、一致性和提交事实。
+
+### 2.4 Catalog 责任收敛
+
+当前核心不定义独立的 Catalog artifact、Catalog digest、Catalog mutation command 或 Catalog authority。全局约束中曾使用的 `Catalog` 名称收敛为两类既有 CLI 机器责任：
+
+- generation `manifest.json` 保存 current candidate/record pointers 与 projection references，是 currentness 的机器来源；
+- generation `views.json` 保存按 project、domain、architecture unit、feature 生成的可重建 record-ID 聚合索引，不拥有独立语义。
+
+因此，CLI 通过 publish、supersede、deprecate、archive 和 rebuild 所产生的 generation commit 原子更新 manifest 中的 current pointers/projection references。`views.json` 是可重建的派生索引：在投影模块接线前，生命周期 commit 可以保存空合法对象；投影模块完成后由显式 rebuild 生成新 generation 填充或恢复 views。任何 generation 都不得把 stale 或部分 views 声称为 current 完整索引。CLI 不提供单独的 `catalog` 命令；任何后续独立 Catalog artifact 或命令都必须另立设计，不能从本 Spec 推断存在。
 
 ## 3. 治理链路
 

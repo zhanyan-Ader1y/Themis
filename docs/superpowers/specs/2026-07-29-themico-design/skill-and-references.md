@@ -18,20 +18,36 @@
 
 ## 3. 固定加载顺序
 
-一次操作的加载顺序固定为：
+一次操作的加载顺序分为已有记录与尚未分类的新 candidate 两条路径。
+
+已有正式记录或已有 candidate：
 
 ```text
 common/operation-contract
 → exactly one selected operation reference
-→ CLI inspect/query 返回 persisted type，或读取新 candidate 的 proposed type
-→ common/type-registry
+→ CLI inspect/query 返回 persisted knowledge_type，或 candidate inspect 返回 proposed/persisted type
+→ common/type-registry 的 identity routing table
 → exactly one registry-selected type factory
 → selected L2/L3/semantic-check reference
 → Agent proposal 或 assessment
 → CLI deterministic validate/prepare/apply
 ```
 
-一次操作只选择一个 operation reference。只有当操作需要理解或生成特定类型内容时，才继续加载 type factory；不能默认加载三个 factory 后让 Agent自由选择正式记录类型。
+`create-candidate` 或 `create-derived-candidate` 在尚无 `proposed_type` 时：
+
+```text
+common/operation-contract
+→ exactly one selected create operation reference
+→ common/type-registry 的 lightweight classification registry
+→ Agent 只依据三种类型的分类摘要与排除条件提出一个 proposed_type 和分类理由
+→ common/type-registry 的 identity routing table
+→ exactly one selected type factory
+→ selected L2/L3 reference
+→ Agent 形成 candidate content
+→ CLI deterministic create
+```
+
+一次操作只选择一个 operation reference。lightweight classification registry 是 common reference 内的短分类表，不是 type factory，也不包含三种类型的 L2、L3 或 semantic-check 合同。分类完成前不得加载任一 factory；分类完成后只加载 proposed type 对应的一个 factory，不能默认加载三个 factory 后让 Agent自由选择正式记录类型。
 
 ## 4. operation reference
 
@@ -47,9 +63,25 @@ common/operation-contract
 
 operation reference 不复制三种类型的完整 L2/L3 合同，也不定义新的 Zone、类型、状态或关系。若 operation 与 CLI command 不可用，reference 必须要求 draft-only 降级，不能指导 Agent 手工改写 `.themico`。
 
-## 5. type registry
+## 5. common type registry
 
-common type registry 是 Skill 的类型路由说明，必须与 CLI registry 闭集一致：
+`common/type-registry.md` 同时提供两个轻量表，两者都必须与 CLI registry 闭集一致，但都不复制 factory 的详细内容。
+
+### 5.1 lightweight classification registry
+
+该表在新 candidate 尚无 `proposed_type` 时即可加载，只包含提出初始分类所需的信息：
+
+| `knowledge_type` | 分类问题 | 排除提示 |
+| --- | --- | --- |
+| `design_decision` | 材料是否主要回答“项目已决定什么以及为什么” | 若主要规定必须/禁止动作或复用观察经验，则不选 |
+| `development_standard` | 材料是否主要回答“触发后必须、禁止或验证什么” | 若只是一次设计取舍或条件化观察，则不选 |
+| `development_experience` | 材料是否主要回答“在何种背景下观察到什么、证据多强、建议如何行动” | 若内容是 current 设计决定或强制规则，则不选 |
+
+Agent 只能使用该表提出一个 `proposed_type` 和分类依据；它不能据此生成完整 L2/L3，也不能把 proposed type 声称为已确认类型。若一个类型不能被唯一提出，停止 candidate 创建并请求 Human 澄清，不能同时加载多个 factory 试写后再选择。
+
+### 5.2 identity routing table
+
+类型已有 persisted identity 或 Agent 已提出唯一 `proposed_type` 后，使用该表选择 factory：
 
 | `knowledge_type` | factory | Zone |
 | --- | --- | --- |
@@ -57,7 +89,7 @@ common type registry 是 Skill 的类型路由说明，必须与 CLI registry �
 | `development_standard` | `types/development-standard/factory.md` | `project_knowledge` |
 | `development_experience` | `types/development-experience/factory.md` | `project_experience` |
 
-registry 不支持目录自动发现、插件式类型扩展或标题关键词猜测。未知类型必须失败关闭。
+identity routing table 不支持目录自动发现、插件式类型扩展或标题关键词猜测。未知类型必须失败关闭。
 
 ## 6. factory 选择
 
@@ -74,7 +106,7 @@ registry 不支持目录自动发现、插件式类型扩展或标题关键词�
 
 ### 6.2 新 candidate
 
-新 candidate 尚无固化类型时，Agent 可以依据三个 factory 的分类摘要提出一个 `proposed_type` 和分类理由。Human 确认后，后续处理只能使用 CLI 返回的固化 `knowledge_type`。Human 拒绝或要求改变类型时，应在固化前修订 proposal；固化后改变类型必须创建派生 candidate。
+新 candidate 尚无固化类型时，Agent 必须先使用 common type registry 中的 lightweight classification registry 提出唯一 `proposed_type` 和分类理由，而不是读取三个 factory。提出类型后，才通过 identity routing table 加载该类型的唯一 factory，并生成类型化 L2/L3 candidate content。Human 确认后，后续处理只能使用 CLI 返回的固化 `knowledge_type`。Human 拒绝或要求改变类型时，应在固化前修订 proposal；固化后改变类型必须创建派生 candidate。
 
 ## 7. type factory 内容
 

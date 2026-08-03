@@ -50,22 +50,23 @@
 25. **失效传播**：record revision 变化后旧投影保留为历史 payload，但 current manifest 不再引用；失效投影不能被 current 查询静默使用。
 26. **view rebuild**：删除或破坏 current views 后，可从 current record revisions 及现存有效 L1/L2 创建新 generation 恢复；重建不调用 Agent、不从 L3 生成新摘要、不修改 record bytes。L1/L2 缺失时必须失败，不能声称仅靠 L3 已完成投影恢复。
 27. **重建失败原子性**：任一 current record 或 projection 非法时，rebuild 整体失败且不提交部分 views。
+28. **无独立 Catalog 漏项**：当前核心不定义独立 Catalog artifact、digest 或 command；manifest current pointers/projection references 承担 currentness，`views.json` 承担可重建 record-ID 聚合索引。投影模块接线前生命周期 commit 可以写空合法 views；接线后显式 rebuild 以新 generation 填充或恢复 views，任何阶段都不能把 stale 或部分 views 声称为完整 current 索引。
 
 ## 8. Skill、格式与安全降级
 
-28. **单一 Skill**：只有一个公共 `themico` Skill；一次操作只加载一个 operation reference，正式记录只加载 registry 指定的一个 type factory。
-29. **Skill references**：common、operation 和三个 type factory reference 路径完整；只有 `SKILL.md` 使用宿主要求的最小 YAML frontmatter，其他产品合同使用中文 Markdown。
-30. **正式类型不可重解释**：给 persisted `design_decision` record 使用“失败经验”标题时，Skill 仍选择 design-decision factory，并由 semantic/结构审查报告错配，而不是改选 development-experience factory。
-31. **安全降级**：CLI unavailable、registry 缺失、current generation 非法、投影无效或授权不完整时，只允许 draft-only；不持久化，不声称 published、current 或 valid，不用其他脚本模拟产品能力。
-32. **输入安全**：machine JSON 拒绝 unknown field、duplicate key、float、invalid UTF-8、尾随 JSON 和超限输入；L3 拒绝 YAML frontmatter，路径检查覆盖当前平台可执行的 symlink/junction 情况。
-33. **确定性输出**：相同输入的 canonical digest、issue 排序、query 排序、help 和 result envelope 可重复；stdout 只包含一个 JSON result envelope。
+29. **单一 Skill**：只有一个公共 `themico` Skill；一次操作只加载一个 operation reference。已有正式记录只加载 persisted type 对应的一个 factory；新 candidate 先使用 common lightweight classification registry 提出唯一 type，再只加载该 type 的一个 factory。
+30. **Skill references**：common、operation 和三个 type factory reference 路径完整；`common/type-registry.md` 同时包含不复制 L2/L3 的 classification registry 与 identity routing table；只有 `SKILL.md` 使用宿主要求的最小 YAML frontmatter，其他产品合同使用中文 Markdown。
+31. **正式类型不可重解释**：给 persisted `design_decision` record 使用“失败经验”标题时，Skill 仍选择 design-decision factory，并由 semantic/结构审查报告错配，而不是改选 development-experience factory。
+32. **安全降级**：CLI unavailable、registry 缺失、current generation 非法、投影无效或授权不完整时，只允许 draft-only；不持久化，不声称 published、current 或 valid，不用其他脚本模拟产品能力。
+33. **输入安全**：machine JSON 拒绝 unknown field、duplicate key、float、invalid UTF-8、尾随 JSON 和超限输入；L3 拒绝 YAML frontmatter，路径检查覆盖当前平台可执行的 symlink/junction 情况。
+34. **确定性输出**：相同输入的 canonical digest、issue 排序、query 排序、help 和 result envelope 可重复；stdout 只包含一个 JSON result envelope。
 
 ## 9. 范围边界
 
-34. **无 MCP 越界**：当前代码和产品声明不包含 MCP adapter、MCP server、工具注册或已可用的 MCP 调用链。
-35. **无 Themis integration 越界**：不修改 Themis Global Rule、Capability、Workspace 或 lifecycle，不把 Themico 正式知识写入 `workspace/context/` 并声称 Context authority。
-36. **无外部模型与存储越界**：不实现 Claude API、内置 LLM、Embedding、向量数据库、SQLite、OpenViking、URL source fetch、自动知识摄取或自动经验晋升。
-37. **仓库约束**：不新增 Python、产品 YAML、功能版本、版本目录、compatibility、upgrade 或 migration；CLI 二进制名为 `themico`。
+35. **无 MCP 越界**：当前代码和产品声明不包含 MCP adapter、MCP server、工具注册或已可用的 MCP 调用链。
+36. **无 Themis integration 越界**：不修改 Themis Global Rule、Capability、Workspace 或 lifecycle，不把 Themico 正式知识写入 `workspace/context/` 并声称 Context authority。
+37. **无外部模型与存储越界**：不实现 Claude API、内置 LLM、Embedding、向量数据库、SQLite、OpenViking、URL source fetch、自动知识摄取或自动经验晋升。
+38. **仓库约束**：不新增 Python、产品 YAML、功能版本、版本目录、compatibility、upgrade 或 migration；CLI 二进制名为 `themico`。
 
 ## 10. 完成判定
 

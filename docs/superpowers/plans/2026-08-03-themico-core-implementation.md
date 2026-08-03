@@ -21,7 +21,7 @@
 - 跨类型提炼必须创建新 candidate/record，并通过 `derived_from` 关系连接原记录。
 - Agent 只能产生 proposal、candidate content、semantic assessment、explanation 和 relevance decision，不能产生 published/current/valid authority。
 - Human 负责类型确认、publication、supersede、deprecate 和 archive 的授权；CLI 只校验授权工件的结构和绑定，不声称验证人的真实身份。
-- CLI 是唯一 machine authority：负责结构、枚举、ID、revision、canonical digest、本地 source binding、registry、Catalog、currentness、确定性过滤、byte budget、关系完整性、可见提交、失效和重建。
+- CLI 是唯一 machine authority：负责结构、枚举、ID、revision、canonical digest、本地 source binding、registry、currentness、确定性过滤、byte budget、关系完整性、可见提交、投影索引、失效和重建。当前核心不定义独立 Catalog artifact 或命令；计划中原先的 `Catalog` 责任由 generation `manifest.json` 的 current pointers/projection references 与 `views.json` 的可重建聚合索引承担。任务 7 的生命周期 commit 可在投影模块接线前写空合法 views；任务 10 通过显式 rebuild 生成新 generation 填充或恢复聚合索引，不把空、stale 或部分 views 声称为完整 current 索引。
 - 正式 source 首批只支持 repository/root-relative 本地文件；CLI 必须直接读取 bytes 并计算 `sha256`。URL 抓取和未物化外部来源留给后续计划。
 - 所有 machine JSON 使用 UTF-8、拒绝未知字段、拒绝重复键、拒绝浮点数，digest 使用项目定义的 canonical JSON 加 `sha256:` 前缀。
 - 单个 machine JSON 输入上限为 1 MiB，单个 L3 Markdown 上限为 4 MiB，单个 source file 上限为 16 MiB；超过上限返回 `validation_failed`，不能截断。
@@ -940,7 +940,7 @@ CLI 只接受 `operation=publish` 且所有 binding 完全匹配的 Approval。�
 
 - [ ] **步骤 5：实现 publish generation commit**
 
-Publish 写入 immutable record revision、L1、L2、assessment、approval，然后提交新 generation manifest。Record status 为 `active`；candidate pointer 变为 `published` 并记录 record ID；generation views 在任务 10 前写空合法对象。
+Publish 写入 immutable record revision、L1、L2、assessment、approval，然后提交新 generation manifest。Record status 为 `active`；candidate pointer 变为 `published` 并记录 record ID；generation views 在任务 10 前写空合法对象。空 views 只表示聚合索引尚未由投影模块构建，不是完整 Catalog 或 current 索引；query 任务 8 直接使用 manifest pointers 与 record projections，不得依赖空 views。
 
 - [ ] **步骤 6：验证中断不产生可见发布**
 
@@ -1128,7 +1128,7 @@ type ViewEntry struct {
 
 - [ ] **步骤 4：实现 Rebuild generation**
 
-Rebuild 从 current record revisions 重新读取 L1/L2，生成新 views 和 manifest projection references，再以新 generation 提交。权威 record bytes 不改变；如果任何 record/projection 校验失败，整个 rebuild 返回 validation_failed 且不提交。
+Rebuild 从 current record revisions 重新读取 L1/L2，生成新 views 和 manifest projection references，再以新 generation 提交。权威 record bytes 不改变；如果任何 record/projection 校验失败，整个 rebuild 返回 validation_failed 且不提交。任务 10 首次成功 rebuild 是把任务 7–9 的空合法 views 提升为完整聚合索引的唯一显式步骤；后续 lifecycle commit 若尚未集成增量 BuildViews，必须再次显式 rebuild，且旧 views 不得被标记为完整 current 索引。
 
 - [ ] **步骤 5：实现失效传播**
 
@@ -1290,24 +1290,40 @@ type factories 恰为 3 个
 
 - [ ] **步骤 2：写公共 Skill 入口**
 
-`SKILL.md` 的 description 优先说明：可查询 Themico、形成/审阅知识候选、通过 CLI 准备和执行经授权治理操作。正文固定加载顺序：
+`SKILL.md` 的 description 优先说明：可查询 Themico、形成/审阅知识候选、通过 CLI 准备和执行经授权治理操作。正文固定两条加载路径。
+
+已有正式记录或已有 candidate：
 
 ```text
 common/operation-contract
 → selected operation reference
-→ CLI inspect/query 得到 persisted type 或 candidate proposed type
-→ common/type-registry
+→ CLI inspect/query 得到 persisted type，或 candidate inspect 得到 proposed/persisted type
+→ common/type-registry identity routing table
 → exactly one selected type factory
 → selected L2/L3/semantic-check reference
 → Agent proposal or assessment
 → CLI deterministic validation/prepare/apply
 ```
 
-明确已有 record 的 type 只能来自 CLI；CLI unavailable 时只允许 draft-only、不持久化、不声称 current。
+尚无 `proposed_type` 的 `create-candidate` 或 `create-derived-candidate`：
+
+```text
+common/operation-contract
+→ selected create operation reference
+→ common/type-registry lightweight classification registry
+→ Agent 提出唯一 proposed type 和分类依据
+→ common/type-registry identity routing table
+→ exactly one selected type factory
+→ selected L2/L3 reference
+→ Agent candidate content
+→ CLI deterministic create
+```
+
+`common/type-registry` 的 lightweight classification registry 只包含三个 type identity、分类问题和排除提示，不包含完整 factory/L2/L3/semantic-check 内容。分类前不加载 factory；分类后只加载一个 factory。明确已有 record 的 type 只能来自 CLI；CLI unavailable 时只允许 draft-only、不持久化、不声称 current。
 
 - [ ] **步骤 3：写 common 和 operation references**
 
-每个 operation reference 必须写：输入、Agent 职责、CLI command、Human gate、权威输出、合法 machine statuses、fail-closed 行为。不得复制三个 type 的完整 L2/L3 合同。
+每个 operation reference 必须写：输入、Agent 职责、CLI command、Human gate、权威输出、合法 machine statuses、fail-closed 行为。不得复制三个 type 的完整 L2/L3 合同。`common/type-registry.md` 必须同时提供 classification registry 和 identity routing table，并测试 create 路径能在不预加载三个 factory 的前提下提出唯一 type 后只加载一个 factory。
 
 - [ ] **步骤 4：写三个 type factory**
 
