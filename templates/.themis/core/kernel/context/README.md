@@ -7,8 +7,8 @@ Context supplies governed design constraints, background, history, and reusable 
 ## Capability mapping
 
 - `themis-grounding`: verifies bounded implementation-fact requests and proposes a structured Grounding result.
-- `core/templates/context-resolution.md`: supports bounded selection of relevant Context.
-- `core/templates/context-summary.md`: structures a candidate for separate knowledge governance.
+- `core/templates/context/resolution.md`: supports bounded selection of relevant Context.
+- `core/templates/context/summary.md`: structures a candidate for separate knowledge governance.
 
 ## Authority boundary
 

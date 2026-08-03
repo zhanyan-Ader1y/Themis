@@ -1,31 +1,32 @@
-# Protocols Package
+# Protocols 包
 
-## Responsibility
+## 职责
 
-Protocols marks the boundary between Plan 35 Prompt-level structures and future machine-enforced contracts. Plan 35 names fields and relationships needed by the dual-scope policy, Capability results, artifact families, and evidence records without treating descriptive YAML/Markdown as validated Schema.
+Protocols 标记 Plan 35 Prompt-level structures 与未来 machine-enforced contracts 的边界。Plan 35 只用描述性 Markdown 命名 dual-scope Policy、Capability results、artifact families 与 evidence records 所需的字段和关系，不把这些文档当作 validated Schema。
 
-## Contract categories
+## 合同分类
 
-- Request Intake: Source Event metadata/raw-byte references, proposal, decision, Intake state, continuation bindings, and post-completion retention facts.
-- Lifecycle semantics: Current Request, Questioning, Plan, Review Projection/Feedback/Approval, Impl Result, Verification, Acceptance, Summary, and Failure Learning.
-- Structured judgments: Grounding, Complexity Assessment, Plan Check, Review Check, and route-affecting results.
-- Operational evidence: policy binding, Execution Identity, Invocation, attempt, recorder result, marker, pointer, command evidence, Git observation, and last proven gate.
+- Request Intake：Source Event metadata/raw-byte references、proposal、decision、Intake state、continuation bindings 与 post-completion retention facts。
+- Lifecycle semantics：Current Request、Questioning、Plan、Review Projection/Feedback/Approval、Impl Result、Verification、Acceptance、Summary 与 Failure Learning。
+- Structured judgments：Grounding、Complexity Assessment、Plan Check、Review Check 与 route-affecting results。
+- Operational evidence：Policy binding、Execution Identity、Invocation、attempt、recorder result、marker、pointer、command evidence、Git observation 与 last proven gate。
+- Context descriptive protocols：[Context package](context/README.md) 描述 Context result、item、catalog、bundle 与 signal，但不拥有当前事实或 lifecycle authority。
 
-Temporary Specification is Invocation-local, non-persistent, and has no artifact protocol or current pointer.
+Temporary Specification 是 Invocation-local、non-persistent handoff，没有 artifact protocol 或 current pointer。
 
-## Boundaries
+## 边界
 
-- Protocol does not decide claims, assignment, complexity, design, Review, implementation, Verification, Acceptance, or knowledge value.
-- Markdown templates are governed content shapes, not machine protocol authority.
-- A Capability result remains proposed output until policy matching, declared action, complete persistence, completion observation, reread, immutable revision observation, and pointer update.
-- No functional versions, compatibility contracts, upgrade paths, or migration protocols exist.
+- Protocol 不裁决 claims、assignment、complexity、design、Review、implementation、Verification、Acceptance 或 knowledge value。
+- Markdown templates 是 governed content shapes，不是 machine protocol authority。
+- Capability result 在 Policy matching、declared action、complete persistence、completion observation、reread、immutable revision observation 与 pointer update 完成前始终只是 proposal。
+- 不存在 functional version、compatibility contract、upgrade path 或 runtime migration protocol。
 
-## Plan ownership
+## 后续计划归属
 
-Plan 36 owns strict Schema, canonical serialization, validation stages/issues, semantic oracle, and accepted/rejected fixtures. Plan 37 owns native evaluation, Invocation hosting, recording, digest/write services, and command execution.
+Plan 36 拥有 strict Schema、canonical serialization、validation stages/issues、semantic oracle 与 accepted/rejected fixtures。Plan 37 拥有 native evaluation、Invocation hosting、recording、digest/write services 与 command execution。
 
-Without those observed implementations, do not claim machine-valid bindings, canonical digests, currentness, transition execution, completion, failure recording, or recovery.
+在这些实现被实际观察前，不得宣称 machine-valid bindings、canonical digests、currentness、transition execution、completion、failure recording 或 recovery。
 
-## Current status
+## 当前状态
 
-Plan 35 supplies descriptive structures and static/manual verification only. Existing Context declarations remain non-executable until a later accepted plan explicitly validates or replaces them.
+Plan 35 只提供活动 descriptive Markdown 与 static/manual verification 边界；Context declarations 仍不可执行。

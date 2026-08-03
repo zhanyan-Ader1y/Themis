@@ -1,103 +1,31 @@
-# Workspace Package
+# Workspace 包
 
-## Responsibility
+## 职责
 
-Workspace is the project-owned boundary for durable Request Intake records, lifecycle artifacts, control facts, execution evidence, outcomes, and governed knowledge candidates. Core is read-only. Workspace stores observed records and references but does not decide routes, semantic judgments, currentness, or completion.
+Workspace 是项目拥有的持久边界，保存 Request Intake records、lifecycle artifacts、control facts、execution evidence、outcomes 与 governed knowledge candidates。Core 对 Workspace 只读；Workspace 只记录 observation 与 reference，不自行裁决 route、semantic judgment、currentness 或 completion。
 
-## Directory ownership
+## 不可绕过的边界
 
-| Path | Ownership |
+- `request-intake` 与 `lifecycle` 可以引用同一 immutable source，但不得共享 dynamic state、Execution Identity、failure budget、continuation authority、current pointer 或 completion state。
+- Capability result、文件或路径始终不直接建立 authority；适用 authority 需要唯一 Policy control、完整 materialization、completion observation、reread 与 separate current pointer update。
+- 当前实现事实只来自 code、configuration、Schema 与 observed executable behavior；Context、Plan、Review、Summary 与 Agent prose 只能提供约束或线索。
+- Cache 永远可重建且 non-authoritative；restricted Policy override 不得绕过 global invariants。
+- Fresh installation 必须在写入前拒绝既有 `.themis/` 或冲突 managed target；不存在 upgrade、runtime migration 或 compatibility path。
+
+## 配置入口
+
+[project.md](project.md) 保存项目 identity、commands、Context 来源、Gates、adapters、restricted Policy overrides 与 Workspace paths。
+
+## 参考合同
+
+| 参考 | 职责 |
 |---|---|
-| `manifest.yaml` | Project identity, explicit commands/Gates, paths, adapters, and restricted policy overrides |
-| `context/` | Governed Context inputs; never proof of current implementation |
-| `intakes/<intake-id>/` | Source Events, claim/assignment proposals, confirmation decisions, Intake state, Intake-local continuations, and post-completion retention facts |
-| `changes/<lifecycle-id>/` | Immutable Current Request, Questioning, Plan, Review Projection, Approval, and Review Feedback revision families |
-| `state/<lifecycle-id>/` | Minimal lifecycle control facts, current pointers, invalidations, markers, incomplete operations, and last proven gate |
-| `runs/<lifecycle-id>/` | Task Execution, Invocation, attempt, Impl Result, and Verification records |
-| `evidence/<lifecycle-id>/` | Command evidence, Git observations, and external evidence |
-| `outcomes/<lifecycle-id>/` | Immutable Human Acceptance and Summary revision families |
-| `knowledge/intakes/<intake-id>/` | Intake-scoped Failure Learning candidates and dispositions |
-| `knowledge/lifecycles/<lifecycle-id>/` | Lifecycle-scoped Failure Learning/Summary candidates and dispositions |
-| `cache/` | Rebuildable indexes, bundles, and projections; never authority |
-| `policies/` | Restricted project overrides that cannot bypass global invariants |
+| [目录归属](references/directory-ownership.md) | Family roots、路径 ownership 与 fresh scaffold 边界 |
+| [Intake 与 lifecycle 隔离](references/intake-and-lifecycle-isolation.md) | 双 authority scope、assignment gate 与 partial materialization |
+| [工件与状态模型](references/artifact-and-state-model.md) | Paired revisions、structured/operational records、最小 state 与 currentness |
+| [完成与 Intake 保留](references/completion-retention.md) | Lifecycle completion observation、target freezing 与 `dormant-read-only` |
+| [恢复与缓存](references/recovery-and-cache.md) | Direct evidence、last proven gate、恢复 reread 与 cache 非权威边界 |
 
-## Approved shape
+## 当前保证
 
-```text
-workspace/
-  intakes/<intake-id>/
-    source-events/
-    proposals/
-    decisions/
-    state/
-
-  changes/<lifecycle-id>/
-    current-request/
-    questioning/
-    plan/
-    review/
-    approval/
-    feedback/
-
-  state/<lifecycle-id>/
-    lifecycle-state
-    current-pointers/
-    invalidations/
-    markers/
-
-  runs/<lifecycle-id>/
-    task-executions/
-    invocations/
-    attempts/
-    impl-results/
-    verification-results/
-
-  evidence/<lifecycle-id>/
-    commands/
-    git-observations/
-    external-evidence/
-
-  outcomes/<lifecycle-id>/
-    acceptance/
-    summary/
-
-  knowledge/
-    intakes/<intake-id>/
-    lifecycles/<lifecycle-id>/
-```
-
-The fresh scaffold creates family roots only. It does not pre-create example Intake, lifecycle, or revision identities.
-
-## Artifact and state model
-
-Paired semantic revisions use an opaque revision directory containing one machine record and one governed Markdown document. Structured-only judgments and operational/evidence records remain separate families. A path or file does not prove authority: identity, bindings, complete materialization, completion observation, reread, immutable revision observation, and separate pointer update are required where applicable.
-
-A completed Questioning exchange is one immutable `questioning/<round-revision>/` pair. An unanswered question remains proposal/continuation state and is not a completed round.
-
-Lifecycle state stores only control facts and references: current gate and pointers, policy identity/digest, sticky flags, Execution Identity and attempt references, currentness, markers, invalidations, incomplete operations, and last proven gate. It must not copy Current Request claims, Plan content, design, Acceptance semantics, or artifact prose.
-
-## Scope isolation
-
-Request Intake and lifecycle records may reference the same immutable Source Event or assignment decision but cannot share dynamic state, Execution Identity, failure budget, continuation authority, current pointer, or completion state.
-
-A confirmed and fully materialized Intake assignment decision must exist before lifecycle creation or update. Target operations are exactly `create-lifecycle | update-current-request | no-change`. Each target has its own decision-bound continuation, materialization status, and observation. Partial success remains `open + incomplete`; successful targets remain authoritative, `remaining_target_identities` identifies unfinished work, and recovery resumes only those remaining targets without automatic rollback.
-
-## Post-completion Intake retention
-
-When a lifecycle Summary pair is fully materialized and lifecycle completion is observed, the completion observation is recorded against every immutable Intake assignment target bound to that lifecycle identity under each `intakes/<intake-id>/state/`. Each matching target binding becomes read-only without changing other targets.
-
-An assigned Intake enters derived retention mode `dormant-read-only` only after every associated lifecycle-bearing target is observed completed. Its disposition remains `assigned`; all Intake-local continuations become inactive and non-attachable. Source Events, proposals, confirmation and assignment decisions, target materialization observations, lifecycle completion observations, and historical bindings remain immutable read-only records. They are not deleted, rewritten, or used to schedule an Invocation or recover execution. Only rebuildable cache may be cleaned.
-
-While any associated lifecycle target remains incomplete, the Intake stays `active`; completed target bindings are frozen independently and cannot block, roll back, or mutate unfinished targets. A future external message never attaches to a `dormant-read-only` Intake and must create a new Intake identity.
-
-## Evidence and recovery
-
-Code, configuration, Schema, and observed executable behavior are the only current implementation fact sources. Plan, Review, Context, Specification, Summary, and Agent prose cannot substitute for direct evidence.
-
-Recovery rereads scope state, pointers, completion/incomplete markers, every required artifact component, Invocation/attempt records, and applicable Git facts to determine the last proven gate. It does not infer completion or automatically repair, roll back, merge, or continue partial writes.
-
-## Installation and runtime boundary
-
-Fresh installation must refuse an existing `.themis/` or conflicting managed target before writing. There is no upgrade, migration, or compatibility path.
-
-Plan 35 provides this scaffold and Prompt-level ownership contracts only. It does not provide an installer, validator, evaluator, recorder, digest service, deterministic writer, command runner, transaction system, lock manager, or automatic recovery runtime.
+Plan 35 只提供 scaffold 与 Prompt-level ownership contracts。Installer、validator、Policy evaluator、state recorder、digest service、deterministic writer、command runner、transaction、lock manager 与 automatic recovery runtime 当前均为 `unavailable`。

@@ -1,6 +1,6 @@
 # themis-simple-plan
 
-## 内部执行合同
+## 身份与固定绑定
 
 - Stable identity：`themis-simple-plan`。
 - Authority scope：`lifecycle`。
@@ -32,51 +32,64 @@
 
 ## 合法状态
 
-```text
-ready
-escalate-full
-blocked
-```
+| Selected path | Profile | Status | 语义 |
+|---|---|---|---|
+| `simple` | `lightweight` | `ready` | 在已证明简单边界内形成完整 unified Plan proposal |
+| `simple` | `lightweight` | `escalate-full` | 需要合同、架构、跨模块、权限、数据、状态或其他完整设计 |
+| `simple` | `lightweight` | `blocked` | 必要事实或访问条件不可获得 |
 
-- `ready`：在已证明简单边界内形成完整 unified Plan proposal。
-- `escalate-full`：需要合同、架构、跨模块、权限、数据、状态或其他完整设计。
-- `blocked`：必要事实或访问条件不可获得。
+## 输出字段合同
 
-## 输出
+Result 顶层字段固定为：`capability` = `themis-simple-plan`；`authority_scope` = `lifecycle`；`agent_profile` = `semantic-readonly`；`status` 必须是当前 `simple/lightweight` 行中的一个合法终态。
 
-```yaml
-capability: themis-simple-plan
-authority_scope: lifecycle
-agent_profile: semantic-readonly
-status: ready | escalate-full | blocked
-input_bindings:
-  lifecycle_identity: ""
-  execution_identity: ""
-  invocation_identity: ""
-  attempt_identity: ""
-  current_request_revision: ""
-  active_claim_revisions: []
-  questioning_round_revision: ""
-  complexity_assessment_reference: ""
-  implementation_baseline: ""
-  policy_identity: ""
-  policy_digest: ""
-  continuation_identity: ""
-  selected_path: simple
-  profile: lightweight
-output:
-  structured_result:
-    plan_content: ""
-    coverage_summary: []
-    not_applicable_evidence: []
-  proposed_artifact_references: []
-  materialization_target: plan-pair
-diagnostics:
-  gaps: []
-  evidence: []
-  affected_semantics: [plan]
-recommended_route: plan-check | set-full-path-required | request-unblock
-```
+### Input bindings
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `lifecycle_identity` | 必填 | current lifecycle identity |
+| `execution_identity` | 必填 | lifecycle scope-local Execution Identity |
+| `invocation_identity` | 必填 | 本次 Invocation identity |
+| `attempt_identity` | 必填 | 本次 attempt identity |
+| `current_request_revision` | 必填 | current Current Request revision |
+| `active_claim_revisions` | 必填 | active confirmed claims |
+| `questioning_round_revision` | 必填 | current completed Questioning round |
+| `complexity_assessment_reference` | 必填 | current `simple-qualified` Assessment |
+| `implementation_baseline` | 必填 | direct implementation baseline reference |
+| `policy_identity` | 必填 | `themis-core-control` |
+| `policy_digest` | 必填 | 已加载 Policy digest reference |
+| `continuation_identity` | 必填 | current simple-planning continuation |
+| `review_feedback_revision` | Review owner re-entry 时必填 | exact Review Feedback revision；普通 Simple Planning 时为 `null` |
+| `review_feedback_owner_continuation_reference` | Review owner re-entry 时必填 | Feedback record 保存的 `simple-planning` owner continuation reference；普通 Simple Planning 时为 `null` |
+| `selected_path` | 必填 | 固定 `simple` |
+| `profile` | 必填 | 固定 `lightweight` |
+
+### Structured result
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `plan_content` | `ready` 时必填 | 完整 unified Plan content proposal |
+| `coverage_summary` | 必填 | source/claim/acceptance coverage map |
+| `not_applicable_evidence` | 必填 | deep-design 项不适用的直接证据 |
+
+### Artifact refs 与 materialization
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `proposed_artifact_references` | 必填 | Plan proposal references，可为空 |
+| `materialization_target` | 必填 | 固定 `plan-pair` |
+
+### Diagnostics 与 recommended route
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `gaps` | 必填 | Plan/evidence gaps，可为空 |
+| `evidence` | 必填 | Assessment、Grounding 与 implementation evidence refs |
+| `affected_semantics` | 必填 | 固定 `plan` |
+| `recommended_route` | 必填 | advisory `plan-check | set-full-path-required | request-unblock` |
+
+## Review Feedback owner re-entry
+
+当本 Invocation 来自 Review Feedback 的 `simple-planning` continuation 时，result 必须原样保留 exact Feedback revision 与 owner continuation binding。只有 `ready` Plan pair 完整物化、重读并成为 current 后，control layer 才可另行记录 resolution observation；Capability 不得自行标记 resolved 或修改 unresolved set。`escalate-full`、`blocked`、Plan proposal 或文件存在不能关闭 Feedback。
 
 ## 权限与边界
 

@@ -8,8 +8,8 @@ Knowledge receives governed candidates produced by failure and completion flows.
 
 - `themis-failure-learning`: proposes a scope-bound candidate after every counted failure and after an explicitly linked later success.
 - `themis-summary`: may propose optional project-experience or project-knowledge changes after delivery completion.
-- `core/templates/failure-learning.yaml` and `failure-learning.md`: paired immutable candidate structure.
-- `core/templates/context-summary.md`: source-supported candidate structure for separate governance.
+- `core/templates/failure-learning/record.md` and `content.md`: paired immutable candidate structure.
+- `core/templates/context/summary.md`: source-supported candidate structure for separate governance.
 
 ## Scope and failure boundary
 

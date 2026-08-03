@@ -1,6 +1,6 @@
 # themis-review-dialogue
 
-## 内部执行合同
+## 身份与固定绑定
 
 - Stable identity：`themis-review-dialogue`。
 - Authority scope：`lifecycle`。
@@ -37,68 +37,84 @@
 
 ## 合法状态
 
-```text
-continue
-approved
-needs-current-request
-needs-questioning
-needs-simple-planning
-needs-planning
-needs-specification
-needs-grounding
-escalate-full
-```
+| Selected path | Profile | Status | 语义 |
+|---|---|---|---|
+| `simple` | `lightweight` | `continue` | 继续展示或等待明确反馈 |
+| `simple` | `lightweight` | `approved` | 用户明确批准完整 current subject，只形成 Approval proposal |
+| `simple` | `lightweight` | `needs-current-request` | source-bound claim 或 lifecycle assignment 语义改变 |
+| `simple` | `lightweight` | `needs-questioning` | Why、impact、expected result 或 abstract What 有缺口 |
+| `simple` | `lightweight` | `needs-simple-planning` | simple Plan 需重建 |
+| `simple` | `lightweight` | `needs-planning` | 技术设计需完整 Planning |
+| `simple` | `lightweight` | `needs-specification` | 需求合同需 Specification refinement |
+| `simple` | `lightweight` | `needs-plan-check` | current Plan 保持不变，独立 Plan Check 需重建 |
+| `simple` | `lightweight` | `needs-review-projection` | current checked Plan 保持不变，Review Projection 需重建 |
+| `simple` | `lightweight` | `needs-grounding` | 已分类 owner 需要直接事实 |
+| `simple` | `lightweight` | `escalate-full` | 发现隐藏复杂度并设置 sticky upgrade |
+| `full` | `full` | `continue` | 继续展示或等待明确反馈 |
+| `full` | `full` | `approved` | 用户明确批准完整 current subject，只形成 Approval proposal |
+| `full` | `full` | `needs-current-request` | source-bound claim 或 lifecycle assignment 语义改变 |
+| `full` | `full` | `needs-questioning` | Why、impact、expected result 或 abstract What 有缺口 |
+| `full` | `full` | `needs-planning` | 技术设计需重建 |
+| `full` | `full` | `needs-specification` | 需求合同需 refinement |
+| `full` | `full` | `needs-plan-check` | current Plan 保持不变，独立 Plan Check 需重建 |
+| `full` | `full` | `needs-review-projection` | current checked Plan 保持不变，Review Projection 需重建 |
+| `full` | `full` | `needs-grounding` | 已分类 owner 需要直接事实 |
 
-- `continue`：需要继续展示或等待明确反馈。
-- `approved`：用户明确批准完整 current subject，只形成 Approval proposal。
-- `needs-current-request`：反馈改变 source-bound claim 或 lifecycle assignment 语义，owner 为 Current Request Dialogue。
-- `needs-questioning`：反馈暴露 Why、impact、expected result 或 abstract What 缺口，owner 为 `themis-q`。
-- 其余返工状态形成 source-bound Review Feedback proposal，并分类到真实 semantic owner。
-- `needs-grounding` 只请求 owner 所需事实证据；`affected_owner` 仍必须是 approved semantic owner，不能是 Grounding。
-- `needs-simple-planning`/`escalate-full` 只在 simple 且 sticky upgrade 未设置时合法；full path 不得返回。
+Full path 不得返回 `needs-simple-planning` 或 `escalate-full`。除 `continue`/`approved` 外，返工先形成 source-bound Review Feedback proposal。`needs-plan-check` 只能绑定 `affected_owner: plan-check`，`needs-review-projection` 只能绑定 `affected_owner: review-projection`；其他 owner-specific status 也必须与对应 `affected_owner` 唯一一致。`needs-grounding` 的 `affected_owner` 仍是七个 semantic owner 之一，不能是 Grounding。
 
-## 输出
+## 输出字段合同
 
-```yaml
-capability: themis-review-dialogue
-authority_scope: lifecycle
-agent_profile: human-dialogue
-status: <legal dialogue status>
-input_bindings:
-  lifecycle_identity: ""
-  execution_identity: ""
-  invocation_identity: ""
-  attempt_identity: ""
-  current_request_revision: ""
-  questioning_round_revision: ""
-  plan_revision: ""
-  review_revision: ""
-  review_check_reference: ""
-  user_source_event_references: []
-  unresolved_feedback_references: []
-  policy_identity: ""
-  policy_digest: ""
-  continuation_identity: ""
-  selected_path: simple | full
-  profile: lightweight | full
-output:
-  structured_result:
-    presented_sections: []
-    expanded_plan_locations: []
-    preserved_user_feedback: []
-    classified_impact: ""
-    affected_owner: current-request-dialogue | questioning | specification | simple-planning | planning | plan-check | review-projection | null
-    owner_continuation: null
-    approval_subject: null
-    approval_decision_source_event_reference: null
-  proposed_artifact_references: []
-  materialization_target: review-dialogue-continuation | review-feedback-pair | review-approval-pair
-diagnostics:
-  gaps: []
-  evidence: []
-  affected_semantics: []
-recommended_route: continue-review | record-approval | return-to-owner | set-full-path-required
-```
+Result 顶层字段固定为：`capability` = `themis-review-dialogue`；`authority_scope` = `lifecycle`；`agent_profile` = `human-dialogue`；`status` 必须是当前 selected path/profile 行中的一个合法终态。
+
+### Input bindings
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `lifecycle_identity` | 必填 | current lifecycle identity |
+| `execution_identity` | 必填 | lifecycle scope-local Execution Identity |
+| `invocation_identity` | 必填 | human-dialogue Invocation identity |
+| `attempt_identity` | 必填 | dialogue attempt identity |
+| `current_request_revision` | 必填 | current Current Request revision |
+| `questioning_round_revision` | 必填 | current completed Questioning round |
+| `plan_revision` | 必填 | current checked Plan revision |
+| `review_revision` | 必填 | 用户实际看到的 current Review Projection revision |
+| `review_check_reference` | 必填 | current `pass` Review Check reference |
+| `user_source_event_references` | feedback/approval 时必填 | 经 Intake interception 的 Source Event refs |
+| `unresolved_feedback_references` | 必填 | unresolved feedback set，可为空 |
+| `policy_identity` | 必填 | `themis-core-control` |
+| `policy_digest` | 必填 | 已加载 Policy digest reference |
+| `continuation_identity` | 必填 | current Review Dialogue continuation |
+| `selected_path` | 必填 | `simple | full`，与 Profile 锁定 |
+| `profile` | 必填 | `lightweight | full`，与 selected path 锁定 |
+
+### Structured result
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `presented_sections` | 必填 | 实际呈现的 Review sections |
+| `expanded_plan_locations` | 必填 | 按需展开的 Plan locations，可为空 |
+| `preserved_user_feedback` | feedback 时必填 | exact Source Event fragments |
+| `classified_impact` | feedback 时必填 | affected semantics 与 invalidation projection |
+| `affected_owner` | 返工时必填 | `current-request-dialogue | questioning | specification | simple-planning | planning | plan-check | review-projection`；否则 `null` |
+| `owner_continuation` | 返工时必填 | durable owner continuation；否则 `null` |
+| `approval_subject` | `approved` 时必填 | 完整 current Plan/Projection/Checks subject；否则 `null` |
+| `approval_decision_source_event_reference` | `approved` 时必填 | 明确 approval Source Event；否则 `null` |
+
+### Artifact refs 与 materialization
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `proposed_artifact_references` | 必填 | dialogue/Feedback/Approval proposal refs，可为空 |
+| `materialization_target` | 必填 | `review-dialogue-continuation | review-feedback-pair | review-approval-pair` |
+
+### Diagnostics 与 recommended route
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `gaps` | 必填 | dialogue/binding gaps，可为空 |
+| `evidence` | 必填 | Plan、Projection、Check 与 Source Event refs |
+| `affected_semantics` | 必填 | 受影响语义列表，可为空 |
+| `recommended_route` | 必填 | advisory `continue-review | record-approval | return-to-owner | set-full-path-required` |
 
 ## 权限与边界
 
@@ -111,5 +127,5 @@ recommended_route: continue-review | record-approval | return-to-owner | set-ful
 
 - Review Check 非 current `pass`、unresolved feedback 非空却申请批准，或 bindings stale 时停止。
 - 模糊肯定、沉默、遗漏或历史消息不得产生 `approved`。
-- owner 无法从 closed set 确定时不得返回返工状态。
+- owner 无法从 closed set 确定，或 owner-specific status 与 `affected_owner` 不唯一一致时不得返回返工状态。
 - 工具、结果合同或 Invocation 失败属于 counted failure；external drift 单独 stop-and-revalidate。

@@ -1,6 +1,6 @@
 # themis-complexity-assessment
 
-## 内部执行合同
+## 身份与固定绑定
 
 - Stable identity：`themis-complexity-assessment`。
 - Authority scope：`lifecycle`。
@@ -29,48 +29,55 @@
 
 ## 合法状态
 
-```text
-simple-qualified
-full-required
-blocked
-```
+| Selected path | Profile | Status | 语义 |
+|---|---|---|---|
+| `null` | `null` | `simple-qualified` | 全部简单条件均有直接证据且结论为 simple |
+| `null` | `null` | `full-required` | 任一条件 non-simple、uncertain 或缺少直接证据 |
+| `null` | `null` | `blocked` | 必要读取权限、环境或外部条件不可获得 |
 
-- `simple-qualified`：全部条件均有直接证据且结论为 simple。
-- `full-required`：任一条件 non-simple、uncertain 或缺少直接证据。
-- `blocked`：必要读取权限、环境或外部条件不可获得。
+## 输出字段合同
 
-## 输出
+Result 顶层字段固定为：`capability` = `themis-complexity-assessment`；`authority_scope` = `lifecycle`；`agent_profile` = `semantic-readonly`；`status` 必须是当前 `null/null` 行中的一个合法终态。
 
-```yaml
-capability: themis-complexity-assessment
-authority_scope: lifecycle
-agent_profile: semantic-readonly
-status: simple-qualified | full-required | blocked
-input_bindings:
-  lifecycle_identity: ""
-  execution_identity: ""
-  invocation_identity: ""
-  attempt_identity: ""
-  current_request_revision: ""
-  questioning_round_revision: ""
-  grounding_references: []
-  policy_identity: ""
-  policy_digest: ""
-  continuation_identity: ""
-  selected_path: null
-  profile: null
-output:
-  structured_result:
-    criteria: []
-    full_requirement_reasons: []
-  proposed_artifact_references: []
-  materialization_target: complexity-assessment-structured-record
-diagnostics:
-  gaps: []
-  evidence: []
-  affected_semantics: [path_selection]
-recommended_route: simple-plan | full-path | request-unblock
-```
+### Input bindings
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `lifecycle_identity` | 必填 | current lifecycle identity |
+| `execution_identity` | 必填 | lifecycle scope-local Execution Identity |
+| `invocation_identity` | 必填 | 本次 Invocation identity |
+| `attempt_identity` | 必填 | 本次 attempt identity |
+| `current_request_revision` | 必填 | current Current Request revision |
+| `questioning_round_revision` | 必填 | current completed Questioning round |
+| `grounding_references` | 必填 | Grounding/direct implementation evidence，可为空但不得隐藏 unknown |
+| `policy_identity` | 必填 | `themis-core-control` |
+| `policy_digest` | 必填 | 已加载 Policy digest reference |
+| `continuation_identity` | 必填 | current assessment continuation |
+| `selected_path` | 必填 | 固定 `null` |
+| `profile` | 必填 | 固定 `null` |
+
+### Structured result
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `criteria` | 必填 | 每项简单条件、证据与结论 |
+| `full_requirement_reasons` | 必填 | full/unknown reasons；simple 时可为空 |
+
+### Artifact refs 与 materialization
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `proposed_artifact_references` | 必填 | proposal references，可为空 |
+| `materialization_target` | 必填 | 固定 `complexity-assessment-structured-record` |
+
+### Diagnostics 与 recommended route
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `gaps` | 必填 | evidence gaps，可为空 |
+| `evidence` | 必填 | direct evidence references |
+| `affected_semantics` | 必填 | 固定 `path_selection` |
+| `recommended_route` | 必填 | advisory `simple-plan | full-path | request-unblock` |
 
 ## 权限与边界
 

@@ -1,6 +1,6 @@
 # themis-review-check
 
-## 内部执行合同
+## 身份与固定绑定
 
 - Stable identity：`themis-review-check`。
 - Authority scope：`lifecycle`。
@@ -29,45 +29,58 @@
 
 ## 合法状态
 
-```text
-pass
-needs-projection
-```
+| Selected path | Profile | Status | 语义 |
+|---|---|---|---|
+| `simple` | `lightweight` | `pass` | Projection 的 fidelity、traceability 与 presentation burden 合格 |
+| `simple` | `lightweight` | `needs-projection` | 只需重新生成 Projection，不修改 Plan |
+| `full` | `full` | `pass` | Projection 的 fidelity、traceability 与 presentation burden 合格 |
+| `full` | `full` | `needs-projection` | 只需重新生成 Projection，不修改 Plan |
 
-`needs-projection` 只允许重新生成 projection，不得修改 Plan。
+旧状态 `passed` 与 `blocked` 非法；缺少 evidence 时停止，Invocation/tool/result failure 进入 counted invalid-result，不能包装成合法状态。
 
-## 输出
+## 输出字段合同
 
-```yaml
-capability: themis-review-check
-authority_scope: lifecycle
-agent_profile: independent-checker
-status: pass | needs-projection
-input_bindings:
-  lifecycle_identity: ""
-  execution_identity: ""
-  invocation_identity: ""
-  attempt_identity: ""
-  current_request_revision: ""
-  plan_revision: ""
-  plan_check_reference: ""
-  review_revision: ""
-  policy_identity: ""
-  policy_digest: ""
-  continuation_identity: ""
-  selected_path: simple | full
-  profile: lightweight | full
-output:
-  structured_result:
-    checks: []
-  proposed_artifact_references: []
-  materialization_target: review-check-structured-record
-diagnostics:
-  gaps: []
-  evidence: []
-  affected_semantics: [review_projection]
-recommended_route: human-review | regenerate-projection
-```
+Result 顶层字段固定为：`capability` = `themis-review-check`；`authority_scope` = `lifecycle`；`agent_profile` = `independent-checker`；`status` 必须是当前 selected path/profile 行中的一个合法终态。
+
+### Input bindings
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `lifecycle_identity` | 必填 | current lifecycle identity |
+| `execution_identity` | 必填 | lifecycle scope-local Execution Identity |
+| `invocation_identity` | 必填 | independent checker Invocation identity |
+| `attempt_identity` | 必填 | checker attempt identity |
+| `current_request_revision` | 必填 | current Current Request revision |
+| `plan_revision` | 必填 | current checked Plan revision |
+| `plan_check_reference` | 必填 | current `pass` Plan Check reference |
+| `review_revision` | 必填 | current Review Projection revision |
+| `policy_identity` | 必填 | `themis-core-control` |
+| `policy_digest` | 必填 | 已加载 Policy digest reference |
+| `continuation_identity` | 必填 | current Review Check continuation |
+| `selected_path` | 必填 | `simple | full`，与 Profile 锁定 |
+| `profile` | 必填 | `lightweight | full`，与 selected path 锁定 |
+
+### Structured result
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `checks` | 必填 | fidelity、traceability、presentation burden 与 projection-map checks |
+
+### Artifact refs 与 materialization
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `proposed_artifact_references` | 必填 | Review Check proposal refs，可为空 |
+| `materialization_target` | 必填 | 固定 `review-check-structured-record` |
+
+### Diagnostics 与 recommended route
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `gaps` | 必填 | projection check gaps，可为空 |
+| `evidence` | 必填 | Plan/Projection/map evidence refs |
+| `affected_semantics` | 必填 | 固定 `review_projection` |
+| `recommended_route` | 必填 | advisory `human-review | regenerate-projection` |
 
 ## 权限与边界
 

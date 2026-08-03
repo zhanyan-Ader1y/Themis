@@ -1,6 +1,6 @@
 # Plan 37：Native Runtime
 
-> 状态：暂停。等待 replacement Plan 35 重新接受、Plan 36 完整重基线并实施接受后，再对本文重基线并由用户单独确认。依赖满足不构成实施授权；以下正文仅作为未来设计输入。
+> 状态：暂停。等待 Markdown-first replacement Plan 35 完成新证据与用户明确重新接受、Plan 36 完整重基线并实施接受后，再对本文重基线并由用户单独确认。正文中的 `transitions.yaml` parse、strict YAML Schema 等 runtime 假设已经失效，只作为未来重设计输入；依赖满足不构成实施授权，本次不逐段修补或开始 Plan 37 实现。
 
 ## 1. 目标
 

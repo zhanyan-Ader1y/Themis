@@ -28,18 +28,18 @@ external user message
 
 ```text
 one public themis Skill
-→ one always-loaded Global Control Rule
-→ one transitions.yaml across request-intake and lifecycle
+→ one always-loaded Global Control Rule with on-demand references
+→ one Markdown Policy package
 → one internal Capability + fixed Agent Profile
 → one temporary Invocation in one authority scope
 → proposed Capability result
-→ exactly one legal route and declared control action
-→ observed materialization, reread, and pointer update
+→ exactly one applicable natural-language control rule
+→ complete record/content materialization, reread, and pointer update
 ```
 
 - [`../.claude/skills/themis/SKILL.md`](../.claude/skills/themis/SKILL.md) 是唯一公共 Themis 入口，负责运输消息与 durable continuation，不拥有语义判断或路由。
-- [`core/kernel/orchestrator/rules.md`](core/kernel/orchestrator/README.md) 是唯一常驻 Rule，通用解释 policy 并协调双作用域。
-- [`core/policies/transitions.yaml`](core/policies/README.md) 是 route/control、固定 Profile/scope、guards、invalidation 和失败控制的唯一声明源。
+- [`core/kernel/orchestrator/rules.md`](core/kernel/orchestrator/README.md) 是唯一常驻 Rule，按 durable gate 加载通用 references，并协调双作用域。
+- [`core/policies/README.md`](core/policies/README.md) 与其 references 共同构成 route/control、固定 Profile/scope、guards、invalidation 和失败控制的唯一自然语言 Policy。
 - [`core/capabilities`](core/capabilities/README.md) 中十六个内部 Capability 分别拥有一个 proposed semantic judgment；它们不是公共 Skills。
 - [`core/agent-profiles`](core/agent-profiles/README.md) 中四个固定 Profile 只约束工具、权限与隔离；没有 governance writer。
 - 一次 Invocation 只执行一个 Capability，Capability/Agent 不得嵌套调度，也不存在持久 Agent、共享 authority、投票或共识。
@@ -69,7 +69,7 @@ one public themis Skill
 
 ## Artifact 与 Workspace
 
-所有逻辑 artifacts 使用 immutable revision；需要人类语义的 family 使用 machine record + Markdown paired revision，current pointer 独立保存。任一 component 缺失或 identity/digest/scope/bindings 不一致时，整个 revision invalid。
+所有逻辑 artifacts 使用 immutable revision；需要人类语义的 family 使用同一 revision 下的 Markdown control `record.md` 与 governed `content.md`，current pointer 独立保存。任一 component 缺失或 identity/digest/scope/bindings 不一致时，整个 revision invalid。
 
 ```text
 workspace/intakes/<intake-id>/       Source Events、proposals、decisions、state

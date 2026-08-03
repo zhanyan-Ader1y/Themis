@@ -12,12 +12,12 @@ Planning creates the single persistent Plan family from confirmed source-bound c
 
 ## Unified Plan
 
-Each Plan revision is a paired immutable artifact:
+Each Plan revision is a paired immutable Markdown artifact:
 
 ```text
 workspace/changes/<lifecycle-id>/plan/<plan-revision>/
-  plan.yaml
-  plan.md
+  record.md
+  content.md
 ```
 
 It binds Current Request claims, Questioning, design constraints, Grounding/Assessment, selected path/profile, and direct implementation evidence. Its governed content covers scope and core flow, behavior/contracts/acceptance, implementation facts and assumptions, technical design and trade-offs, impact/failure/recovery boundaries, dependency-ready Impl/Verification tasks, done conditions, evidence, and source-category coverage.

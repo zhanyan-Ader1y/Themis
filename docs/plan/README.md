@@ -1,6 +1,6 @@
 # Themis 活动实施计划
 
-`docs/plan/**` 只保存尚待实施或验收的活动计划。当前跨模块权威设计位于 `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md`；模块详细合同与模板状态位于 `templates/.themis/**/README.md`。本目录不建立第二套产品规范。
+`docs/plan/**` 只保存尚待实施或验收的活动计划。Plan 35 的 2026-07-31 replacement 产品语义位于 `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md`；Markdown authority cutover、新静态证据、十六场景人工 replay 与 criteria 1–31 重映射已完成，criterion 32 仍等待用户明确重新接受。模块详细合同与模板状态位于 `templates/.themis/**/README.md`。本目录不建立第二套产品规范。
 
 ## 授权规则
 
@@ -8,14 +8,14 @@
 - 一个计划的批准不自动批准依赖或后续计划。
 - 实施发现 current authority 需要变化时，先更新设计并重新批准。
 - 未观察真实验证输出前不得宣称完成。
-- Plan 35 已于 2026-07-31 完成实现、静态核验、人工 replay 和用户明确重新接受，现为 current authority。
+- Plan 35 于 2026-07-31 完成当时 YAML 表示下的实现、核验和明确重新接受；该事实作为历史基线保留。当前 Markdown-first 表示迁移已完成新静态核验、人工 replay 与 criteria 1–31 重映射，但 criterion 32 仍等待用户明确重新接受，因此不得据此启动 Plan 36/37。
 
 ## 活动队列
 
 | 顺序 | 计划 | 依赖 | 定位 | 状态 |
 |---|---|---|---|---|
-| 35 | [Core Contract Replacement](35-core-prompt-flow/impl.md) | 无 | Intake-first 双作用域控制、十六个 Capability、不可变工件与 Prompt-level replay | 已实施、核验并重新接受；current authority |
-| 36 | [Deterministic Assurance](36-deterministic-assurance/impl.md) | replacement Plan 35 已重新接受 | strict contracts、validator、canonicalization 与 fixtures；无副作用 | 暂停，待完整重基线和单独批准 |
+| 35 | [Core Contract Replacement](35-core-prompt-flow/impl.md) | 无 | Intake-first 双作用域控制、十六个 Capability、不可变工件与 Prompt-level replay | Cutover、静态证据、replay 与 criteria 1–31 已完成；criterion 32 等待用户重新接受 |
+| 36 | [Deterministic Assurance](36-deterministic-assurance/impl.md) | Markdown-first replacement Plan 35 已重新接受 | strict contracts、validator、canonicalization 与 fixtures；无副作用 | 暂停，待 Plan 35 criterion 32 通过后完整重基线和单独批准 |
 | 37 | [Native Runtime](37-native-runtime/impl.md) | 重基线后的 Plan 36 已实施并接受 | policy evaluator、temporary invocation、recorder 与 minimal write safety | 暂停，待 Plan 36 |
 | 80 | [Multi-Agent Execution](80-multi-agent-execution/impl.md) | 可选；启动时重基线 | optional worker topology | 待单独确认，非阻塞 |
 | 90 | [Attribution Analytics](90-attribution-analytics/impl.md) | 可选；启动时重基线 | post-delivery attribution/outcome analysis | 待单独确认，非阻塞 |
@@ -23,7 +23,8 @@
 ## 依赖
 
 ```text
-replacement Plan 35 implementation, evidence, and explicit re-acceptance complete
+replacement Plan 35 historical product semantics retained
+→ Markdown-first representation cutover, evidence rebuild, and explicit re-acceptance
 → full Plan 36 rebaseline and separate approval
 → Plan 36 implementation and acceptance
 → Plan 37 rebaseline and separate approval
@@ -62,22 +63,22 @@ external message
 - Specification 是 full-path temporary handoff，不持久化为 authority。
 - 当前代码、配置、Schema 和 observed executable behavior 是当前实现事实的唯一来源。
 
-## 统一控制模型
+## 当前控制模型
 
 ```text
 one public themis Skill
-→ one Global Control Rule
-→ one transitions.yaml across request-intake and lifecycle scopes
+→ one Global Control Rule with on-demand references
+→ one Markdown Policy package across request-intake and lifecycle scopes
 → one internal Capability + fixed Agent Profile
 → one temporary Invocation
 → proposed Capability Invocation Result
-→ exactly one legal route
+→ exactly one applicable natural-language control rule
 → complete materialization + observed reread
 → immutable revision and separate current pointer
 ```
 
 - Capability 拥有一个语义判断；Profile 拥有权限与隔离合同。
-- Global Rule 只解释 policy、协调 bindings、materialization、invalidation、failure control 和 recorded-state recovery。
+- Global Rule 只解释 Policy、协调 bindings、materialization、invalidation、failure control 和 recorded-state recovery。
 - 文件存在、Markdown、Agent summary 或 proposed result 不构成 authority。
 - Workspace 按 Intake 或 lifecycle identity 保存实际记录。
 
@@ -85,7 +86,7 @@ one public themis Skill
 
 ### Plan 36
 
-基于已重新接受的 replacement Plan 35 完整重基线，再定义 strict Schema、canonicalization、validation issue、semantic oracle 和 accepted/rejected fixtures。Plan 36 不执行 transition、调用 Agent、写状态、运行项目命令或修改实现。
+等待 replacement Plan 35 的当前 Markdown-first 证据获得用户明确重新接受后，再基于该 authority 完整重基线并单独审阅 Plan 36。Plan 36 只定义 strict Schema、canonicalization、validation issue、semantic oracle 和 accepted/rejected fixtures，不执行 transition、调用 Agent、写状态、运行项目命令或修改实现。
 
 ### Plan 37
 

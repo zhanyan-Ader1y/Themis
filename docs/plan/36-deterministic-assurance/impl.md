@@ -1,6 +1,6 @@
 # Plan 36：Deterministic Assurance
 
-> 状态：暂停，等待完整重基线和单独批准。replacement Plan 35 已于 2026-07-31 明确重新接受并恢复 current authority；以下正文仍只作为重基线输入，不代表当前可实施需求。
+> 状态：暂停，等待 Markdown-first replacement Plan 35 完成新静态证据、人工 replay 和用户明确重新接受后，再完整重基线并由用户单独批准。本文正文中的 `transitions.yaml`、strict YAML Schema、十五个 Capability 等假设已被当前十六 Capability 与自然语言 Policy 架构取代，只作为历史设计输入，不代表当前可实施需求；本次不逐段修补或开始 Plan 36 实现。
 
 ## 1. 目标
 

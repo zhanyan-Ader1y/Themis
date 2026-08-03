@@ -1,6 +1,6 @@
 # themis-spec
 
-## 内部执行合同
+## 身份与固定绑定
 
 - Stable identity：`themis-spec`。
 - Authority scope：`lifecycle`。
@@ -31,51 +31,63 @@ Specification 对事实的转述、结论或假设不是当前实现事实。
 
 ## 合法状态
 
-```text
-ready
-needs-questioning
-needs-grounding
-blocked
-```
+| Selected path | Profile | Status | 语义 |
+|---|---|---|---|
+| `full` | `null` | `ready` | 返回完整 replacement handoff |
+| `full` | `null` | `needs-questioning` | Why 或 abstract What 仍有真实缺口 |
+| `full` | `null` | `needs-grounding` | 需要直接实现事实，一次返回全部事实请求 |
+| `full` | `null` | `blocked` | 事实、权限或来源无法获得 |
 
-- `ready`：返回完整 replacement handoff。
-- `needs-questioning`：Why 或 abstract What 仍有真实缺口。
-- `needs-grounding`：需要直接实现事实，一次返回全部事实请求。
-- `blocked`：事实、权限或来源无法获得。
+## 输出字段合同
 
-## 输出
+Result 顶层字段固定为：`capability` = `themis-spec`；`authority_scope` = `lifecycle`；`agent_profile` = `semantic-readonly`；`status` 必须是当前 `full/null` 行中的一个合法终态。
 
-```yaml
-capability: themis-spec
-authority_scope: lifecycle
-agent_profile: semantic-readonly
-status: ready | needs-questioning | needs-grounding | blocked
-input_bindings:
-  lifecycle_identity: ""
-  execution_identity: ""
-  invocation_identity: ""
-  attempt_identity: ""
-  current_request_revision: ""
-  active_claim_revisions: []
-  questioning_round_revision: ""
-  policy_identity: ""
-  policy_digest: ""
-  continuation_identity: ""
-  selected_path: full
-  profile: null
-output:
-  structured_result:
-    handoff: ""
-    fact_requests: []
-    request_conflicts: []
-  proposed_artifact_references: []
-  materialization_target: temporary-specification-handoff
-diagnostics:
-  gaps: []
-  evidence: []
-  affected_semantics: [requirement_refinement]
-recommended_route: planning | questioning | grounding | request-unblock
-```
+### Input bindings
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `lifecycle_identity` | 必填 | current lifecycle identity |
+| `execution_identity` | 必填 | lifecycle scope-local Execution Identity |
+| `invocation_identity` | 必填 | 本次 Invocation identity |
+| `attempt_identity` | 必填 | 本次 attempt identity |
+| `current_request_revision` | 必填 | current Current Request revision |
+| `active_claim_revisions` | 必填 | active confirmed claims |
+| `questioning_round_revision` | 必填 | current completed Questioning round |
+| `policy_identity` | 必填 | `themis-core-control` |
+| `policy_digest` | 必填 | 已加载 Policy digest reference |
+| `continuation_identity` | 必填 | current specification continuation |
+| `review_feedback_revision` | Review owner re-entry 时必填 | exact Review Feedback revision；普通 Specification 时为 `null` |
+| `review_feedback_owner_continuation_reference` | Review owner re-entry 时必填 | Feedback record 保存的 `specification` owner continuation reference；普通 Specification 时为 `null` |
+| `selected_path` | 必填 | 固定 `full` |
+| `profile` | 必填 | 固定 `null` |
+
+### Structured result
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `handoff` | `ready` 时必填 | non-authoritative temporary Specification handoff |
+| `fact_requests` | `needs-grounding` 时必填 | 一次返回的全部直接事实请求；否则可为空 |
+| `request_conflicts` | 必填 | Current Request/handoff conflicts，可为空 |
+
+### Artifact refs 与 materialization
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `proposed_artifact_references` | 必填 | raw result/proposal refs，可为空 |
+| `materialization_target` | 必填 | 固定 `temporary-specification-handoff`；不创建 semantic artifact/current pointer |
+
+### Diagnostics 与 recommended route
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `gaps` | 必填 | requirement/fact gaps，可为空 |
+| `evidence` | 必填 | Current Request、Questioning 与 Grounding refs |
+| `affected_semantics` | 必填 | 固定 `requirement_refinement` |
+| `recommended_route` | 必填 | advisory `planning | questioning | grounding | request-unblock` |
+
+## Review Feedback owner re-entry
+
+当本 Invocation 来自 Review Feedback 的 `specification` continuation 时，result 必须原样保留 exact Feedback revision 与 owner continuation binding。只有 `ready` temporary handoff result evidence 完整记录并重读后，control layer 才可另行记录 resolution observation；Capability 不得自行标记 resolved 或修改 unresolved set。`needs-questioning`、`needs-grounding`、`blocked` 或 handoff 草稿不能关闭 Feedback。
 
 ## 权限与边界
 

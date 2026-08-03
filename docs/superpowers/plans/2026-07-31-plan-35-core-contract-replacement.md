@@ -1,5 +1,7 @@
 # Plan 35 Core Contract Replacement Implementation Plan
 
+> **历史表示说明：** 本执行记录仅作为历史保留。其 YAML Policy/工件表示与 Python 检查指令已由 `2026-08-01-plan-35-markdown-contract-refactor.md` 取代，不是当前实施 guidance。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the invalidated lifecycle-first Plan 35 contracts with the approved Intake-first, dual-authority, sixteen-Capability Prompt contract and produce static and manual-replay evidence for user re-acceptance.

@@ -1,10 +1,12 @@
 # Plan 35：Core Contract Replacement 实施计划
 
-> 状态：replacement 设计、包含 Intake `dormant-read-only` 休眠合同的 Prompt/template/policy/Workspace implementation、静态核验、十六类人工 replay 与验收审计均已完成；用户已于 2026-07-31 明确重新接受，Plan 35 current authority 已恢复。
+> 状态：用户曾于 2026-07-31 明确重新接受 replacement Plan 35，其产品语义继续作为本次表示重构的输入；2026-08-01 生效的 Markdown-first 规则使当时的 YAML 表示与旧核验证据不再足以证明当前合规。Markdown authority cutover、新静态证据、十六场景人工 replay 与 criteria 1–31 重映射已完成；criterion 32 保持 `PENDING USER RE-ACCEPTANCE`，Plan 36/37 继续暂停。
+
+> 本次只重构表示与加载粒度，不重新设计 Intake、Capability、Review、Verify、Failure Learning、Workspace 或 lifecycle。2026-07-31 的重新接受仍是历史事实，不得改写为从未发生。
 
 ## 1. 权威设计
 
-当前唯一 Plan 35 产品设计是：
+本次 Markdown 表示重构的唯一 Plan 35 产品语义输入是：
 
 - `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md`
 
@@ -32,16 +34,18 @@ external user message
 
 Plan 35 只提供 Prompt-level 产品合同、模板结构、声明式政策和人工可重放语义，不提供 strict machine enforcement。
 
-## 3. 固定架构
+## 3. Markdown-first 固定架构
+
+本节记录保持不变的 2026-07-31 产品语义及完成 cutover 后的活动表示：
 
 - 一个公共 `themis` Skill；
-- 一个常驻 Global Control Rule；
-- 一个 `transitions.yaml`；
+- 一个常驻 Global Control Rule 与六个按 durable gate 加载的 references；
+- 一个由 `templates/.themis/core/policies/README.md` 与 references 组成的自然语言 Policy；
 - 两个隔离 authority scope：`request-intake`、`lifecycle`；
 - 十六个固定 Capability；
 - 四个固定 Agent Profile；
 - route key 保持 `capability + selected_path + profile + status`；
-- Capability Invocation Result 始终是 proposal，只有 policy control action 完整持久化、记录完成观察、重读并更新独立 current pointer 后才形成 authority。
+- Capability Invocation Result 始终是 proposal，只有 Policy control action 完整持久化、记录完成观察、重读并更新独立 current pointer 后才形成 authority。
 
 两个 scope 只能通过 stable references 关联，不能共享 Execution Identity、failure budget、continuation、current pointer、completion state 或动态状态。
 
@@ -93,22 +97,22 @@ Current Request 由 user-confirmed、source-bound claims 组成。claim revision
 
 ## 6. Immutable artifacts 与 Workspace
 
-Paired semantic artifact 使用不可变 revision：
+Paired semantic artifact 使用同一不可变 revision 下的两个 Markdown components：
 
 ```text
 <artifact-family>/<opaque-revision-id>/
-  <artifact>.yaml
-  <artifact>.md
+  record.md
+  content.md
 ```
 
-machine record 与 Markdown 任一缺失或 identity/digest/bindings 不匹配时，整个 logical revision invalid。current pointer 与 revision creation 分离；不原地覆盖，不以 symlink、文件存在或叙述证明 currentness。
+`record.md` 保存 identity、typed bindings、content digest、scope 与 materialization/currentness slots；`content.md` 保存 governed human semantics。任一 component 缺失或 identity/digest/bindings 不匹配时，整个 logical revision invalid。current pointer 与 revision creation 分离；不原地覆盖，不以 symlink、文件存在或叙述证明 currentness。
 
-Questioning 改为每个已完成 exchange 一个不可变 pair：
+Questioning 每个已完成 exchange 形成一个不可变 pair：
 
 ```text
 questioning/<round-revision>/
-  round.yaml
-  round.md
+  record.md
+  content.md
 ```
 
 未回答问题保留在 durable proposal/continuation，不形成 completed round。
@@ -151,21 +155,30 @@ Intake Execution Identity 与 lifecycle Plan Task Execution Identity 各自最�
 
 恢复只读取 active durable Intake/lifecycle state、current pointers、markers、artifact components、Invocation/attempt records 和适用 Git facts，并只从 last proven gate 继续。`dormant-read-only` Intake 的历史记录只供来源/决定核验，不参与恢复、重激活或 Invocation。不得从聊天、Agent summary 或临时推理恢复，也不得自动 repair、rollback、merge 或推断完成。
 
-## 9. 实施任务
+## 9. 表示层次与剩余核验
 
-1. 更新活动计划、历史 superseded 标记和后续计划暂停状态。
-2. 建立 Source Event、Intake、Current Request、per-round Questioning 和 paired/structured artifact templates。
-3. 新增 Current Request Dialogue，并更新十六个 Capability、对应 Skill 和四个 Profile 合同。
-4. 将唯一 `transitions.yaml` 替换为 dual-scope policy。
-5. 将 Global Rule 与公共 `themis` Skill 替换为 Intake-first generic interpreter。
-6. 更新 Workspace scaffold、manifest 和模块合同。
-7. 对齐安装 guidance 与产品概览。
-8. 执行 Plan-35-only static consistency verification。
-9. 重放十六类场景并映射三十二条验收条件。
+活动合同层次：
 
-详细可执行步骤位于：
+```text
+docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md
+  + 同名 references
+→ templates/.themis/core/kernel/orchestrator/rules.md
+  + gate-specific references
+→ templates/.themis/core/policies/README.md
+  + shared-topic and phase-route references
+→ sixteen Capability contracts + four Agent Profiles
+→ layered templates using record.md/content.md or structured Markdown records
+→ workspace/project.md + Workspace/Context references
+```
 
-- `docs/superpowers/plans/2026-07-31-plan-35-core-contract-replacement.md`
+Markdown authority cutover 已删除旧产品 YAML 与被目录结构替代的 flat templates。静态核验、十六场景人工 replay 与三十二条验收重映射已完成；唯一剩余门禁是：
+
+1. 由用户审阅当前 `static-verification.md`、`manual-replay.md` 与十六个 scenario、`acceptance-audit.md`、`evidence-summary.md`；
+2. 由用户明确决定是否重新接受当前 Markdown-first 表示；在此之前 criterion 32 保持 `PENDING USER RE-ACCEPTANCE`。
+
+表示重构的详细执行计划位于：
+
+- `docs/superpowers/plans/2026-08-01-plan-35-markdown-contract-refactor.md`
 
 ## 10. Verification strategy
 
@@ -178,7 +191,7 @@ Intake Execution Identity 与 lifecycle Plan Task Execution Identity 各自最�
 - 每个 Capability 的 Profile/scope 映射唯一；
 - 只有 `themis-impl` 使用 `implementation-writer`；
 - 每个 Capability 声明 inputs、outputs、legal statuses、permissions、stop conditions 和 materialization target；
-- `transitions.yaml` 是唯一 route/control policy；
+- 唯一自然语言 Policy package 是 route/control source；旧 YAML policy 只存在于冻结的历史记录；
 - Global Rule 不复制第二状态表或领域推理；
 - active guidance 不在 Intake 前创建 lifecycle；
 - 不存在单一可变 `questioning.md`、artifact 原地覆盖或 Markdown-only authority；

@@ -1,6 +1,6 @@
 # themis-current-request-dialogue
 
-## 内部执行合同
+## 身份与固定绑定
 
 - Stable identity：`themis-current-request-dialogue`。
 - Authority scope：`request-intake`。
@@ -45,56 +45,69 @@ Source Event
 
 ## 合法状态
 
-```text
-needs-request-confirmation
-assignment-confirmed
-rejected
-```
+| Selected path | Profile | Status | 语义 |
+|---|---|---|---|
+| `null` | `null` | `needs-request-confirmation` | 返回完整 changed-only proposal、stable diff item identities、source fragments、允许 dispositions、full diff digest 和 confirmation continuation |
+| `null` | `null` | `assignment-confirmed` | 非空 diff 绑定 pending proposal、confirmation Source Event、逐项 disposition 与 full diff digest；空 diff 绑定 current assignment、claims unchanged 与 `no-change` operation |
+| `null` | `null` | `rejected` | 只在用户明确拒绝时返回 rejection decision proposal，不产生 lifecycle operations |
 
-- `needs-request-confirmation`：返回完整 changed-only proposal、stable diff item identities、source fragments、允许 dispositions、full diff digest 和 confirmation continuation。
-- `assignment-confirmed`：非空 diff 必须绑定 pending proposal、确认 Source Event、每个必需 item 的明确 disposition 和完整 diff digest；空 diff 必须绑定 current confirmed assignment、claims unchanged 结论和 `no-change` operation。
-- `rejected`：只在用户明确拒绝时返回，绑定拒绝 Source Event、空 lifecycle operations 和 rejection decision proposal。
+## 输出字段合同
 
-## 输出
+Result 顶层字段固定为：`capability` = `themis-current-request-dialogue`；`authority_scope` = `request-intake`；`agent_profile` = `human-dialogue`；`status` 必须是当前 `null/null` 行中的一个合法终态。
 
-```yaml
-capability: themis-current-request-dialogue
-authority_scope: request-intake
-agent_profile: human-dialogue
-status: needs-request-confirmation | assignment-confirmed | rejected
-input_bindings:
-  intake_identity: ""
-  execution_identity: ""
-  invocation_identity: ""
-  attempt_identity: ""
-  source_event_reference: ""
-  pending_proposal_reference: null
-  current_request_references: []
-  current_claim_revisions: []
-  original_dialogue_continuation: ""
-  policy_identity: ""
-  policy_digest: ""
-  continuation_identity: ""
-  selected_path: null
-  profile: null
-output:
-  structured_result:
-    operation: changed-diff | confirmation-decision | no-change | rejection
-    changed_only_diff: {}
-    user_visible_diff: ""
-    item_dispositions: []
-    assignment_operations: []
-    assignment_decision: {}
-    confirmation_continuation: null
-    original_dialogue_continuation: ""
-  proposed_artifact_references: []
-  materialization_target: request-intake-proposal | request-intake-decision
-diagnostics:
-  gaps: []
-  evidence: []
-  affected_semantics: [request_claims, lifecycle_assignment]
-recommended_route: await-confirmation | materialize-assignment | close-intake
-```
+### Input bindings
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `intake_identity` | 必填 | current Intake identity |
+| `execution_identity` | 必填 | request-intake scope-local Execution Identity |
+| `invocation_identity` | 必填 | 本次 Invocation identity |
+| `attempt_identity` | 必填 | 本次 attempt identity |
+| `source_event_reference` | 必填 | 当前 immutable Source Event reference |
+| `pending_proposal_reference` | confirmation 时必填 | pending proposal reference；否则 `null` |
+| `current_request_references` | 必填 | 相关 Current Request revisions，可为空 |
+| `current_claim_revisions` | 必填 | source-bound confirmed claim revisions，可为空 |
+| `original_dialogue_continuation` | 必填 | 不可替换的原 dialogue continuation |
+| `policy_identity` | 必填 | `themis-core-control` |
+| `policy_digest` | 必填 | 已加载 Policy digest reference |
+| `continuation_identity` | 必填 | current Intake continuation |
+| `review_feedback_revision` | Review owner re-entry 时必填 | exact lifecycle Review Feedback revision；普通 Intake 时为 `null` |
+| `review_feedback_owner_continuation_reference` | Review owner re-entry 时必填 | Feedback record 保存的 `current-request-dialogue` owner continuation reference；普通 Intake 时为 `null` |
+| `selected_path` | 必填 | 固定 `null` |
+| `profile` | 必填 | 固定 `null` |
+
+### Structured result
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `operation` | 必填 | `changed-diff | confirmation-decision | no-change | rejection` |
+| `changed_only_diff` | 必填 | source-bound changed-only diff；无变化时为空 |
+| `user_visible_diff` | 必填 | 可供用户确认的 changed-only 内容 |
+| `item_dispositions` | 必填 | 每个必需 diff item 的 disposition，可为空 |
+| `assignment_operations` | 必填 | 逐目标 operations，可为空 |
+| `assignment_decision` | 必填 | confirmation/no-change/rejection decision proposal |
+| `confirmation_continuation` | 需要确认时必填 | durable confirmation continuation；否则 `null` |
+| `original_dialogue_continuation` | 必填 | 与 input binding 完全一致 |
+
+### Artifact refs 与 materialization
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `proposed_artifact_references` | 必填 | proposal references，可为空 |
+| `materialization_target` | 必填 | `request-intake-proposal | request-intake-decision` |
+
+### Diagnostics 与 recommended route
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `gaps` | 必填 | gaps 列表，可为空 |
+| `evidence` | 必填 | Source Event 与 assignment evidence references |
+| `affected_semantics` | 必填 | 固定只来自 `request_claims | lifecycle_assignment` |
+| `recommended_route` | 必填 | advisory `await-confirmation | materialize-assignment | close-intake` |
+
+## Review Feedback owner re-entry
+
+当本 Invocation 来自 Review Feedback 的 `current-request-dialogue` continuation 时，result 必须原样保留 exact Feedback revision 与 owner continuation binding。只有 `assignment-confirmed` 且对应 Current Request/assignment control action 完整物化并重读后，control layer 才可另行记录 lifecycle-local resolution observation；Capability 不得自行标记 resolved 或修改 unresolved set。`needs-request-confirmation`、`rejected`、Invocation 开始或 Intake proposal 存在均不能关闭 Feedback。
 
 ## 权限与边界
 

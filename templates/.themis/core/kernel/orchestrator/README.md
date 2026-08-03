@@ -1,79 +1,72 @@
-# Orchestrator Package
+# Orchestrator 包
 
-## Responsibility
+## 职责
 
-Orchestrator hosts the sole always-loaded Global Control Rule. It interprets one `transitions.yaml` across isolated `request-intake` and `lifecycle` scopes, coordinates one temporary Capability Invocation at a time, validates proposed results, executes policy-declared generic control actions, observes materialization, applies invalidation/failure control, and recovers from durable facts.
+Orchestrator 保存唯一 always-loaded [Global Control Rule](rules.md) 与六个按 durable gate 加载的通用控制 references。它解释唯一 [自然语言 Policy](../../policies/README.md)，协调一次一个 temporary Capability Invocation，验证 proposal、请求 Policy control action、消费 observed materialization，并从 durable facts 恢复。
 
-It does not own Capability reasoning, legal status tables, route mappings, user claims, implementation facts, artifact content, or recorder behavior.
+它不拥有 Capability 推理、legal status、route、用户 claims、实现事实、artifact content 或 recorder 行为，也不建立第二份 Policy。
 
-## Owned assets
+## 文件角色
 
-- `rules.md`：Intake-first generic policy interpreter, materialization/currentness boundary, lifecycle gates, scope-local failure control, recovery, and safe degradation.
-- `../../policies/transitions.yaml`：sole route/control policy, fixed scope/Profile mappings, guards, invalidation, and invalid-result behavior.
+- [rules.md](rules.md)：常驻最小入口，拥有 Intake-first、scope isolation、ownership、reference loading、唯一规则匹配、materialization 门禁与 fail-closed 边界。
+- [references/intake-entry.md](references/intake-entry.md)：Source Event、attachment、Current Request confirmation、assignment 与 retention。
+- [references/invocation-and-materialization.md](references/invocation-and-materialization.md)：preflight、temporary Invocation、proposed result、Policy rule 与 complete materialization。
+- [references/lifecycle-continuation.md](references/lifecycle-continuation.md)：Questioning、Grounding、Assessment、simple/full、Plan 与 Plan Check。
+- [references/review-and-completion.md](references/review-and-completion.md)：Review、Approval、Verify、Acceptance、Summary、completion 与 Intake dormancy。
+- [references/failure-invalidation-recovery.md](references/failure-invalidation-recovery.md)：sticky escalation、currentness、invalidation、failure budget、Failure Learning 与 recovery。
+- [references/safe-degradation.md](references/safe-degradation.md)：unavailable runtime guarantee 与禁止模拟执行。
 
-## Execution model
+六个 references 只解释通用控制顺序；Capability 的 legal scope/Profile/status、具体 control action、guard、invalidation 与 failure class 由 Policy entry 及其 references 唯一拥有。
+
+## 加载顺序
 
 ```text
-external user message
-→ immutable Source Event under Request Intake
-→ Global Control Rule
-→ transitions.yaml selects one internal Capability + fixed Profile
-→ one temporary Invocation in one authority scope
-→ proposed Capability result
-→ exactly one four-field route
-→ policy control action
-→ complete persistence + observation + reread + pointer update
-→ decision-bound lifecycle continuation, if assignment exists
+public themis governance entry
+→ rules.md
+→ policies/README.md
+→ current gate 对应的 orchestrator reference
+→ current decision 所需的 Policy shared-topic reference
+→ current Capability 对应的唯一 Policy phase route reference
+→ one Capability contract + fixed Agent Profile
+→ one temporary Invocation
 ```
 
-The route key is `capability + selected_path + profile + status`; authority scope is fixed by Capability contract and policy rather than added as a fifth dimension.
+同一 durable gate 可需要多个 orchestrator references，例如 Acceptance 用户消息同时需要 Intake interception 与 Review/完成控制；但一次 Invocation 仍只允许一个 Capability、一个 Agent 与一个 Policy phase route reference。
 
-## Authority boundary
+## 权威边界
 
-- Source Event owns original external bytes.
-- User-confirmed source-bound claims own lifecycle target semantics.
-- Code/configuration/Schema/observed behavior own current implementation facts.
-- Capability owns one semantic judgment and returns a proposal.
-- Agent Profile owns tools, permissions, and isolation.
-- Policy owns control actions and route legality.
-- Observed recorder result plus reread proves materialization.
-- Workspace stores durable scope records, immutable revisions, evidence, and separate current pointers.
+- Source Event 拥有 exact external bytes。
+- User-confirmed Current Request 拥有 lifecycle target semantics。
+- Code/configuration/Schema/observed behavior 拥有 current implementation facts。
+- Capability 只拥有一个 semantic proposal。
+- Agent Profile 拥有 tools、permissions 与 isolation。
+- Policy 拥有 route legality 与 control semantics。
+- Observed recorder result 加完整重读才能证明 materialization。
+- Workspace 保存 durable scope records、immutable revisions、evidence 与 separate current pointers。
 
-The Rule never directly judges complexity, refines requirements, designs/checks Plan, creates/checks Review, verifies implementation, classifies acceptance, or publishes knowledge.
+`request-intake` 与 `lifecycle` 只可互引 stable immutable references，不得共享 dynamic state、Execution Identity、failure budget、continuation authority、current pointer 或 completion state。
 
-## Scope isolation
+## 关键不变量
 
-`request-intake` and `lifecycle` may exchange immutable stable references only. They cannot share dynamic state, Execution Identity, failure budget, continuation authority, current pointer, or completion state.
+- Every external message is Source Event and Intake first。
+- Confirmed assignment precedes lifecycle creation/update。
+- Simple/full paths create one Plan family and converge before Review。
+- Plan Check precedes Review；current explicit Approval precedes Impl。
+- Verify 是 `Impl → independent Verification`，使用 separate Invocations 与 shared Plan task budget。
+- Acceptance requires current Verification `passed`；Summary also requires Acceptance `accepted`。
+- `full_path_required` lifecycle-local、sticky、one-way。
+- Third counted failure terminates the scope-local Execution Identity and forbids a fourth Invocation。
+- Failure Learning scope-bound、non-blocking、non-recursive、candidate-only。
+- `dormant-read-only` Intake 不可 attachment、Invocation、mutation、reactivation 或 recovery。
 
-All lifecycle user interactions—including Questioning answers, Review feedback/approval, Acceptance, and unblock/restart—first become Source Events and pass Current Request Dialogue. Durable active Intake-local confirmation/restart continuations are the only way to attach a Source Event to an existing Intake; a `dormant-read-only` Intake is never attachable.
+## Materialization 与 recovery
 
-## Materialization and recovery
+Capability result、Markdown draft、successful write、Agent report 与 file existence 都不是 authority。Authority 要求 proposed result validation、exactly-one Policy rule、declared control action、complete persistence、observation、reread、immutable revision observation 与 separate pointer update。
 
-Capability results are proposed outputs. Authority requires validation, exactly-one-route match, declared control action, complete persistence, completion/incomplete observation, reread of identity/content/digest/bindings, immutable revision observation, and separate pointer update.
+Recovery 重读 scope state、pointers、markers、artifact components、attempts 与 applicable Git facts，只从 last proven gate 的 exact continuation 恢复。不得从 chat、summary、temporary Specification 或 inferred completion 恢复，也不得自动 repair、rollback、merge 或 replay completed target。
 
-Multi-target Intake decisions execute and record each target independently. Partial success remains `open + incomplete`, preserves completed targets, and recovery resumes only recorded remaining targets; no rollback or replay of completed targets is allowed. Explicit host-observed abandonment uses a policy control action rather than a Capability status and is never inferred from silence.
+## 当前状态
 
-After a Summary pair is fully materialized and lifecycle completion is observed, policy records that completion against every immutable Intake target bound to the completed lifecycle identity and freezes each matching target binding read-only. Each affected Intake retains disposition `assigned` and becomes `dormant-read-only` only when every lifecycle target associated with that Intake is observed completed. Dormancy deactivates all Intake continuations, forbids attachment, Invocation, mutation, reactivation, and recovery, and preserves source/decision/observation records read-only; later messages create a new Intake. This is a post-completion control, not a Capability route or fifth disposition.
+Plan 35 只提供 Prompt-level Rule、自然语言 Policy、Capability、template、Workspace、人工 parity review 与 replay 合同。Strict contracts/validation 仍属未实施的 Plan 36；evaluator、Invocation host、recorder、deterministic writes 与 command execution 仍属未实施的 Plan 37。
 
-Recovery rereads scope state, pointers, markers, artifact components, Invocation/attempt records, and applicable Git facts, then resumes only from the `last proven gate`. It does not infer completion or automatically repair/rollback/merge. Dormant Intake records may verify historical source and decisions but are never a recovery source.
-
-## Lifecycle invariants
-
-- Confirmed assignment precedes lifecycle creation/update.
-- Questioning consumes confirmed claims and precedes path selection.
-- simple/full paths create one Plan family and converge before Review.
-- Plan Check precedes Review; explicit current Approval precedes Impl.
-- Verify is `Impl → independent Verification` with separate Invocations and one shared Plan task budget.
-- Acceptance requires current Verification `passed`; Summary also requires current Acceptance `accepted`.
-- `full_path_required` is lifecycle-local, sticky, and one-way.
-- Failure Learning is scope-bound, non-blocking, non-recursive, and candidate-only.
-
-## Failure boundary
-
-Intake Execution Identity and lifecycle Plan Task Execution Identity each allow at most three counted failures. The third terminates only that identity and forbids a fourth Invocation. Intake failure never consumes lifecycle budget; Impl, Verification, and acceptance repair share one lifecycle Plan task budget.
-
-## Current status
-
-Plan 35 provides one public Skill, one Global Rule, one dual-scope policy, sixteen internal Capability contracts, four Profiles, immutable artifact templates, static verification, and manual replay semantics. It does not provide strict validation or runtime enforcement.
-
-Plan 36 owns strict contracts/validation. Plan 37 owns evaluator, Invocation host, recorder, deterministic writes, and command execution. This package does not claim functional versions, upgrade/migration, Shell fallback, general transactions, automatic recovery, multi-Agent execution, or Attribution gates.
+当前没有已批准并已实现的 Themis Go CLI 文档合同检查命令。自动检查记为 `unavailable`；不得以 Python、Shell、临时 parser 或虚构命令替代，也不得声称不存在的 runtime guarantee 已实现。

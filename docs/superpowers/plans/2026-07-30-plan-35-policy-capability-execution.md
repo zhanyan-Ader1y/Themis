@@ -1,6 +1,6 @@
 # Plan 35 Policy、Capability 与执行模型收尾实施计划
 
-> 历史状态：本文已被 `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md` 及其当前实施计划取代，仅保留为历史记录，不是 current authority。
+> 历史状态：本文已被 `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md` 及其当前实施计划取代，仅保留为历史记录，不是 current authority。本文的 YAML policy/artifact 表示与 Python 检查说明又由 `2026-08-01-plan-35-markdown-contract-refactor.md` 取代，不是当前实施 guidance。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

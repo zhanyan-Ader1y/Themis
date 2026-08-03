@@ -1,6 +1,6 @@
 # themis-grounding
 
-## 内部执行合同
+## 身份与固定绑定
 
 - Stable identity：`themis-grounding`。
 - Authority scope：`lifecycle`。
@@ -31,49 +31,56 @@
 
 ## 合法状态
 
-```text
-ready
-partial
-blocked
-```
+| Selected path | Profile | Status | 语义 |
+|---|---|---|---|
+| `null` | `null` | `ready` | 每项请求都有直接证据或明确否定证据 |
+| `null` | `null` | `partial` | 只核验部分请求，逐项列出 unknown；不表示满足 |
+| `null` | `null` | `blocked` | 权限、环境或外部条件使核验无法开始 |
 
-- `ready`：每项请求都有直接证据或明确否定证据。
-- `partial`：只核验部分请求，逐项列出 unknown；它不代表满足。
-- `blocked`：权限、环境或外部条件使核验无法开始。
+## 输出字段合同
 
-## 输出
+Result 顶层字段固定为：`capability` = `themis-grounding`；`authority_scope` = `lifecycle`；`agent_profile` = `semantic-readonly`；`status` 必须是当前 `null/null` 行中的一个合法终态。
 
-```yaml
-capability: themis-grounding
-authority_scope: lifecycle
-agent_profile: semantic-readonly
-status: ready | partial | blocked
-input_bindings:
-  lifecycle_identity: ""
-  execution_identity: ""
-  invocation_identity: ""
-  attempt_identity: ""
-  current_request_revision: ""
-  requesting_capability: ""
-  baseline_identity: ""
-  policy_identity: ""
-  policy_digest: ""
-  continuation_identity: ""
-  selected_path: null
-  profile: null
-output:
-  structured_result:
-    baseline: ""
-    facts: []
-    blocked_by: []
-  proposed_artifact_references: []
-  materialization_target: grounding-structured-record
-diagnostics:
-  gaps: []
-  evidence: []
-  affected_semantics: [implementation_facts]
-recommended_route: return-to-continuation | request-unblock
-```
+### Input bindings
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `lifecycle_identity` | 必填 | current lifecycle identity |
+| `execution_identity` | 必填 | lifecycle scope-local Execution Identity |
+| `invocation_identity` | 必填 | 本次 Invocation identity |
+| `attempt_identity` | 必填 | 本次 attempt identity |
+| `current_request_revision` | 必填 | current Current Request revision |
+| `requesting_capability` | 必填 | durable continuation 中的 requesting Capability identity |
+| `baseline_identity` | 必填 | checkout/implementation baseline identity |
+| `policy_identity` | 必填 | `themis-core-control` |
+| `policy_digest` | 必填 | 已加载 Policy digest reference |
+| `continuation_identity` | 必填 | return-to-requester continuation |
+| `selected_path` | 必填 | 固定 `null` |
+| `profile` | 必填 | 固定 `null` |
+
+### Structured result
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `baseline` | 必填 | observed baseline reference |
+| `facts` | 必填 | 逐项 proven/disproven/unknown facts 与直接证据 |
+| `blocked_by` | 必填 | observed blockers，可为空 |
+
+### Artifact refs 与 materialization
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `proposed_artifact_references` | 必填 | proposal references，可为空 |
+| `materialization_target` | 必填 | 固定 `grounding-structured-record` |
+
+### Diagnostics 与 recommended route
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `gaps` | 必填 | 未核验事实列表，可为空 |
+| `evidence` | 必填 | code/config/Schema/command evidence references |
+| `affected_semantics` | 必填 | 固定 `implementation_facts` |
+| `recommended_route` | 必填 | advisory `return-to-continuation | request-unblock` |
 
 ## 权限与边界
 

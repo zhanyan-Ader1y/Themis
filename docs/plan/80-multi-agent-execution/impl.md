@@ -1,6 +1,6 @@
 # Plan 80：Multi-Agent Execution
 
-> 状态：可选实施设计，待用户单独确认。Plan 80 不阻塞 Plans 35–37，也不阻塞 Verification、Human Acceptance、Summary 或 lifecycle completion。
+> 状态：可选未来设计，待用户单独确认并在启动时依据届时 current Markdown-first contracts 完整重基线。正文中的 `transitions.yaml` route 假设已经失效，只作为历史设计输入；本次不逐段修补或开始 Plan 80 实现。Plan 80 不阻塞 Plans 35–37，也不阻塞 Verification、Human Acceptance、Summary 或 lifecycle completion。
 
 ## 1. 目标
 

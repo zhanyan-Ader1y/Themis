@@ -1,6 +1,6 @@
 # Plan 35 收尾与 Capability 执行模型设计
 
-> 历史状态：本文已被 `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md` 取代，仅保留为历史记录，不是 current authority。
+> 历史状态：本文已被 `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md` 取代，仅保留为历史记录，不是 current authority。本文的 YAML 表示层又由 `docs/superpowers/plans/2026-08-01-plan-35-markdown-contract-refactor.md` 取代。
 
 ## 1. 背景
 

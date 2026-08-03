@@ -1,6 +1,6 @@
 # themis-review-projection
 
-## 内部执行合同
+## 身份与固定绑定
 
 - Stable identity：`themis-review-projection`。
 - Authority scope：`lifecycle`。
@@ -29,48 +29,64 @@
 
 ## 合法状态
 
-```text
-ready
-blocked
-```
+| Selected path | Profile | Status | 语义 |
+|---|---|---|---|
+| `simple` | `lightweight` | `ready` | 生成忠实、完整且低负担的 projection proposal |
+| `simple` | `lightweight` | `blocked` | Plan、Plan Check 或必要 binding 不可访问 |
+| `full` | `full` | `ready` | 生成忠实、完整且低负担的 projection proposal |
+| `full` | `full` | `blocked` | Plan、Plan Check 或必要 binding 不可访问 |
 
-- `ready`：生成忠实、完整且低负担的 projection proposal。
-- `blocked`：Plan、Plan Check 或必要 binding 不可访问。
+## 输出字段合同
 
-## 输出
+Result 顶层字段固定为：`capability` = `themis-review-projection`；`authority_scope` = `lifecycle`；`agent_profile` = `semantic-readonly`；`status` 必须是当前 selected path/profile 行中的一个合法终态。
 
-```yaml
-capability: themis-review-projection
-authority_scope: lifecycle
-agent_profile: semantic-readonly
-status: ready | blocked
-input_bindings:
-  lifecycle_identity: ""
-  execution_identity: ""
-  invocation_identity: ""
-  attempt_identity: ""
-  current_request_revision: ""
-  plan_revision: ""
-  plan_digest: ""
-  plan_check_reference: ""
-  policy_identity: ""
-  policy_digest: ""
-  continuation_identity: ""
-  selected_path: simple | full
-  profile: lightweight | full
-output:
-  structured_result:
-    review_content: ""
-    projection_map: []
-    diagram_rationale: ""
-  proposed_artifact_references: []
-  materialization_target: review-projection-pair
-diagnostics:
-  gaps: []
-  evidence: []
-  affected_semantics: [review_projection]
-recommended_route: review-check | request-unblock
-```
+### Input bindings
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `lifecycle_identity` | 必填 | current lifecycle identity |
+| `execution_identity` | 必填 | lifecycle scope-local Execution Identity |
+| `invocation_identity` | 必填 | producer Invocation identity |
+| `attempt_identity` | 必填 | producer attempt identity |
+| `current_request_revision` | 必填 | current Current Request revision |
+| `plan_revision` | 必填 | current checked Plan revision |
+| `plan_digest` | 必填 | bound Plan content digest reference |
+| `plan_check_reference` | 必填 | current `pass` Plan Check reference |
+| `policy_identity` | 必填 | `themis-core-control` |
+| `policy_digest` | 必填 | 已加载 Policy digest reference |
+| `continuation_identity` | 必填 | current Review Projection continuation |
+| `review_feedback_revision` | Review owner re-entry 时必填 | exact Review Feedback revision；普通 Projection 时为 `null` |
+| `review_feedback_owner_continuation_reference` | Review owner re-entry 时必填 | Feedback record 保存的 `review-projection` owner continuation reference；普通 Projection 时为 `null` |
+| `selected_path` | 必填 | `simple | full`，与 Profile 锁定 |
+| `profile` | 必填 | `lightweight | full`，与 selected path 锁定 |
+
+### Structured result
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `review_content` | `ready` 时必填 | checked Plan 的 human projection content |
+| `projection_map` | `ready` 时必填 | 每项 projection 到 Plan location/digest 的追溯表 |
+| `diagram_rationale` | 必填 | 图形使用理由；不需要图形时说明 `not-required` 依据 |
+
+### Artifact refs 与 materialization
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `proposed_artifact_references` | 必填 | Review proposal refs，可为空 |
+| `materialization_target` | 必填 | 固定 `review-projection-pair` |
+
+### Diagnostics 与 recommended route
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `gaps` | 必填 | projection gaps，可为空 |
+| `evidence` | 必填 | Plan/Plan Check/projection evidence refs |
+| `affected_semantics` | 必填 | 固定 `review_projection` |
+| `recommended_route` | 必填 | advisory `review-check | request-unblock` |
+
+## Review Feedback owner re-entry
+
+当本 Invocation 来自 Review Feedback 的 `review-projection` continuation 时，result 必须原样保留 exact Feedback revision 与 owner continuation binding。只有 `ready` Review Projection pair 完整物化、重读并成为 current 后，control layer 才可另行记录 resolution observation；Capability 不得自行标记 resolved 或修改 unresolved set。`blocked`、projection proposal 或文件存在不能关闭 Feedback。
 
 ## 权限与边界
 

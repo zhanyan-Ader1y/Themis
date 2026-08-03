@@ -1,6 +1,6 @@
 # themis-acceptance-dialogue
 
-## 内部执行合同
+## 身份与固定绑定
 
 - Stable identity：`themis-acceptance-dialogue`。
 - Authority scope：`lifecycle`。
@@ -26,55 +26,67 @@
 
 ## 合法状态
 
-```text
-accepted
-implementation-defect
-needs-planning
-needs-specification
-escalate-full
-```
+| Selected path | Profile | Status | 语义 |
+|---|---|---|---|
+| `simple` | `lightweight` | `accepted` | 用户明确接受 current actual result |
+| `simple` | `lightweight` | `implementation-defect` | Plan 仍有效，在 approved scope 内使用同一 Plan Task Execution Identity 与 failure budget 返回 Impl repair，随后必须重新 independent Verification |
+| `simple` | `lightweight` | `needs-planning` | 技术设计或任务合同需改变 |
+| `simple` | `lightweight` | `needs-specification` | 需求语义需 Specification refinement |
+| `simple` | `lightweight` | `escalate-full` | 发现隐藏复杂度并设置 sticky upgrade |
+| `full` | `full` | `accepted` | 用户明确接受 current actual result |
+| `full` | `full` | `implementation-defect` | Plan 仍有效，在 approved scope 内使用同一 Plan Task Execution Identity 与 failure budget 返回 Impl repair，随后必须重新 independent Verification |
+| `full` | `full` | `needs-planning` | 技术设计或任务合同需改变 |
+| `full` | `full` | `needs-specification` | 需求语义需 Specification refinement |
 
-- `accepted`：用户明确接受 current actual result。
-- `implementation-defect`：Plan 仍有效，返回 approved scope 内 Impl repair 并重新 Verification；计入 shared task budget。
-- `needs-planning`/`needs-specification`：对应技术或需求语义需改变。
-- `escalate-full`：只在 simple 且 sticky upgrade 未设置时合法。
+Full path 不得返回 `escalate-full`。
 
-## 输出
+## 输出字段合同
 
-```yaml
-capability: themis-acceptance-dialogue
-authority_scope: lifecycle
-agent_profile: human-dialogue
-status: accepted | implementation-defect | needs-planning | needs-specification | escalate-full
-input_bindings:
-  lifecycle_identity: ""
-  execution_identity: ""
-  invocation_identity: ""
-  attempt_identity: ""
-  current_request_revision: ""
-  approval_revision: ""
-  plan_revision: ""
-  verification_revision: ""
-  acceptance_source_event_references: []
-  policy_identity: ""
-  policy_digest: ""
-  continuation_identity: ""
-  selected_path: simple | full
-  profile: lightweight | full
-output:
-  structured_result:
-    acceptance_view: {}
-    preserved_user_feedback: []
-    observed_difference: ""
-    classification_reason: ""
-  proposed_artifact_references: []
-  materialization_target: human-acceptance-pair
-diagnostics:
-  gaps: []
-  evidence: []
-  affected_semantics: []
-recommended_route: summary | impl-repair | planning | specification | set-full-path-required
-```
+Result 顶层字段固定为：`capability` = `themis-acceptance-dialogue`；`authority_scope` = `lifecycle`；`agent_profile` = `human-dialogue`；`status` 必须是当前 selected path/profile 行中的一个合法终态。
+
+### Input bindings
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `lifecycle_identity` | 必填 | current lifecycle identity |
+| `execution_identity` | 必填 | lifecycle scope-local Execution Identity；repair 时保持原 Plan Task Execution Identity |
+| `invocation_identity` | 必填 | Human Acceptance Invocation identity |
+| `attempt_identity` | 必填 | acceptance dialogue attempt identity |
+| `current_request_revision` | 必填 | current Current Request revision |
+| `approval_revision` | 必填 | current Review Approval revision |
+| `plan_revision` | 必填 | approved Plan revision |
+| `verification_revision` | 必填 | current `passed` Verification revision |
+| `acceptance_source_event_references` | 必填 | 经 Intake interception 的用户观察/决定 Source Event refs |
+| `policy_identity` | 必填 | `themis-core-control` |
+| `policy_digest` | 必填 | 已加载 Policy digest reference |
+| `continuation_identity` | 必填 | current Human Acceptance continuation |
+| `selected_path` | 必填 | `simple | full`，与 Profile 锁定 |
+| `profile` | 必填 | `lightweight | full`，与 selected path 锁定 |
+
+### Structured result
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `acceptance_view` | 必填 | 展示给用户的 actual delivery 与精简 evidence view |
+| `preserved_user_feedback` | 必填 | 用户 exact Source Event fragments |
+| `observed_difference` | 必填 | 用户观察到的 actual-result difference |
+| `classification_reason` | 必填 | 对 closed status 的 source-bound 分类依据 |
+
+### Artifact refs 与 materialization
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `proposed_artifact_references` | 必填 | Human Acceptance proposal refs，可为空 |
+| `materialization_target` | 必填 | 固定 `human-acceptance-pair` |
+
+### Diagnostics 与 recommended route
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `gaps` | 必填 | acceptance/binding gaps，可为空 |
+| `evidence` | 必填 | Plan、Approval、Verification 与 Source Event refs |
+| `affected_semantics` | 必填 | 受影响语义列表，可为空 |
+| `recommended_route` | 必填 | advisory `summary | impl-repair | planning | specification | set-full-path-required` |
 
 ## 权限与边界
 

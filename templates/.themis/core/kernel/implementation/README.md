@@ -7,7 +7,7 @@ Implementation executes one dependency-ready task from the current approved unif
 ## Capability mapping
 
 - `themis-impl`: the only internal Capability allowed to modify project implementation, using the fixed `implementation-writer` Profile.
-- `core/templates/impl-result.yaml` and `impl-result.md`: paired immutable Impl Result structure.
+- `core/templates/impl-result/record.md` and `content.md`: paired immutable Impl Result structure.
 
 ## Inputs and result
 

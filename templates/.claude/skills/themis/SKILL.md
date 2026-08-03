@@ -1,77 +1,100 @@
 ---
 name: themis
-description: 接收任意需要 Themis 治理的新消息或续接消息，先记录不可变 Source Event 与 Request Intake，再通过唯一控制 Rule、内部 Capability 和声明式 policy 启动、继续或恢复交付。
+description: 唯一公共 `themis` 治理入口；接收任意新消息或续接消息，先执行 Source Event 与 Request Intake，再按 Global Rule、自然语言 Policy、内部 Capability 和 fixed Agent Profile 启动、继续或恢复治理流程。
 ---
 
 # themis
 
-## Public entry responsibility
+## 公共治理入口职责
 
-本 Skill 是唯一公共 Themis 入口。每条外部用户消息必须先进入 Request Intake，不能先定位、创建或继续 lifecycle。
+本 Skill 是唯一公共 `themis` 治理入口。每条外部用户消息必须先成为 immutable Source Event 并进入 Request Intake，不能先定位、创建或继续 lifecycle。
 
 它只负责：
 
-- 请求记录用户消息的原始 bytes 和 immutable Source Event metadata；
+- 请求记录 exact original external bytes、Source Event identity、metadata 与 fragment references；
 - 从 durable Intake confirmation/restart continuation 选择 attachment，否则建立新 Intake；
-- 加载 `.themis/core/kernel/orchestrator/rules.md` 和 current `.themis/core/policies/transitions.yaml`；
-- 按 Rule/policy 加载一个 internal Capability 与 fixed Agent Profile；
-- 运输用户 Source Event、Capability proposed result 和 durable continuation；
-- 请求从 durable facts 恢复中断流程。
+- 加载唯一 Global Rule、current natural-language Policy 和当前 gate 对应的 references；
+- 加载一个 internal Capability contract 与其 fixed Agent Profile；
+- 运输 Source Event、Capability proposed result 与 durable continuation；
+- 请求从 durable facts 和 last proven gate 恢复。
 
-## Intake-first execution boundary
+本入口不拥有 claims、assignment、Questioning、Grounding、Assessment、Plan、Review、Impl、Verification、Acceptance、Failure Learning 或 Summary 的语义判断，也不拥有 route、currentness、Approval、failure count、invalidation、materialization 或 completion。
+
+## 加载流程
+
+```text
+rules.md
+→ policies/README.md
+→ 当前 gate 对应的 orchestrator reference
+→ 当前决定所需的 Policy shared-topic reference
+→ 当前 Capability/Profile 对应的唯一 Policy phase route reference
+→ one Capability contract + fixed Agent Profile
+→ one temporary Invocation
+```
+
+稳定入口位置：
+
+- `.themis/core/kernel/orchestrator/rules.md`
+- `.themis/core/policies/README.md`
+- `.themis/core/kernel/orchestrator/references/*.md`
+- `.themis/core/policies/references/*.md`
+- `.themis/core/capabilities/<selected>.md`
+- `.themis/core/agent-profiles/<fixed>.md`
+
+一次 Invocation 只加载一个 Capability 与一个 fixed Profile；Capability/Agent 不得嵌套调用。Policy route identity 为 `capability + selected_path + profile + status`，`authority_scope` 由 Capability/Policy binding 决定，不是第五维度。
+
+## Intake-first 边界
 
 ```text
 external user message
 → immutable Source Event
 → request-intake
 → themis-current-request-dialogue
-   ├─ needs-request-confirmation → wait for new confirmation Source Event
-   ├─ rejected → persist rejection and close Intake
-   └─ assignment-confirmed → policy-controlled assignment materialization
-→ create/update lifecycle Current Request revision
-→ resume decision-bound lifecycle continuation
+→ Policy-controlled confirmation/assignment
+→ fully materialized assignment decision
+→ decision-bound lifecycle continuation
 ```
 
-只有 fully materialized and reread assignment decision 才能创建、更新、拆分、合并或继续 lifecycle。不存在 provisional lifecycle。
+只有 fully materialized and reread assignment decision 才能创建、更新、拆分、合并或继续 lifecycle。Claims/assignment 改变时必须保存 proposal、触发原 lifecycle dialogue 的 Source Event binding 与原 durable continuation，并等待新的 confirmation Source Event；confirmation 只确认 governance diff，不替代原 lifecycle-bearing Source Event。`no-change` 也必须先物化 Intake decision。
 
-## Internal execution
+`dormant-read-only` Intake 不可 attachment、Invocation、mutation、reactivation 或 recovery。未来消息创建新 Intake；历史记录只用于 source/decision verification。
 
-Assignment 后仍只通过同一 Rule/policy 推进：
+## 启动、继续与恢复
+
+1. 读取 `rules.md` 与 `policies/README.md`，确认当前 scope、Policy binding、durable gate、Execution Identity、pointers 与 exact continuation。
+2. 对当前消息请求 Source Event recording，并完成 Intake attachment/interception。
+3. 按 durable gate 加载最小 orchestrator reference 和 Policy shared-topic reference。
+4. 只加载 current Capability 对应的一个 Policy phase route reference、一个 Capability contract 与 fixed Profile。
+5. 将控制权交给 Global Rule 建立 one temporary Invocation。
+6. Proposed result 只交给 Global Rule 按 current Policy 验证、唯一匹配与请求 control action。
+7. Assignment materialized 后才读取 lifecycle state 和 decision-bound continuation。
+8. 中断后只从 reread durable facts 得出的 last proven gate 恢复；不从 chat、summary、Agent report、temporary Specification 或 file existence 恢复。
+9. Lifecycle completion observed 后只请求 Policy 声明的 Intake retention 后置控制。
+
+`recommended_route`、Agent prose、chat history、summary 和 file existence 不能推进 gate。Capability result、successful write 或 Markdown draft 不能替代 complete materialization。
+
+## Review 与交付门禁
+
+Review 必须在 Impl 前完成并形成 current explicit Approval。Verify 固定包含：
 
 ```text
-Global Control Rule
-→ current transitions.yaml
-→ one internal Capability + fixed Agent Profile
-→ one temporary Invocation in one authority scope
-→ proposed Capability Invocation Result
-→ exactly one policy route and control action
-→ observed materialization and reread
+themis-impl
+→ independent themis-verification
 ```
 
-- 一次 Invocation 只加载一个 Capability；Capability/Agent 不得嵌套调用。
-- Internal Capability contracts under `.themis/core/capabilities/` are not public Skills.
-- 本 Skill 不拥有 claims、assignment、Questioning、Grounding、Assessment、Plan、Review、Impl、Verification、Acceptance、Failure Learning 或 Summary 的语义判断。
-- 本 Skill 不拥有 route lookup、authority state、artifact currentness、Approval、failure count、invalidation 或 completion。
-- `recommended_route`、Agent prose、chat history 和 file existence 不能推进 gate。
+Impl 与 Verification 使用 separate Invocations，但共享 current Approval、Plan task、baseline、expected delta、Plan Task Execution Identity 与 failure budget。Acceptance 要求 current Verification `passed`；Summary 还要求 Human Acceptance `accepted`。
 
-## Start, continue, and resume
+Implementation mutation 只允许 `themis-impl` 的 `implementation-writer` 在 current Approval、Plan task、baseline 与 allowed paths 范围内执行。Writer 不能验证自身。
 
-1. 确认唯一 Rule、唯一 policy、十六个 Capability contracts 和四个 Profile contracts 可读。
-2. 对当前消息请求 Source Event recording，并绑定 `request-intake`。
-3. 只从 active durable Intake continuation 决定 attachment；`dormant-read-only` Intake 不可附加，否则创建新 Intake。
-4. 将控制权交给 Global Rule；所有 route/control 只来自 current policy。
-5. Assignment materialized 后，才读取 lifecycle state 和 decision-bound continuation。
-6. 中断后重读 scope state、pointers、markers、artifact components、attempts 和 applicable Git facts，仅从 `last proven gate` 恢复；`dormant-read-only` Intake 只可用于历史来源/决定核验，不可恢复、重激活或调度 Invocation。
-7. lifecycle 完成后只请求执行 policy 声明的 Intake retention 后置控制；全部关联 lifecycle target 完成时休眠并失活 continuation，未来消息创建新 Intake。
+## 安全降级
 
-## Safe degradation
+当前 Plan 35 不含 strict validator、canonical digest、Policy evaluator、state recorder、Invocation host 或 deterministic write runtime。缺少当前动作所需支持时：
 
-当前 Plan 35 不含 strict validator、evaluator、recorder、digest service、Invocation host 或 deterministic write runtime。缺少某项实际支持时：
-
-- 停在当前 proven gate；
+- 停在 last proven gate；
 - 指明 unavailable assurance；
-- 不声称 Source Event、transition、persistence、digest、currentness、invalidation、attempt、termination、recovery 或 completion 已由机器执行；
-- 不手写 machine-owned state 来模拟成功；
-- 不自动 repair、rollback、merge 或推断完成。
+- 保留 durable continuation；
+- 不创建伪 attempt；
+- 不手写 machine-owned state；
+- 不声称 transition、persistence、digest、currentness、invalidation、termination、recovery 或 completion 已由机器执行。
 
-Implementation mutation 只允许由 `themis-impl` 的 `implementation-writer` 在 current Approval/Plan task/baseline/allowed paths 范围内执行。成功写文件不等于治理 artifact/state 已物化。
+Invocation 前 required Policy package/reference unavailable 或 ambiguous 时不消耗 failure budget。Invocation 已开始或 result 返回后的 invalid-result 由 Policy 进入 scope-local failure control。

@@ -1,54 +1,62 @@
-# Policies Package
+# Core 控制 Policy
 
-## Responsibility
+## 身份与职责
 
-`transitions.yaml` 是 Themis 唯一 route/control policy，声明 `request-intake` 与 `lifecycle` 两个隔离 authority scope、十六个固定 Capability/Profile 绑定、legal statuses、control actions、materialization/currentness、失效、恢复和失败预算。
+本文件是 `themis-core-control` 的唯一 Policy entry。`references/` 中的主题文件和阶段 route 文件共同构成同一份自然语言 Policy，只按当前 authority scope、durable gate、Capability 和 continuation 按需加载，不形成第二份 Policy。
 
-Global Rule 只通用解释这份 policy；Capability 只产生 proposed semantic result；Workspace 保存 observed state、records、evidence 和 current pointers。任何一方都不得复制或覆盖另一方的 authority。
+本 Policy 同时治理 `request-intake` 与 `lifecycle` 两个隔离 authority scope。Global Rule 只能解释本 Policy、验证 Invocation/result bindings、请求 control action 并消费 observed recorder result；Capability 只返回 proposed semantic result；Workspace 只保存 observed state、records、evidence 和 current pointers。
 
-## Sole owned policy
+## 控制规则定位
 
-- `transitions.yaml`：唯一 policy；route key 固定为 `capability + selected_path + profile + status`。
-- Authority scope 不是第五个 route 维度，因为每个 Capability 的 legal scope 在 policy 和 Capability contract 中唯一绑定。
-- 当前 route 数量只是该文件的可观察属性，不是产品身份或永久合同。
+自然语言控制规则通过以下四项定位：
 
-## Authority scopes
+```text
+capability + selected_path + profile + status
+```
 
-- `request-intake`：Source Event、claim/assignment proposal、用户确认 decision、Intake Execution Identity、scope-local continuation、pointer、disposition 和 post-completion retention facts。
-- `lifecycle`：Current Request、Questioning、path/Plan、Review/Approval、Plan Task Execution、Verification、Acceptance、Summary 和 scope-local continuation/pointers。
-- 两个 scope 只能用稳定不可变引用互相指向；不得共享动态 state、Execution Identity、failure budget、continuation authority、current pointer 或 completion state。
-- `dormant-read-only` 是 assigned Intake 的派生 retention mode，不是 disposition、Capability status 或 route key 维度。
+`authority_scope` 不是第五个 route 维度。每个 Capability 的 legal scope 和 fixed Agent Profile 由 [Capability bindings](references/capability-bindings.md) 唯一约束。`recommended_route` 只用于 diagnostics，不能覆盖本 Policy。
 
-## Control boundaries
+旧 `transitions.yaml` 中观察到 98 个合法结果组合；该数字只用于本次表示迁移的人工覆盖核对，不是产品 identity、永久常量、固定 Markdown 行数、Go CLI 输入或可解析 DSL。
 
-- 所有外部消息先成为 immutable Source Event，并经 `themis-current-request-dialogue`；不能先创建或继续 lifecycle。
-- Capability Invocation Result 永远只是 proposal。
-- Authority 需要：校验结果与 bindings、精确匹配一条 route、执行 control action、完整持久化、记录 completion/incomplete observation、重读 identity/content/digest/bindings，再更新独立 pointer。
-- 零条或多条 route match、unknown status、wrong-profile、wrong-scope、stale/duplicate/late result 或 recorder/materialization failure 均 fail closed。
-- `recommended_route` 只供 diagnostics，不具控制权。
-- `profile` 表示 Plan profile `lightweight | full | null`；执行权限由独立 `agent_profile` 定义。
+## Global Rule 的加载顺序
 
-## Lifecycle invariants
+Global Rule 必须先读取 current authority scope、Policy identity/digest、Execution Identity、durable gate、current pointers、exact continuation 和待调用 Capability，再按以下顺序加载：
 
-- `full_path_required` 在同一 lifecycle 内只允许 `false → true`；Questioning、reassessment、restart、resume 或 retry 都不能清除。
-- Simple/full paths 在 Plan Check 后汇合，共用 Review、Approval、Verify、Acceptance 和 Summary。
-- Review Approval 在 Impl 前；Verify 固定为 `themis-impl → independent themis-verification`。
-- Current Verification 必须 `passed` 才能 Acceptance；current Acceptance 必须 `accepted` 才能 Summary。
-- Summary pair 完整物化并观察 lifecycle completion 后，policy 冻结对应 Intake target；全部关联 lifecycle target 完成后，Intake 保持 `assigned` 并进入 `dormant-read-only`，失活 continuation，禁止 attachment、Invocation、mutation、reactivation 和 recovery。
+1. 总是加载与当前决定直接相关的共享主题 reference；
+2. 根据当前 Capability 只加载一个对应的阶段 route reference；
+3. `themis-failure-learning` 根据 Invocation 已验证的 scope/path/profile 加载 Learning route，不跨 scope 搬运动动态状态；
+4. 在 Invocation 开始前，任一必需 reference 缺失、不可读、冲突、无法唯一定位或不能与 observed current Policy binding 对齐时，必须停在 last proven gate，报告 Policy package unavailable/ambiguous，且不创建 attempt、不计入 failure budget；不得从聊天、Agent summary 或自由文本补全规则；
+5. 只有 Invocation 已开始，或 proposed result 返回后出现 zero/multiple rule match、Policy binding mismatch 或其他 invalid-result 原因时，才进入 counted invalid-result control。
 
-## Failure and recovery
+## Reference 选择
 
-- Intake Execution Identity 和 lifecycle Plan Task Execution Identity 各自最多三次 counted failure；第三次终止对应 identity，禁止第四次 Invocation。
-- Impl、Verification 和 acceptance 的 implementation-defect repair 共享一个 Plan Task budget。
-- 每次 counted failure 和显式关联 later success 都触发 scope-bound、non-blocking、non-recursive Failure Learning。
-- Recovery 只从 active durable state、pointers、markers、artifact components、Invocation/attempt records 和 applicable Git facts重建 `last-proven-gate`；不得从 chat、summary 或 temporary reasoning 恢复。
-- Dormant Intake records 只用于历史来源/决定核验，不参与 recovery；后续外部消息创建新 Intake。
+### 共享主题
 
-## Safe degradation
+- [Authority scopes](references/authority-scopes.md)：Policy binding、authority owner、双 scope 与跨 scope 隔离。
+- [Intake and retention](references/intake-and-retention.md)：外部消息 interception、多目标 assignment、completion 与 `dormant-read-only`。
+- [Capability bindings](references/capability-bindings.md)：closed vocabulary、十六个 Capability、fixed Profile、legal status 和 materialization target。
+- [Materialization and currentness](references/materialization-and-currentness.md)：proposal、完整物化、currentness checkpoint、paired/structured record。
+- [Guards, invalidation and recovery](references/guards-invalidation-and-recovery.md)：sticky full guard、Review/Verify gates、invalidation 与 interruption recovery。
+- [Failure control](references/failure-control.md)：双预算、counted/non-counted、Failure Learning 和 invalid result。
+- [Assurance boundary](references/assurance-boundary.md)：Plan 35 Prompt-level 边界与 unavailable guarantees。
 
-当前 YAML 是 Prompt-level control input，不是 strict machine contract。Plan 35 只能进行静态检查和人工 replay；没有对应后续能力时不得声称机器执行了 transition、persistence、currentness、digest、attempt、invalidation、termination 或 recovery。
+### 阶段 route
 
-- Plan 36：strict Schema、canonical serialization、validator、issue taxonomy、semantic oracle 和 fixtures。
-- Plan 37：policy evaluator、Invocation host、recorder、deterministic writes 和 command execution。
+- [Intake](references/routes/intake.md)：`themis-current-request-dialogue`。
+- [Understanding](references/routes/understanding.md)：`themis-q`、`themis-grounding`、`themis-complexity-assessment`。
+- [Planning](references/routes/planning.md)：`themis-simple-plan`、`themis-spec`、`themis-planning`、`themis-plan-check`。
+- [Review](references/routes/review.md)：`themis-review-projection`、`themis-review-check`、`themis-review-dialogue`。
+- [Delivery](references/routes/delivery.md)：`themis-impl`、`themis-verification`、`themis-acceptance-dialogue`、`themis-summary`。
+- [Learning](references/routes/learning.md)：scope/path-bound `themis-failure-learning`。
 
-本包不包含功能版本、upgrade、migration、Shell fallback、多 Agent orchestration、Attribution gate、通用锁、事务、rollback journal 或 automatic repair。
+## 每条自然语言规则的完整性
+
+每个 route 规则组必须用完整中文句子共同说明：合法 status；current bindings、guard 和 durable facts；需要物化或记录的对象；成功后的 Capability、Human Dialogue 或 gate；guard failure action 与 next；失效范围；`none | non-counted | counted` failure class；以及必须停止且不得从自由文本猜测 route 的条件。
+
+Capability Invocation Result 永远只是 proposal。只有结果通过唯一规则匹配、control action 完整执行、所有组件持久化、completion/incomplete 被观察、内容与 identity/digest/bindings 被重读、immutable revision 被观察且独立 current pointer 更新成功后，才可能成为 current authority。
+
+## 表示与接受边界
+
+本 Markdown package 是唯一活动 Policy 表示；旧 YAML 表示在全局 authority cutover 中删除，不再形成迁移对照或第二份设计权威。该切换本身不证明 Markdown-first 静态一致性、人工 replay 或用户重新接受，也不产生 machine enforcement。
+
+当前没有已批准并已实现的 Go parser、Policy evaluator、validator、recorder 或 deterministic write runtime。Global Rule 和 guidance 不得声称这些自然语言规则已被机器执行。

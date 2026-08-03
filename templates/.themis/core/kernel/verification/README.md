@@ -7,7 +7,7 @@ Verification runs after Impl in an independent read-only Invocation. It reads th
 ## Capability mapping
 
 - `themis-verification`: fixed `independent-checker` Capability.
-- `core/templates/verification.yaml` and `verification.md`: paired immutable Verification structure.
+- `core/templates/verification/record.md` and `content.md`: paired immutable Verification structure.
 
 ## Evidence and binding
 

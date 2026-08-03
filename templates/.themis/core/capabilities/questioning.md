@@ -1,6 +1,6 @@
 # themis-q
 
-## 内部执行合同
+## 身份与固定绑定
 
 - Stable identity：`themis-q`。
 - Authority scope：`lifecycle`。
@@ -35,53 +35,67 @@ What：触发 → 必要的抽象动作 → 结果
 
 ## 合法状态
 
-```text
-needs-questioning
-converged
-```
+| Selected path | Profile | Status | 语义 |
+|---|---|---|---|
+| `null` | `null` | `needs-questioning` | 返回每个薄弱点、对应问题与 durable continuation proposal；不形成 completed round |
+| `null` | `null` | `converged` | 返回完整 Why、abstract What、source refs 与 completed round content proposal |
 
-- `needs-questioning`：返回每个薄弱点及对应问题和 durable continuation proposal；未获得回答，不创建 completed round。
-- `converged`：返回完整 Why、abstract What、source refs 和 completed round content proposal。
+## 输出字段合同
 
-## 输出
+Result 顶层字段固定为：`capability` = `themis-q`；`authority_scope` = `lifecycle`；`agent_profile` = `human-dialogue`；`status` 必须是当前 `null/null` 行中的一个合法终态。
 
-```yaml
-capability: themis-q
-authority_scope: lifecycle
-agent_profile: human-dialogue
-status: needs-questioning | converged
-input_bindings:
-  lifecycle_identity: ""
-  execution_identity: ""
-  invocation_identity: ""
-  attempt_identity: ""
-  current_request_revision: ""
-  active_claim_revisions: []
-  previous_questioning_round_revision: null
-  answer_source_event_references: []
-  policy_identity: ""
-  policy_digest: ""
-  continuation_identity: ""
-  selected_path: null
-  profile: null
-output:
-  structured_result:
-    current_understanding: {}
-    weak_points: []
-    questions: []
-    converged_why: ""
-    converged_what: ""
-    source_fragment_references: []
-    question_continuation: null
-    completed_round_content: null
-  proposed_artifact_references: []
-  materialization_target: questioning-proposal | questioning-round-pair
-diagnostics:
-  gaps: []
-  evidence: []
-  affected_semantics: [why, abstract_what]
-recommended_route: ask-user | complexity-assessment
-```
+### Input bindings
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `lifecycle_identity` | 必填 | current lifecycle identity |
+| `execution_identity` | 必填 | lifecycle scope-local Execution Identity |
+| `invocation_identity` | 必填 | 本次 Invocation identity |
+| `attempt_identity` | 必填 | 本次 attempt identity |
+| `current_request_revision` | 必填 | current Current Request revision |
+| `active_claim_revisions` | 必填 | active confirmed claims |
+| `previous_questioning_round_revision` | 可选 | previous completed round；否则 `null` |
+| `answer_source_event_references` | continuation 时必填 | 本轮回答的 Source Event refs；否则可为空 |
+| `policy_identity` | 必填 | `themis-core-control` |
+| `policy_digest` | 必填 | 已加载 Policy digest reference |
+| `continuation_identity` | 必填 | current questioning continuation |
+| `review_feedback_revision` | Review owner re-entry 时必填 | exact Review Feedback revision；普通 Questioning 时为 `null` |
+| `review_feedback_owner_continuation_reference` | Review owner re-entry 时必填 | Feedback record 保存的 `questioning` owner continuation reference；普通 Questioning 时为 `null` |
+| `selected_path` | 必填 | 固定 `null` |
+| `profile` | 必填 | 固定 `null` |
+
+### Structured result
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `current_understanding` | 必填 | source-bound current Why/What understanding |
+| `weak_points` | 必填 | 真实薄弱点列表，可为空 |
+| `questions` | 必填 | 与 weak points 一一对应的问题，可为空 |
+| `converged_why` | `converged` 时必填 | 完整 Why；否则空 |
+| `converged_what` | `converged` 时必填 | abstract What；否则空 |
+| `source_fragment_references` | 必填 | 支撑理解/收敛的 exact fragments |
+| `question_continuation` | `needs-questioning` 时必填 | durable continuation；否则 `null` |
+| `completed_round_content` | `converged` 时必填 | completed round content proposal；否则 `null` |
+
+### Artifact refs 与 materialization
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `proposed_artifact_references` | 必填 | proposal references，可为空 |
+| `materialization_target` | 必填 | `questioning-proposal | questioning-round-pair` |
+
+### Diagnostics 与 recommended route
+
+| 字段 | 必填性 | 合法内容 |
+|---|---|---|
+| `gaps` | 必填 | gaps 列表，可为空 |
+| `evidence` | 必填 | source/evidence references |
+| `affected_semantics` | 必填 | 固定只来自 `why | abstract_what` |
+| `recommended_route` | 必填 | advisory `ask-user | complexity-assessment` |
+
+## Review Feedback owner re-entry
+
+当本 Invocation 来自 Review Feedback 的 `questioning` continuation 时，result 必须原样保留 exact Feedback revision 与 owner continuation binding。只有 `converged` Questioning round 完整物化并重读后，control layer 才可另行记录 resolution observation；Capability 不得自行标记 resolved 或修改 unresolved set。`needs-questioning`、问题 proposal 或 Invocation 开始不能关闭 Feedback。
 
 ## 权限与边界
 
