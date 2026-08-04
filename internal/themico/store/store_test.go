@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -19,6 +18,15 @@ import (
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/canonical"
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/model"
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/store"
+)
+
+const (
+	candidateID            = "cand_00000000000000000000000000000001"
+	candidateRevisionID    = "crev_00000000000000000000000000000001"
+	recordID               = "kr_00000000000000000000000000000001"
+	recordRevisionID       = "rev_00000000000000000000000000000001"
+	secondRecordID         = "kr_00000000000000000000000000000002"
+	secondRecordRevisionID = "rev_00000000000000000000000000000002"
 )
 
 func TestInitMakesGenerationZeroVisibleAndOpenPreservesIdentity(t *testing.T) {
@@ -61,14 +69,21 @@ func TestInitMakesGenerationZeroVisibleAndOpenPreservesIdentity(t *testing.T) {
 }
 
 func TestInitRejectsInvalidInjectedStoreID(t *testing.T) {
-	root := t.TempDir()
-	opts := testOptions()
-	opts.NewID = func(string) (string, error) { return "op_NOT_HEX", nil }
-	if _, err := store.Init(root, opts); !errors.Is(err, store.ErrValidation) {
-		t.Fatalf("error: %v", err)
-	}
-	if _, err := os.Lstat(filepath.Join(root, ".themico")); !os.IsNotExist(err) {
-		t.Fatalf("store unexpectedly exists: %v", err)
+	for _, invalidID := range []string{
+		"op_NOT_HEX",
+		"op_0000000000000000000000000000000A",
+	} {
+		t.Run(invalidID, func(t *testing.T) {
+			root := t.TempDir()
+			opts := testOptions()
+			opts.NewID = func(string) (string, error) { return invalidID, nil }
+			if _, err := store.Init(root, opts); !errors.Is(err, store.ErrValidation) {
+				t.Fatalf("error: %v", err)
+			}
+			if _, err := os.Lstat(filepath.Join(root, ".themico")); !os.IsNotExist(err) {
+				t.Fatalf("store unexpectedly exists: %v", err)
+			}
+		})
 	}
 }
 
@@ -93,6 +108,69 @@ func TestInitExistingStoreFailsWithoutChangingBytes(t *testing.T) {
 	}
 	if string(got) != "unchanged" {
 		t.Fatalf("existing bytes changed: %q", got)
+	}
+}
+
+func TestInitDoesNotReplaceTargetThatAppearsAtPublication(t *testing.T) {
+	root := t.TempDir()
+	parent := filepath.Join(root, ".themico")
+	ready := make(chan struct{})
+	release := make(chan struct{})
+	opts := testOptions()
+	baseIDs := opts.NewID
+	opts.NewID = func(prefix string) (string, error) {
+		id, err := baseIDs(prefix)
+		if err == nil {
+			close(ready)
+			<-release
+		}
+		return id, err
+	}
+
+	result := make(chan error, 1)
+	go func() {
+		_, err := store.Init(root, opts)
+		result <- err
+	}()
+	<-ready
+	if err := os.Mkdir(parent, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	close(release)
+	if err := <-result; !errors.Is(err, store.ErrPrecondition) {
+		t.Fatalf("error: %v", err)
+	}
+	info, err := os.Stat(parent)
+	if err != nil || !info.IsDir() {
+		t.Fatalf("publication target changed: info=%v err=%v", info, err)
+	}
+	entries, err := os.ReadDir(parent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("existing target was replaced: %v", entries)
+	}
+}
+
+func TestCommitDoesNotReplaceEmptyGenerationTargetCreatedAtHook(t *testing.T) {
+	root := t.TempDir()
+	finalRoot := filepath.Join(root, ".themico", "generations", "gen-00000000000000000001")
+	opts := testOptions()
+	opts.BeforeGenerationRename = func() error {
+		return os.Mkdir(finalRoot, 0o700)
+	}
+	s := mustInit(t, root, opts)
+	_, err := s.Commit(context.Background(), commitPlan(0, "approvals/no-replace.json", []byte(`{}`)))
+	if !errors.Is(err, store.ErrConflict) {
+		t.Fatalf("error: %v", err)
+	}
+	entries, readErr := os.ReadDir(finalRoot)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("empty target was replaced: %v", entries)
 	}
 }
 
@@ -126,56 +204,400 @@ func TestCommitRejectsUnsafeImmutablePaths(t *testing.T) {
 }
 
 func TestCommitRejectsSymlinkEscapeWhenSupported(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("standard-library symlink checks do not cover Windows junction/reparse points")
-	}
 	root := t.TempDir()
 	s := mustInit(t, root, testOptions())
 	outside := t.TempDir()
-	link := filepath.Join(root, ".themico", "records", "escape")
+	link := filepath.Join(root, ".themico", "records", recordID)
 	if err := os.Symlink(outside, link); err != nil {
-		if runtime.GOOS == "windows" {
-			t.Skipf("symlink unavailable: %v", err)
-		}
-		t.Fatal(err)
+		t.Skipf("symlink setup unavailable: %v", err)
 	}
 
-	_, err := s.Commit(context.Background(), commitPlan(0, "records/escape/payload.json", []byte("payload")))
+	path := "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md"
+	_, err := s.Commit(context.Background(), commitPlan(0, path, []byte("payload")))
 	if !errors.Is(err, store.ErrValidation) {
 		t.Fatalf("error: %v", err)
 	}
-	if _, statErr := os.Stat(filepath.Join(outside, "payload.json")); !os.IsNotExist(statErr) {
+	if _, statErr := os.Stat(filepath.Join(outside, "revisions", recordRevisionID, "content.md")); !os.IsNotExist(statErr) {
 		t.Fatalf("outside payload exists or stat failed unexpectedly: %v", statErr)
 	}
 }
 
 func TestCommitRejectsSymlinkSwapBeforeImmutableCreateWhenSupported(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("standard-library symlink checks do not cover Windows junction/reparse points")
-	}
 	root := t.TempDir()
 	s := mustInit(t, root, testOptions())
 	outside := t.TempDir()
-	parent := filepath.Join(root, ".themico", "records", "race")
+	parent := filepath.Join(root, ".themico", "records", recordID)
 	mustMkdirAll(t, parent)
-	path := "records/race/payload.json"
+	path := "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md"
 	plan := commitPlan(0, path, []byte("payload"))
 
 	if err := os.Remove(parent); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Symlink(outside, parent); err != nil {
-		if runtime.GOOS == "windows" {
-			t.Skipf("symlink unavailable: %v", err)
-		}
-		t.Fatal(err)
+		t.Skipf("symlink setup unavailable: %v", err)
 	}
 	_, err := s.Commit(context.Background(), plan)
 	if !errors.Is(err, store.ErrValidation) {
 		t.Fatalf("error: %v", err)
 	}
-	if _, statErr := os.Stat(filepath.Join(outside, "payload.json")); !os.IsNotExist(statErr) {
+	if _, statErr := os.Stat(filepath.Join(outside, "revisions", recordRevisionID, "content.md")); !os.IsNotExist(statErr) {
 		t.Fatalf("outside payload exists or stat failed unexpectedly: %v", statErr)
+	}
+}
+
+func TestCommitRejectsMalformedManifestControlledIDs(t *testing.T) {
+	content := []byte("content")
+	payload := validRecordPayload(t, recordID, recordRevisionID, model.RecordStatusActive, content)
+	for _, invalidID := range []string{
+		"kr_../../escape",
+		"kr_0000000000000000000000000000000A",
+	} {
+		t.Run(invalidID, func(t *testing.T) {
+			root := t.TempDir()
+			s := mustInit(t, root, testOptions())
+			plan := commitPlan(0, "records/"+recordID+"/revisions/"+recordRevisionID+"/record.json", payload)
+			plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md", Data: content})
+			plan.Manifest.CurrentRecords = []model.RecordPointer{{
+				RecordID: invalidID,
+				Revision: recordRevisionID,
+				Status:   model.RecordStatusActive,
+				Digest:   mustCanonicalDigest(t, payload),
+			}}
+			if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
+				t.Fatalf("malformed record ID: %v", err)
+			}
+		})
+	}
+}
+
+func TestCommitRejectsInvalidCandidateRecordBindingID(t *testing.T) {
+	content := []byte("candidate content")
+	payload := validCandidatePayload(t, candidateID, candidateRevisionID, model.CandidateStatusProposed, content)
+	root := t.TempDir()
+	s := mustInit(t, root, testOptions())
+	plan := commitPlan(0, "candidates/"+candidateID+"/revisions/"+candidateRevisionID+"/candidate.json", payload)
+	plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: "candidates/" + candidateID + "/revisions/" + candidateRevisionID + "/content.md", Data: content})
+	plan.Manifest.CurrentCandidates = []model.CandidatePointer{{
+		CandidateID: candidateID,
+		Revision:    candidateRevisionID,
+		Status:      model.CandidateStatusProposed,
+		Digest:      mustCanonicalDigest(t, payload),
+		RecordID:    "kr_0000000000000000000000000000000A",
+	}}
+	if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
+		t.Fatalf("error: %v", err)
+	}
+}
+
+func TestCommitRejectsRecordPointerPayloadIntegrityFailures(t *testing.T) {
+	content := []byte("record content")
+	validPayload := validRecordPayload(t, recordID, recordRevisionID, model.RecordStatusActive, content)
+	validDigest := mustCanonicalDigest(t, validPayload)
+
+	tests := []struct {
+		name    string
+		pointer model.RecordPointer
+		payload []byte
+		content []byte
+	}{
+		{
+			name:    "empty object",
+			pointer: model.RecordPointer{RecordID: recordID, Revision: recordRevisionID, Status: model.RecordStatusActive, Digest: mustCanonicalDigest(t, []byte(`{}`))},
+			payload: []byte(`{}`),
+			content: content,
+		},
+		{
+			name:    "pointer digest mismatch",
+			pointer: model.RecordPointer{RecordID: recordID, Revision: recordRevisionID, Status: model.RecordStatusActive, Digest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+			payload: validPayload,
+			content: content,
+		},
+		{
+			name:    "payload identity mismatch",
+			pointer: model.RecordPointer{RecordID: recordID, Revision: recordRevisionID, Status: model.RecordStatusActive, Digest: mustCanonicalDigest(t, validRecordPayload(t, secondRecordID, recordRevisionID, model.RecordStatusActive, content))},
+			payload: validRecordPayload(t, secondRecordID, recordRevisionID, model.RecordStatusActive, content),
+			content: content,
+		},
+		{
+			name:    "payload revision mismatch",
+			pointer: model.RecordPointer{RecordID: recordID, Revision: recordRevisionID, Status: model.RecordStatusActive, Digest: mustCanonicalDigest(t, validRecordPayload(t, recordID, secondRecordRevisionID, model.RecordStatusActive, content))},
+			payload: validRecordPayload(t, recordID, secondRecordRevisionID, model.RecordStatusActive, content),
+			content: content,
+		},
+		{
+			name:    "payload status mismatch",
+			pointer: model.RecordPointer{RecordID: recordID, Revision: recordRevisionID, Status: model.RecordStatusActive, Digest: mustCanonicalDigest(t, validRecordPayload(t, recordID, recordRevisionID, model.RecordStatusArchived, content))},
+			payload: validRecordPayload(t, recordID, recordRevisionID, model.RecordStatusArchived, content),
+			content: content,
+		},
+		{
+			name:    "content digest mismatch",
+			pointer: model.RecordPointer{RecordID: recordID, Revision: recordRevisionID, Status: model.RecordStatusActive, Digest: validDigest},
+			payload: validPayload,
+			content: []byte("different content"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			s := mustInit(t, root, testOptions())
+			plan := commitPlan(0, "records/"+recordID+"/revisions/"+recordRevisionID+"/record.json", test.payload)
+			plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md", Data: test.content})
+			plan.Manifest.CurrentRecords = []model.RecordPointer{test.pointer}
+			if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
+				t.Fatalf("error: %v", err)
+			}
+		})
+	}
+}
+
+func TestCommitRejectsCandidatePointerPayloadIntegrityFailures(t *testing.T) {
+	content := []byte("candidate content")
+	validPayload := validCandidatePayload(t, candidateID, candidateRevisionID, model.CandidateStatusProposed, content)
+	validDigest := mustCanonicalDigest(t, validPayload)
+
+	for _, test := range []struct {
+		name    string
+		pointer model.CandidatePointer
+		payload []byte
+		content []byte
+	}{
+		{
+			name:    "empty object",
+			pointer: model.CandidatePointer{CandidateID: candidateID, Revision: candidateRevisionID, Status: model.CandidateStatusProposed, Digest: mustCanonicalDigest(t, []byte(`{}`))},
+			payload: []byte(`{}`),
+			content: content,
+		},
+		{
+			name:    "pointer digest mismatch",
+			pointer: model.CandidatePointer{CandidateID: candidateID, Revision: candidateRevisionID, Status: model.CandidateStatusProposed, Digest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+			payload: validPayload,
+			content: content,
+		},
+		{
+			name:    "payload identity mismatch",
+			pointer: model.CandidatePointer{CandidateID: candidateID, Revision: candidateRevisionID, Status: model.CandidateStatusProposed, Digest: mustCanonicalDigest(t, validCandidatePayload(t, "cand_00000000000000000000000000000002", candidateRevisionID, model.CandidateStatusProposed, content))},
+			payload: validCandidatePayload(t, "cand_00000000000000000000000000000002", candidateRevisionID, model.CandidateStatusProposed, content),
+			content: content,
+		},
+		{
+			name:    "payload revision mismatch",
+			pointer: model.CandidatePointer{CandidateID: candidateID, Revision: candidateRevisionID, Status: model.CandidateStatusProposed, Digest: mustCanonicalDigest(t, validCandidatePayload(t, candidateID, "crev_00000000000000000000000000000002", model.CandidateStatusProposed, content))},
+			payload: validCandidatePayload(t, candidateID, "crev_00000000000000000000000000000002", model.CandidateStatusProposed, content),
+			content: content,
+		},
+		{
+			name:    "payload status mismatch",
+			pointer: model.CandidatePointer{CandidateID: candidateID, Revision: candidateRevisionID, Status: model.CandidateStatusProposed, Digest: mustCanonicalDigest(t, validCandidatePayload(t, candidateID, candidateRevisionID, model.CandidateStatusAbandoned, content))},
+			payload: validCandidatePayload(t, candidateID, candidateRevisionID, model.CandidateStatusAbandoned, content),
+			content: content,
+		},
+		{
+			name:    "content digest mismatch",
+			pointer: model.CandidatePointer{CandidateID: candidateID, Revision: candidateRevisionID, Status: model.CandidateStatusProposed, Digest: validDigest},
+			payload: validPayload,
+			content: []byte("different content"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			s := mustInit(t, root, testOptions())
+			plan := commitPlan(0, "candidates/"+candidateID+"/revisions/"+candidateRevisionID+"/candidate.json", test.payload)
+			plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: "candidates/" + candidateID + "/revisions/" + candidateRevisionID + "/content.md", Data: test.content})
+			plan.Manifest.CurrentCandidates = []model.CandidatePointer{test.pointer}
+			if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
+				t.Fatalf("error: %v", err)
+			}
+		})
+	}
+}
+
+func TestCommitRejectsProjectionIntegrityFailures(t *testing.T) {
+	content := []byte("record content")
+	recordPayload := validRecordPayload(t, recordID, recordRevisionID, model.RecordStatusActive, content)
+	l1Payload := validProjectionPayload(t, recordID, recordRevisionID, model.RecordStatusActive)
+	l2Payload := validProjectionPayload(t, recordID, recordRevisionID, model.RecordStatusActive)
+
+	for _, test := range []struct {
+		name    string
+		ref     model.ProjectionRef
+		l1      []byte
+		l2      []byte
+		content []byte
+	}{
+		{
+			name: "missing digests",
+			ref:  model.ProjectionRef{RecordID: recordID, Revision: recordRevisionID},
+			l1:   l1Payload, l2: l2Payload, content: content,
+		},
+		{
+			name: "projection identity mismatch",
+			ref: model.ProjectionRef{
+				RecordID: recordID, Revision: recordRevisionID,
+				L1Digest: mustCanonicalDigest(t, validProjectionPayload(t, secondRecordID, recordRevisionID, model.RecordStatusActive)),
+				L2Digest: mustCanonicalDigest(t, l2Payload), L3Digest: rawSHA256(content),
+			},
+			l1: validProjectionPayload(t, secondRecordID, recordRevisionID, model.RecordStatusActive), l2: l2Payload, content: content,
+		},
+		{
+			name: "projection revision mismatch",
+			ref: model.ProjectionRef{
+				RecordID: recordID, Revision: recordRevisionID,
+				L1Digest: mustCanonicalDigest(t, validProjectionPayload(t, recordID, secondRecordRevisionID, model.RecordStatusActive)),
+				L2Digest: mustCanonicalDigest(t, l2Payload), L3Digest: rawSHA256(content),
+			},
+			l1: validProjectionPayload(t, recordID, secondRecordRevisionID, model.RecordStatusActive), l2: l2Payload, content: content,
+		},
+		{
+			name: "projection status mismatch",
+			ref: model.ProjectionRef{
+				RecordID: recordID, Revision: recordRevisionID,
+				L1Digest: mustCanonicalDigest(t, validProjectionPayload(t, recordID, recordRevisionID, model.RecordStatusArchived)),
+				L2Digest: mustCanonicalDigest(t, l2Payload), L3Digest: rawSHA256(content),
+			},
+			l1: validProjectionPayload(t, recordID, recordRevisionID, model.RecordStatusArchived), l2: l2Payload, content: content,
+		},
+		{
+			name: "projection L1 binding mismatch",
+			ref: model.ProjectionRef{
+				RecordID: recordID, Revision: recordRevisionID,
+				L1Digest: mustCanonicalDigest(t, projectionPayloadWithL1Title(t, "different")),
+				L2Digest: mustCanonicalDigest(t, l2Payload), L3Digest: rawSHA256(content),
+			},
+			l1: projectionPayloadWithL1Title(t, "different"), l2: l2Payload, content: content,
+		},
+		{
+			name: "projection digest mismatch",
+			ref: model.ProjectionRef{
+				RecordID: recordID, Revision: recordRevisionID,
+				L1Digest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				L2Digest: mustCanonicalDigest(t, l2Payload), L3Digest: rawSHA256(content),
+			},
+			l1: l1Payload, l2: l2Payload, content: content,
+		},
+		{
+			name: "projection content digest mismatch",
+			ref: model.ProjectionRef{
+				RecordID: recordID, Revision: recordRevisionID,
+				L1Digest: mustCanonicalDigest(t, l1Payload),
+				L2Digest: mustCanonicalDigest(t, l2Payload), L3Digest: rawSHA256([]byte("expected content")),
+			},
+			l1: l1Payload, l2: l2Payload, content: content,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			s := mustInit(t, root, testOptions())
+			plan := commitPlan(0, "records/"+recordID+"/revisions/"+recordRevisionID+"/record.json", recordPayload)
+			plan.Writes = append(plan.Writes,
+				store.ImmutableWrite{Path: "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md", Data: test.content},
+				store.ImmutableWrite{Path: "projections/" + recordID + "/" + recordRevisionID + "/l1.json", Data: test.l1},
+				store.ImmutableWrite{Path: "projections/" + recordID + "/" + recordRevisionID + "/l2.json", Data: test.l2},
+			)
+			plan.Manifest.CurrentRecords = []model.RecordPointer{{RecordID: recordID, Revision: recordRevisionID, Status: model.RecordStatusActive, Digest: mustCanonicalDigest(t, recordPayload)}}
+			plan.Manifest.Projections = []model.ProjectionRef{test.ref}
+			if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
+				t.Fatalf("error: %v", err)
+			}
+		})
+	}
+}
+
+func TestCommitPreflightsAndCanonicalizesEveryMachineJSONWrite(t *testing.T) {
+	for _, invalid := range []struct {
+		name string
+		data []byte
+	}{
+		{name: "duplicate key", data: []byte(`{"duplicate":1,"duplicate":2}`)},
+		{name: "float", data: []byte(`{"value":1.5}`)},
+		{name: "exponent", data: []byte(`{"value":1e3}`)},
+		{name: "trailing JSON", data: []byte(`{} {}`)},
+		{name: "invalid UTF-8", data: []byte{'{', '"', 'x', '"', ':', '"', 0xff, '"', '}'}},
+		{name: "over limit", data: append(append([]byte(`{"x":"`), bytes.Repeat([]byte{'a'}, 1<<20)...), []byte(`"}`)...)},
+	} {
+		t.Run(invalid.name, func(t *testing.T) {
+			root := t.TempDir()
+			s := mustInit(t, root, testOptions())
+			validPath := "approvals/sha256-valid.json"
+			invalidPath := "assessments/sha256-invalid.json"
+			plan := commitPlan(0, validPath, []byte(`{ "b": 2, "a": 1 }`))
+			plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: invalidPath, Data: invalid.data})
+			if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
+				t.Fatalf("error: %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(root, ".themico", filepath.FromSlash(validPath))); !os.IsNotExist(err) {
+				t.Fatalf("valid payload written before invalid JSON was rejected: %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(root, ".themico", filepath.FromSlash(invalidPath))); !os.IsNotExist(err) {
+				t.Fatalf("invalid payload was written: %v", err)
+			}
+		})
+	}
+
+	root := t.TempDir()
+	s := mustInit(t, root, testOptions())
+	validPath := "approvals/sha256-valid.json"
+	plan := commitPlan(0, validPath, []byte(`{ "b": 2, "a": 1 }`))
+	if _, err := s.Commit(context.Background(), plan); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(root, ".themico", filepath.FromSlash(validPath)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != `{"a":1,"b":2}` {
+		t.Fatalf("stored JSON is not canonical: %s", got)
+	}
+}
+
+func TestCommitCancellationInHookPreventsGenerationPublication(t *testing.T) {
+	root := t.TempDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	opts := testOptions()
+	opts.BeforeGenerationRename = func() error {
+		cancel()
+		return nil
+	}
+	s := mustInit(t, root, opts)
+	_, err := s.Commit(ctx, commitPlan(0, "approvals/cancel.json", []byte(`{}`)))
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error: %v", err)
+	}
+	current, currentErr := s.Current()
+	if currentErr != nil {
+		t.Fatal(currentErr)
+	}
+	if current.Generation != 0 {
+		t.Fatalf("generation: %d", current.Generation)
+	}
+}
+
+func TestOpenRejectsMalformedOrNonUTCCreatedAt(t *testing.T) {
+	for _, createdAt := range []string{"not-a-time", "2026-08-03T20:34:56+08:00"} {
+		t.Run(createdAt, func(t *testing.T) {
+			root := t.TempDir()
+			mustInit(t, root, testOptions())
+			path := filepath.Join(root, ".themico", "store.json")
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var metadata map[string]any
+			if err := json.Unmarshal(data, &metadata); err != nil {
+				t.Fatal(err)
+			}
+			metadata["created_at"] = createdAt
+			canonicalBytes, err := canonical.Encode(metadata)
+			if err != nil {
+				t.Fatal(err)
+			}
+			overwrite(t, path, canonicalBytes)
+			if _, err := store.Open(root, testOptions()); !errors.Is(err, store.ErrValidation) {
+				t.Fatalf("error: %v", err)
+			}
+		})
 	}
 }
 
@@ -188,10 +610,38 @@ func TestCommitRejectsUnsupportedRootAndMismatchedManifestPointers(t *testing.T)
 		t.Fatalf("unsupported root: %v", err)
 	}
 
-	plan = commitPlan(0, "records/kr_01/revisions/rev_01/content.md", []byte("payload"))
-	plan.Manifest.CurrentRecords = []model.RecordPointer{{RecordID: "kr_missing", Revision: "rev_missing", Status: model.RecordStatusActive}}
+	plan = commitPlan(0, "records/"+recordID+"/revisions/"+recordRevisionID+"/content.md", []byte("payload"))
+	plan.Manifest.CurrentRecords = []model.RecordPointer{{RecordID: "kr_../../escape", Revision: recordRevisionID, Status: model.RecordStatusActive}}
 	if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
 		t.Fatalf("missing record pointer: %v", err)
+	}
+}
+
+func TestCommitPublishesProjectionBoundToRecordRevision(t *testing.T) {
+	root := t.TempDir()
+	s := mustInit(t, root, testOptions())
+	content := []byte("record content")
+	recordPayload := validRecordPayload(t, recordID, recordRevisionID, model.RecordStatusActive, content)
+	l1Payload := validProjectionPayload(t, recordID, recordRevisionID, model.RecordStatusActive)
+	l2Payload := validProjectionPayload(t, recordID, recordRevisionID, model.RecordStatusActive)
+	plan := commitPlan(0, "records/"+recordID+"/revisions/"+recordRevisionID+"/record.json", recordPayload)
+	plan.Writes = append(plan.Writes,
+		store.ImmutableWrite{Path: "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md", Data: content},
+		store.ImmutableWrite{Path: "projections/" + recordID + "/" + recordRevisionID + "/l1.json", Data: l1Payload},
+		store.ImmutableWrite{Path: "projections/" + recordID + "/" + recordRevisionID + "/l2.json", Data: l2Payload},
+	)
+	plan.Manifest.CurrentRecords = []model.RecordPointer{{
+		RecordID: recordID, Revision: recordRevisionID, Status: model.RecordStatusActive, Digest: mustCanonicalDigest(t, recordPayload),
+	}}
+	plan.Manifest.Projections = []model.ProjectionRef{{
+		RecordID: recordID, Revision: recordRevisionID,
+		L1Digest: mustCanonicalDigest(t, l1Payload), L2Digest: mustCanonicalDigest(t, l2Payload), L3Digest: rawSHA256(content),
+	}}
+	if _, err := s.Commit(context.Background(), plan); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Current(); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -199,9 +649,10 @@ func TestCommitPublishesGenerationOneAndCopiesReturnedData(t *testing.T) {
 	root := t.TempDir()
 	s := mustInit(t, root, testOptions())
 	data := []byte("immutable")
-	plan := commitPlan(0, "records/kr_01/revisions/rev_01/content.md", data)
-	plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: "records/kr_01/revisions/rev_01/record.json", Data: []byte(`{}`)})
-	plan.Manifest.CurrentRecords = []model.RecordPointer{{RecordID: "kr_01", Revision: "rev_01", Status: model.RecordStatusActive}}
+	payload := validRecordPayload(t, recordID, recordRevisionID, model.RecordStatusActive, data)
+	plan := commitPlan(0, "records/"+recordID+"/revisions/"+recordRevisionID+"/content.md", data)
+	plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: "records/" + recordID + "/revisions/" + recordRevisionID + "/record.json", Data: payload})
+	plan.Manifest.CurrentRecords = []model.RecordPointer{{RecordID: recordID, Revision: recordRevisionID, Status: model.RecordStatusActive, Digest: mustCanonicalDigest(t, payload)}}
 
 	got, err := s.Commit(context.Background(), plan)
 	if err != nil {
@@ -213,18 +664,18 @@ func TestCommitPublishesGenerationOneAndCopiesReturnedData(t *testing.T) {
 	data[0] = 'X'
 	got.CurrentRecords[0].RecordID = "mutated"
 
-	payload, err := os.ReadFile(filepath.Join(root, ".themico", "records", "kr_01", "revisions", "rev_01", "content.md"))
+	writtenContent, err := os.ReadFile(filepath.Join(root, ".themico", "records", recordID, "revisions", recordRevisionID, "content.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(payload) != "immutable" {
-		t.Fatalf("payload mutated: %q", payload)
+	if string(writtenContent) != "immutable" {
+		t.Fatalf("payload mutated: %q", writtenContent)
 	}
 	current, err := s.Current()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if current.CurrentRecords[0].RecordID != "kr_01" {
+	if current.CurrentRecords[0].RecordID != recordID {
 		t.Fatalf("returned slice exposed state: %+v", current.CurrentRecords)
 	}
 	current.CurrentRecords[0].RecordID = "mutated again"
@@ -232,7 +683,7 @@ func TestCommitPublishesGenerationOneAndCopiesReturnedData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if currentAgain.CurrentRecords[0].RecordID != "kr_01" {
+	if currentAgain.CurrentRecords[0].RecordID != recordID {
 		t.Fatalf("Current returned mutable state: %+v", currentAgain.CurrentRecords)
 	}
 }
@@ -242,7 +693,7 @@ func TestCommitPreRenameFaultLeavesPriorCurrentAndOrphanPayload(t *testing.T) {
 	opts := testOptions()
 	opts.BeforeGenerationRename = func() error { return errors.New("injected fault") }
 	s := mustInit(t, root, opts)
-	path := "records/kr_fault/revisions/rev_fault/content.md"
+	path := "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md"
 
 	_, err := s.Commit(context.Background(), commitPlan(0, path, []byte("orphan")))
 	if err == nil || errors.Is(err, store.ErrConflict) {
@@ -272,7 +723,7 @@ func TestCommitPreRenameFaultLeavesPriorCurrentAndOrphanPayload(t *testing.T) {
 func TestCommitRefusesImmutableOverwriteWithoutChangingBytes(t *testing.T) {
 	root := t.TempDir()
 	s := mustInit(t, root, testOptions())
-	path := "records/kr_01/revisions/rev_01/content.md"
+	path := "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md"
 	if _, err := s.Commit(context.Background(), commitPlan(0, path, []byte("winner"))); err != nil {
 		t.Fatal(err)
 	}
@@ -314,8 +765,8 @@ func TestConcurrentCommitHasOneWinnerAndOneConflict(t *testing.T) {
 		path string
 		data string
 	}{
-		{s: s1, path: "records/kr_a/revisions/rev_a/content.md", data: "alpha"},
-		{s: s2, path: "records/kr_b/revisions/rev_b/content.md", data: "beta"},
+		{s: s1, path: "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md", data: "alpha"},
+		{s: s2, path: "records/" + secondRecordID + "/revisions/" + secondRecordRevisionID + "/content.md", data: "beta"},
 	} {
 		_ = i
 		group.Add(1)
@@ -485,13 +936,12 @@ func TestOpenRejectsMissingOrMismatchedReferencedPayload(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			s := mustInit(t, root, testOptions())
-			record := []byte(`{}`)
+			record := validRecordPayload(t, recordID, recordRevisionID, model.RecordStatusActive, []byte("content"))
 			content := []byte("content")
-			path := "records/kr_01/revisions/rev_01/content.md"
-			plan := commitPlan(0, "records/kr_01/revisions/rev_01/record.json", record)
+			path := "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md"
+			plan := commitPlan(0, "records/"+recordID+"/revisions/"+recordRevisionID+"/record.json", record)
 			plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: path, Data: content})
-			plan.Manifest.CurrentRecords = []model.RecordPointer{{RecordID: "kr_01", Revision: "rev_01", Status: model.RecordStatusActive}}
-			plan.Manifest.Projections = []model.ProjectionRef{{RecordID: "kr_01", Revision: "rev_01", L3Digest: rawSHA256(content)}}
+			plan.Manifest.CurrentRecords = []model.RecordPointer{{RecordID: recordID, Revision: recordRevisionID, Status: model.RecordStatusActive, Digest: mustCanonicalDigest(t, record)}}
 			if _, err := s.Commit(context.Background(), plan); err != nil {
 				t.Fatal(err)
 			}
@@ -510,7 +960,7 @@ func TestHigherBrokenGenerationIsNotWriterBaseline(t *testing.T) {
 	mustMkdirAll(t, broken)
 	mustWrite(t, filepath.Join(broken, "manifest.json"), []byte(`{}`))
 
-	_, err := s.Commit(context.Background(), commitPlan(2, "records/kr/revisions/rev/content.md", []byte("payload")))
+	_, err := s.Commit(context.Background(), commitPlan(2, "records/"+recordID+"/revisions/"+recordRevisionID+"/content.md", []byte("payload")))
 	if !errors.Is(err, store.ErrValidation) {
 		t.Fatalf("error: %v", err)
 	}
@@ -519,7 +969,7 @@ func TestHigherBrokenGenerationIsNotWriterBaseline(t *testing.T) {
 func TestCommitRejectsInvalidViewsWithoutWritingPayload(t *testing.T) {
 	root := t.TempDir()
 	s := mustInit(t, root, testOptions())
-	path := "records/kr/revisions/rev/content.md"
+	path := "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md"
 	plan := commitPlan(0, path, []byte("payload"))
 	plan.Views = json.RawMessage(`{"duplicate":1,"duplicate":2}`)
 	if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
@@ -534,15 +984,16 @@ func TestCommitValidatesContextExpectedGenerationAndDuplicateTargets(t *testing.
 	root := t.TempDir()
 	s := mustInit(t, root, testOptions())
 
+	path := "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md"
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := s.Commit(ctx, commitPlan(0, "records/kr/revisions/rev/content.md", []byte("payload"))); !errors.Is(err, context.Canceled) {
+	if _, err := s.Commit(ctx, commitPlan(0, path, []byte("payload"))); !errors.Is(err, context.Canceled) {
 		t.Fatalf("cancellation: %v", err)
 	}
-	if _, err := s.Commit(context.Background(), commitPlan(1, "records/kr/revisions/rev/content.md", []byte("payload"))); !errors.Is(err, store.ErrConflict) {
+	if _, err := s.Commit(context.Background(), commitPlan(1, path, []byte("payload"))); !errors.Is(err, store.ErrConflict) {
 		t.Fatalf("expected generation: %v", err)
 	}
-	plan := commitPlan(0, "records/kr/revisions/rev/content.md", []byte("one"))
+	plan := commitPlan(0, path, []byte("one"))
 	plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: plan.Writes[0].Path, Data: []byte("two")})
 	if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
 		t.Fatalf("duplicate target: %v", err)
@@ -658,6 +1109,128 @@ func assertGenesis(t *testing.T, manifest model.Manifest) {
 	if manifest.ViewsDigest == "" || manifest.Digest == "" {
 		t.Fatalf("genesis digests: %+v", manifest)
 	}
+}
+
+func validCandidatePayload(t *testing.T, id, revision string, status model.CandidateStatus, content []byte) []byte {
+	t.Helper()
+	data, err := canonical.Encode(model.CandidateRevision{
+		Schema:          "themico/candidate-revision",
+		CandidateID:     id,
+		Revision:        revision,
+		Status:          status,
+		Sources:         []model.SourceRef{},
+		Relations:       []model.Relation{},
+		L3Digest:        rawSHA256(content),
+		ContentMarkdown: content,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+
+func validRecordPayload(t *testing.T, id, revision string, status model.RecordStatus, content []byte) []byte {
+	t.Helper()
+	l1 := validL1()
+	l2 := validL2()
+	data, err := canonical.Encode(model.RecordRevision{
+		Schema:          "themico/record-revision",
+		RecordID:        id,
+		Revision:        revision,
+		KnowledgeType:   model.TypeDesignDecision,
+		Status:          status,
+		Sources:         []model.SourceRef{},
+		Relations:       []model.Relation{},
+		L1:              l1,
+		L2:              l2,
+		L1Digest:        mustValueDigest(t, l1),
+		L2Digest:        mustValueDigest(t, l2),
+		L3Digest:        rawSHA256(content),
+		ContentMarkdown: content,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+
+func validL1() model.L1 {
+	return model.L1{Title: "title", Summary: "summary", Triggers: []string{}, Tags: []string{}}
+}
+
+func validL2() model.L2 {
+	return model.L2{
+		CoreConclusion:    "conclusion",
+		ApplicableWhen:    []string{},
+		NotApplicableWhen: []string{},
+		Impact:            []string{},
+		EvidenceSummary:   []string{},
+		UpgradeWhen:       []string{},
+		Payload:           json.RawMessage(`{}`),
+	}
+}
+
+func validProjectionPayload(t *testing.T, id, revision string, status model.RecordStatus) []byte {
+	t.Helper()
+	l1 := validL1()
+	l2 := validL2()
+	data, err := canonical.Encode(model.Projection{
+		Schema:        "themico/projection",
+		RecordID:      id,
+		Revision:      revision,
+		KnowledgeType: model.TypeDesignDecision,
+		Status:        status,
+		L1:            l1,
+		L2:            l2,
+		L1Digest:      mustValueDigest(t, l1),
+		L2Digest:      mustValueDigest(t, l2),
+		L3Digest:      rawSHA256([]byte("record content")),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+
+func projectionPayloadWithL1Title(t *testing.T, title string) []byte {
+	t.Helper()
+	l1 := validL1()
+	l1.Title = title
+	l2 := validL2()
+	data, err := canonical.Encode(model.Projection{
+		Schema:        "themico/projection",
+		RecordID:      recordID,
+		Revision:      recordRevisionID,
+		KnowledgeType: model.TypeDesignDecision,
+		Status:        model.RecordStatusActive,
+		L1:            l1,
+		L2:            l2,
+		L1Digest:      mustValueDigest(t, l1),
+		L2Digest:      mustValueDigest(t, l2),
+		L3Digest:      rawSHA256([]byte("record content")),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+
+func mustValueDigest(t *testing.T, value any) string {
+	t.Helper()
+	digest, err := canonical.Digest(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return digest
+}
+
+func mustCanonicalDigest(t *testing.T, data []byte) string {
+	t.Helper()
+	digest, err := canonical.Digest(json.RawMessage(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return digest
 }
 
 func rawSHA256(data []byte) string {

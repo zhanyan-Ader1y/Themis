@@ -222,6 +222,7 @@ type CandidatePointer struct {
 	CandidateID string          `json:"candidate_id"`
 	Revision    string          `json:"candidate_revision"`
 	Status      CandidateStatus `json:"status"`
+	Digest      string          `json:"digest"`
 	RecordID    string          `json:"record_id,omitempty"`
 }
 
@@ -230,6 +231,7 @@ type RecordPointer struct {
 	RecordID string       `json:"record_id"`
 	Revision string       `json:"record_revision"`
 	Status   RecordStatus `json:"status"`
+	Digest   string       `json:"digest"`
 }
 
 // ProjectionRef binds immutable projection bytes to one record revision.
@@ -400,6 +402,9 @@ func normalizeCandidatePointers(values []CandidatePointer) []CandidatePointer {
 		if left.Status != right.Status {
 			return compare(left.Status, right.Status)
 		}
+		if left.Digest != right.Digest {
+			return compare(left.Digest, right.Digest)
+		}
 		return compare(left.RecordID, right.RecordID)
 	})
 	return slices.Compact(normalized)
@@ -417,7 +422,10 @@ func normalizeRecordPointers(values []RecordPointer) []RecordPointer {
 		if left.Revision != right.Revision {
 			return compare(left.Revision, right.Revision)
 		}
-		return compare(left.Status, right.Status)
+		if left.Status != right.Status {
+			return compare(left.Status, right.Status)
+		}
+		return compare(left.Digest, right.Digest)
 	})
 	return slices.Compact(normalized)
 }

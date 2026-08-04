@@ -392,6 +392,46 @@ func TestEnumClosedSets(t *testing.T) {
 	}
 }
 
+func TestManifestPointerNormalizationIncludesPayloadDigest(t *testing.T) {
+	candidateA := model.CandidatePointer{
+		CandidateID: "cand_00000000000000000000000000000001",
+		Revision:    "crev_00000000000000000000000000000001",
+		Status:      model.CandidateStatusProposed,
+		Digest:      "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	}
+	candidateB := candidateA
+	candidateB.Digest = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	recordA := model.RecordPointer{
+		RecordID: "kr_00000000000000000000000000000001",
+		Revision: "rev_00000000000000000000000000000001",
+		Status:   model.RecordStatusActive,
+		Digest:   "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	}
+	recordB := recordA
+	recordB.Digest = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+
+	normalized := model.NormalizeManifest(model.Manifest{
+		CurrentCandidates: []model.CandidatePointer{candidateB, candidateA},
+		CurrentRecords:    []model.RecordPointer{recordB, recordA},
+	})
+	if !reflect.DeepEqual(normalized.CurrentCandidates, []model.CandidatePointer{candidateA, candidateB}) {
+		t.Fatalf("candidate pointers = %#v", normalized.CurrentCandidates)
+	}
+	if !reflect.DeepEqual(normalized.CurrentRecords, []model.RecordPointer{recordA, recordB}) {
+		t.Fatalf("record pointers = %#v", normalized.CurrentRecords)
+	}
+
+	normalized.CurrentCandidates[0].Digest = "mutated"
+	normalized.CurrentRecords[0].Digest = "mutated"
+	fresh := model.NormalizeManifest(model.Manifest{
+		CurrentCandidates: []model.CandidatePointer{candidateA},
+		CurrentRecords:    []model.RecordPointer{recordA},
+	})
+	if fresh.CurrentCandidates[0].Digest != candidateA.Digest || fresh.CurrentRecords[0].Digest != recordA.Digest {
+		t.Fatalf("normalization exposed pointer storage: candidates=%#v records=%#v", fresh.CurrentCandidates, fresh.CurrentRecords)
+	}
+}
+
 func TestFactoriesHeadingsCannotMutateRegistry(t *testing.T) {
 	factories := model.Factories()
 	factories[0].L3Headings[0] = "changed"
