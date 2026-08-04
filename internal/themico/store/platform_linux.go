@@ -4,6 +4,7 @@ package store
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"runtime"
 	"syscall"
@@ -12,7 +13,13 @@ import (
 
 const renameNoReplaceFlag = 1
 
-func renameNoReplace(source, target string) error {
+func renameRootNoReplace(parent *os.Root, source, target string) error {
+	directory, err := parent.Open(".")
+	if err != nil {
+		return fmt.Errorf("open publication parent: %w", err)
+	}
+	defer directory.Close()
+	fd := int(directory.Fd())
 	oldPath, err := syscall.BytePtrFromString(source)
 	if err != nil {
 		return err
@@ -23,13 +30,14 @@ func renameNoReplace(source, target string) error {
 	}
 	_, _, errno := syscall.Syscall6(
 		renameat2Trap(),
-		^uintptr(99),
+		uintptr(fd),
 		uintptr(unsafe.Pointer(oldPath)),
-		^uintptr(99),
+		uintptr(fd),
 		uintptr(unsafe.Pointer(newPath)),
 		renameNoReplaceFlag,
 		0,
 	)
+	runtime.KeepAlive(directory)
 	if errno == 0 {
 		return nil
 	}
@@ -64,11 +72,14 @@ func renameat2Trap() uintptr {
 	}
 }
 
-func syncDir(path string) error {
-	directory, err := os.Open(path)
+func syncRootDir(parent *os.Root, path string) error {
+	directory, err := parent.Open(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("open directory for sync %s: %w", path, err)
 	}
 	defer directory.Close()
-	return directory.Sync()
+	if err := directory.Sync(); err != nil {
+		return fmt.Errorf("sync directory %s: %w", path, err)
+	}
+	return nil
 }

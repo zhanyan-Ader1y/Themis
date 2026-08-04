@@ -64,8 +64,13 @@ type storeMetadata struct {
 
 func Init(root string, opts Options) (*Store, error) {
 	opts = optionsWithDefaults(opts)
-	storeRoot := filepath.Join(root, ".themico")
-	if _, err := os.Lstat(storeRoot); err == nil {
+	parent, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, fmt.Errorf("open initialization parent: %w", err)
+	}
+	defer parent.Close()
+	const storeName = ".themico"
+	if _, err := parent.Lstat(storeName); err == nil {
 		return nil, fmt.Errorf("%w: store already exists", ErrPrecondition)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("%w: inspect store root: %v", ErrPrecondition, err)
@@ -78,8 +83,8 @@ func Init(root string, opts Options) (*Store, error) {
 	if err := validateID("op_", operationID); err != nil {
 		return nil, err
 	}
-	stagingRoot := filepath.Join(root, ".themico.init-"+operationID)
-	if err := os.Mkdir(stagingRoot, 0o700); err != nil {
+	stagingName := ".themico.init-" + operationID
+	if err := parent.Mkdir(stagingName, 0o700); err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return nil, fmt.Errorf("%w: initialization staging exists", ErrPrecondition)
 		}
@@ -88,12 +93,17 @@ func Init(root string, opts Options) (*Store, error) {
 	published := false
 	defer func() {
 		if !published {
-			_ = os.RemoveAll(stagingRoot)
+			_ = parent.RemoveAll(stagingName)
 		}
 	}()
+	staging, err := parent.OpenRoot(stagingName)
+	if err != nil {
+		return nil, fmt.Errorf("open initialization staging: %w", err)
+	}
+	defer staging.Close()
 
 	for _, directory := range []string{"candidates", "records", "projections", "preparations", "assessments", "approvals", "generations"} {
-		if err := os.Mkdir(filepath.Join(stagingRoot, directory), 0o700); err != nil {
+		if err := staging.Mkdir(directory, 0o700); err != nil {
 			return nil, fmt.Errorf("create store directory %s: %w", directory, err)
 		}
 	}
@@ -133,39 +143,38 @@ func Init(root string, opts Options) (*Store, error) {
 		return nil, fmt.Errorf("canonicalize store metadata: %w", err)
 	}
 
-	generationRoot := filepath.Join(stagingRoot, "generations", generationName(0))
-	if err := os.Mkdir(generationRoot, 0o700); err != nil {
+	if err := staging.Mkdir(filepath.Join("generations", generationName(0)), 0o700); err != nil {
 		return nil, fmt.Errorf("create genesis generation: %w", err)
 	}
-	if err := writeNewSynced(filepath.Join(stagingRoot, "store.json"), metadataBytes); err != nil {
+	if err := writeNewSyncedRoot(staging, "store.json", metadataBytes); err != nil {
 		return nil, err
 	}
-	if err := writeNewSynced(filepath.Join(generationRoot, "manifest.json"), manifestBytes); err != nil {
+	if err := writeNewSyncedRoot(staging, filepath.Join("generations", generationName(0), "manifest.json"), manifestBytes); err != nil {
 		return nil, err
 	}
-	if err := writeNewSynced(filepath.Join(generationRoot, "views.json"), viewsBytes); err != nil {
+	if err := writeNewSyncedRoot(staging, filepath.Join("generations", generationName(0), "views.json"), viewsBytes); err != nil {
 		return nil, err
 	}
-	if err := syncDir(generationRoot); err != nil {
+	if err := syncRootDir(staging, filepath.Join("generations", generationName(0))); err != nil {
 		return nil, err
 	}
-	if err := syncDir(filepath.Join(stagingRoot, "generations")); err != nil {
+	if err := syncRootDir(staging, "generations"); err != nil {
 		return nil, err
 	}
-	if err := syncDir(stagingRoot); err != nil {
+	if err := syncRootDir(parent, stagingName); err != nil {
 		return nil, err
 	}
-	if err := renameAbsent(stagingRoot, storeRoot); err != nil {
+	if err := renameRootNoReplace(parent, stagingName, storeName); err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return nil, fmt.Errorf("%w: store appeared during initialization", ErrPrecondition)
 		}
 		return nil, fmt.Errorf("publish store: %w", err)
 	}
 	published = true
-	if err := syncDir(root); err != nil {
+	if err := syncRootDir(parent, "."); err != nil {
 		return nil, err
 	}
-	return &Store{root: storeRoot, opts: opts}, nil
+	return &Store{root: filepath.Join(root, storeName), opts: opts}, nil
 }
 
 func Open(root string, opts Options) (*Store, error) {
@@ -265,7 +274,7 @@ func (s *Store) Commit(ctx context.Context, plan CommitPlan) (model.Manifest, er
 		if err := ctx.Err(); err != nil {
 			return model.Manifest{}, err
 		}
-		if err := writeImmutable(root, s.root, write.path, write.data); err != nil {
+		if err := writeImmutable(root, write.path, write.data); err != nil {
 			return model.Manifest{}, err
 		}
 	}
@@ -298,12 +307,10 @@ func (s *Store) Commit(ctx context.Context, plan CommitPlan) (model.Manifest, er
 	if err := writeNewSyncedRoot(staging, "views.json", viewsBytes); err != nil {
 		return model.Manifest{}, err
 	}
-	stagingRoot := filepath.Join(s.root, "generations", stagingName)
-	generationsRoot := filepath.Join(s.root, "generations")
-	if err := syncDir(stagingRoot); err != nil {
+	if err := syncRootDir(generations, stagingName); err != nil {
 		return model.Manifest{}, err
 	}
-	if err := syncDir(generationsRoot); err != nil {
+	if err := syncRootDir(root, "generations"); err != nil {
 		return model.Manifest{}, err
 	}
 	if err := ctx.Err(); err != nil {
@@ -317,14 +324,14 @@ func (s *Store) Commit(ctx context.Context, plan CommitPlan) (model.Manifest, er
 	if err := ctx.Err(); err != nil {
 		return model.Manifest{}, err
 	}
-	finalRoot := filepath.Join(generationsRoot, generationName(manifest.Generation))
-	if err := renameAbsent(stagingRoot, finalRoot); err != nil {
+	finalName := generationName(manifest.Generation)
+	if err := renameRootNoReplace(generations, stagingName, finalName); err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return model.Manifest{}, fmt.Errorf("%w: generation %d already exists", ErrConflict, manifest.Generation)
 		}
 		return model.Manifest{}, fmt.Errorf("publish generation: %w", err)
 	}
-	if err := syncDir(generationsRoot); err != nil {
+	if err := syncRootDir(root, "generations"); err != nil {
 		return model.Manifest{}, err
 	}
 	return copyManifest(manifest), nil
@@ -398,7 +405,7 @@ func copyManifest(value model.Manifest) model.Manifest {
 	return value
 }
 
-func writeImmutable(root *os.Root, storePath, relativePath string, data []byte) error {
+func writeImmutable(root *os.Root, relativePath string, data []byte) error {
 	parent := filepath.Dir(relativePath)
 	if err := root.MkdirAll(parent, 0o700); err != nil {
 		return validationError("create immutable parent", err)
@@ -417,7 +424,7 @@ func writeImmutable(root *os.Root, storePath, relativePath string, data []byte) 
 		}
 		return validationError("write immutable payload", err)
 	}
-	if err := syncDir(filepath.Join(storePath, parent)); err != nil {
+	if err := syncRootDir(root, parent); err != nil {
 		return err
 	}
 	return nil
@@ -425,14 +432,6 @@ func writeImmutable(root *os.Root, storePath, relativePath string, data []byte) 
 
 func writeNewSyncedRoot(root *os.Root, path string, data []byte) error {
 	file, err := root.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
-	if err != nil {
-		return err
-	}
-	return writeAndSyncFile(file, path, data)
-}
-
-func writeNewSynced(path string, data []byte) error {
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		return err
 	}
@@ -457,8 +456,4 @@ func writeAndSyncFile(file *os.File, path string, data []byte) error {
 	}
 	closed = true
 	return nil
-}
-
-func renameAbsent(source, target string) error {
-	return renameNoReplace(source, target)
 }

@@ -281,6 +281,14 @@ func validateCandidatePointer(root *os.Root, pointer model.CandidatePointer, pen
 	if revision.CandidateID != pointer.CandidateID || revision.Revision != pointer.Revision || revision.Status != pointer.Status {
 		return validationError("candidate pointer identity does not match payload", nil)
 	}
+	if revision.PublishedRecordID != "" {
+		if err := validateID("kr_", revision.PublishedRecordID); err != nil {
+			return validationError("candidate published record ID is invalid", err)
+		}
+	}
+	if revision.PublishedRecordID != pointer.RecordID {
+		return validationError("candidate published record binding does not match pointer", nil)
+	}
 	digest, err := canonical.Digest(json.RawMessage(payload))
 	if err != nil || digest != pointer.Digest {
 		return validationError("candidate pointer digest does not match payload", err)

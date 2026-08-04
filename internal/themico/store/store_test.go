@@ -161,7 +161,7 @@ func TestCommitDoesNotReplaceEmptyGenerationTargetCreatedAtHook(t *testing.T) {
 		return os.Mkdir(finalRoot, 0o700)
 	}
 	s := mustInit(t, root, opts)
-	_, err := s.Commit(context.Background(), commitPlan(0, "approvals/no-replace.json", []byte(`{}`)))
+	_, err := s.Commit(context.Background(), commitPlan(0, "approvals/sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json", []byte(`{}`)))
 	if !errors.Is(err, store.ErrConflict) {
 		t.Fatalf("error: %v", err)
 	}
@@ -171,6 +171,90 @@ func TestCommitDoesNotReplaceEmptyGenerationTargetCreatedAtHook(t *testing.T) {
 	}
 	if len(entries) != 0 {
 		t.Fatalf("empty target was replaced: %v", entries)
+	}
+}
+
+func TestInitPublicationStaysAnchoredWhenParentPathIsReplaced(t *testing.T) {
+	root := t.TempDir()
+	alias := root + "-alias"
+	if err := os.Symlink(root, alias); err != nil {
+		t.Skipf("parent alias setup unavailable: %v", err)
+	}
+	defer os.Remove(alias)
+	outside := root + "-outside"
+	defer os.RemoveAll(outside)
+	if err := os.Mkdir(outside, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	ready := make(chan struct{})
+	release := make(chan struct{})
+	opts := testOptions()
+	baseIDs := opts.NewID
+	opts.NewID = func(prefix string) (string, error) {
+		id, err := baseIDs(prefix)
+		if err == nil {
+			close(ready)
+			<-release
+		}
+		return id, err
+	}
+
+	result := make(chan error, 1)
+	go func() {
+		_, err := store.Init(alias, opts)
+		result <- err
+	}()
+	<-ready
+	if err := os.Remove(alias); err != nil {
+		close(release)
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, alias); err != nil {
+		close(release)
+		t.Skipf("parent alias replacement unavailable: %v", err)
+	}
+	close(release)
+	if err := <-result; err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".themico", "store.json")); err != nil {
+		t.Fatalf("store was not published under anchored parent: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(outside, ".themico")); !os.IsNotExist(err) {
+		t.Fatalf("store was published under replacement parent: %v", err)
+	}
+}
+
+func TestCommitPublicationStaysAnchoredWhenStorePathIsReplaced(t *testing.T) {
+	root := t.TempDir()
+	storeRoot := filepath.Join(root, ".themico")
+	relocated := filepath.Join(root, ".themico-relocated")
+	var setupErr error
+	opts := testOptions()
+	opts.BeforeGenerationRename = func() error {
+		if err := os.Rename(storeRoot, relocated); err != nil {
+			setupErr = err
+			return err
+		}
+		return os.Mkdir(storeRoot, 0o700)
+	}
+	s := mustInit(t, root, opts)
+	path := "approvals/sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
+	if _, err := s.Commit(context.Background(), commitPlan(0, path, []byte(`{}`))); err != nil {
+		if setupErr != nil && errors.Is(err, setupErr) {
+			t.Skipf("store path replacement setup unavailable: %v", setupErr)
+		}
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(relocated, "generations", "gen-00000000000000000001", "manifest.json")); err != nil {
+		t.Fatalf("generation was not published under anchored parent: %v", err)
+	}
+	entries, err := os.ReadDir(storeRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("generation was published under replacement store path: %v", entries)
 	}
 }
 
@@ -189,6 +273,10 @@ func TestCommitRejectsUnsafeImmutablePaths(t *testing.T) {
 		"records/kr/revisions/rev/unexpected.json",
 		"projections/kr/rev/content.md",
 		"preparations/prep/other.json",
+		"assessments/sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bin",
+		"approvals/sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt",
+		"assessments/not-a-digest.json",
+		"approvals/sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA.json",
 	}
 
 	for _, path := range tests {
@@ -414,6 +502,56 @@ func TestCommitRejectsCandidatePointerPayloadIntegrityFailures(t *testing.T) {
 	}
 }
 
+func TestCommitRejectsCandidatePublishedRecordBindingMismatch(t *testing.T) {
+	content := []byte("candidate content")
+	otherRecordID := "kr_00000000000000000000000000000002"
+	for _, test := range []struct {
+		name              string
+		pointerRecordID   string
+		publishedRecordID string
+	}{
+		{name: "pointer adds binding", pointerRecordID: recordID},
+		{name: "payload adds binding", publishedRecordID: recordID},
+		{name: "different binding", pointerRecordID: recordID, publishedRecordID: otherRecordID},
+		{name: "payload binding malformed", pointerRecordID: recordID, publishedRecordID: "kr_NOT_HEX"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			s := mustInit(t, root, testOptions())
+			payload := validCandidatePayloadWithRecord(t, candidateID, candidateRevisionID, model.CandidateStatusProposed, content, test.publishedRecordID)
+			plan := commitPlan(0, "candidates/"+candidateID+"/revisions/"+candidateRevisionID+"/candidate.json", payload)
+			plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: "candidates/" + candidateID + "/revisions/" + candidateRevisionID + "/content.md", Data: content})
+			plan.Manifest.CurrentCandidates = []model.CandidatePointer{{
+				CandidateID: candidateID, Revision: candidateRevisionID, Status: model.CandidateStatusProposed,
+				Digest: mustCanonicalDigest(t, payload), RecordID: test.pointerRecordID,
+			}}
+			if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
+				t.Fatalf("error: %v", err)
+			}
+		})
+	}
+}
+
+func TestCommitAcceptsMatchingCandidatePublishedRecordBinding(t *testing.T) {
+	content := []byte("candidate content")
+	for _, boundRecordID := range []string{"", recordID} {
+		t.Run(boundRecordID, func(t *testing.T) {
+			root := t.TempDir()
+			s := mustInit(t, root, testOptions())
+			payload := validCandidatePayloadWithRecord(t, candidateID, candidateRevisionID, model.CandidateStatusProposed, content, boundRecordID)
+			plan := commitPlan(0, "candidates/"+candidateID+"/revisions/"+candidateRevisionID+"/candidate.json", payload)
+			plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: "candidates/" + candidateID + "/revisions/" + candidateRevisionID + "/content.md", Data: content})
+			plan.Manifest.CurrentCandidates = []model.CandidatePointer{{
+				CandidateID: candidateID, Revision: candidateRevisionID, Status: model.CandidateStatusProposed,
+				Digest: mustCanonicalDigest(t, payload), RecordID: boundRecordID,
+			}}
+			if _, err := s.Commit(context.Background(), plan); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
 func TestCommitRejectsProjectionIntegrityFailures(t *testing.T) {
 	content := []byte("record content")
 	recordPayload := validRecordPayload(t, recordID, recordRevisionID, model.RecordStatusActive, content)
@@ -520,8 +658,8 @@ func TestCommitPreflightsAndCanonicalizesEveryMachineJSONWrite(t *testing.T) {
 		t.Run(invalid.name, func(t *testing.T) {
 			root := t.TempDir()
 			s := mustInit(t, root, testOptions())
-			validPath := "approvals/sha256-valid.json"
-			invalidPath := "assessments/sha256-invalid.json"
+			validPath := "approvals/sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
+			invalidPath := "assessments/sha256-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.json"
 			plan := commitPlan(0, validPath, []byte(`{ "b": 2, "a": 1 }`))
 			plan.Writes = append(plan.Writes, store.ImmutableWrite{Path: invalidPath, Data: invalid.data})
 			if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
@@ -538,7 +676,7 @@ func TestCommitPreflightsAndCanonicalizesEveryMachineJSONWrite(t *testing.T) {
 
 	root := t.TempDir()
 	s := mustInit(t, root, testOptions())
-	validPath := "approvals/sha256-valid.json"
+	validPath := "approvals/sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
 	plan := commitPlan(0, validPath, []byte(`{ "b": 2, "a": 1 }`))
 	if _, err := s.Commit(context.Background(), plan); err != nil {
 		t.Fatal(err)
@@ -561,7 +699,7 @@ func TestCommitCancellationInHookPreventsGenerationPublication(t *testing.T) {
 		return nil
 	}
 	s := mustInit(t, root, opts)
-	_, err := s.Commit(ctx, commitPlan(0, "approvals/cancel.json", []byte(`{}`)))
+	_, err := s.Commit(ctx, commitPlan(0, "approvals/sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.json", []byte(`{}`)))
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("error: %v", err)
 	}
@@ -1113,15 +1251,21 @@ func assertGenesis(t *testing.T, manifest model.Manifest) {
 
 func validCandidatePayload(t *testing.T, id, revision string, status model.CandidateStatus, content []byte) []byte {
 	t.Helper()
+	return validCandidatePayloadWithRecord(t, id, revision, status, content, "")
+}
+
+func validCandidatePayloadWithRecord(t *testing.T, id, revision string, status model.CandidateStatus, content []byte, recordID string) []byte {
+	t.Helper()
 	data, err := canonical.Encode(model.CandidateRevision{
-		Schema:          "themico/candidate-revision",
-		CandidateID:     id,
-		Revision:        revision,
-		Status:          status,
-		Sources:         []model.SourceRef{},
-		Relations:       []model.Relation{},
-		L3Digest:        rawSHA256(content),
-		ContentMarkdown: content,
+		Schema:            "themico/candidate-revision",
+		CandidateID:       id,
+		Revision:          revision,
+		Status:            status,
+		Sources:           []model.SourceRef{},
+		Relations:         []model.Relation{},
+		L3Digest:          rawSHA256(content),
+		PublishedRecordID: recordID,
+		ContentMarkdown:   content,
 	})
 	if err != nil {
 		t.Fatal(err)

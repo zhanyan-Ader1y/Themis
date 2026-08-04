@@ -47,11 +47,26 @@ func validateImmutablePath(slashPath string) (string, error) {
 	if segments[0] == "preparations" && (len(segments) != 3 || segments[2] != "prepare.json") {
 		return "", validationError("preparation path does not match the fixed layout", nil)
 	}
-	if (segments[0] == "assessments" || segments[0] == "approvals") && len(segments) != 2 {
-		return "", validationError("artifact path does not match the fixed layout", nil)
+	if segments[0] == "assessments" || segments[0] == "approvals" {
+		if len(segments) != 2 || !validDigestArtifactName(segments[1]) {
+			return "", validationError("artifact path does not match the fixed digest JSON layout", nil)
+		}
 	}
 
 	return filepath.FromSlash(slashPath), nil
+}
+
+func validDigestArtifactName(name string) bool {
+	if len(name) != len("sha256-")+64+len(".json") || !strings.HasPrefix(name, "sha256-") || !strings.HasSuffix(name, ".json") {
+		return false
+	}
+	digest := name[len("sha256-") : len(name)-len(".json")]
+	for _, char := range digest {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') {
+			return false
+		}
+	}
+	return true
 }
 
 func hasWindowsVolume(path string) bool {

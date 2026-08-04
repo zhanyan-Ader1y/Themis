@@ -7,12 +7,12 @@ import (
 	"os"
 )
 
-func renameNoReplace(source, target string) error {
+func renameRootNoReplace(parent *os.Root, source, target string) error {
 	return fmt.Errorf("atomic no-replace directory rename is unavailable on this platform")
 }
 
-func syncDir(path string) error {
-	directory, err := os.Open(path)
+func syncRootDir(parent *os.Root, path string) error {
+	directory, err := parent.Open(path)
 	if err != nil {
 		return fmt.Errorf("open directory for sync %s: %w", path, err)
 	}
