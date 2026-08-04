@@ -37,34 +37,39 @@ func parseGenerationName(name string) (uint64, bool) {
 }
 
 func (s *Store) loadCurrent() (model.Manifest, error) {
+	manifest, _, err := s.loadCurrentState()
+	return manifest, err
+}
+
+func (s *Store) loadCurrentState() (model.Manifest, json.RawMessage, error) {
 	root, err := os.OpenRoot(s.root)
 	if err != nil {
-		return model.Manifest{}, validationError("open store root", err)
+		return model.Manifest{}, nil, validationError("open store root", err)
 	}
 	defer root.Close()
 
 	metadata, err := loadMetadata(root)
 	if err != nil {
-		return model.Manifest{}, err
+		return model.Manifest{}, nil, err
 	}
 	if metadata.Schema != storeSchema {
-		return model.Manifest{}, validationError("store metadata schema is invalid", nil)
+		return model.Manifest{}, nil, validationError("store metadata schema is invalid", nil)
 	}
 	if err := validateID("op_", metadata.StoreID); err != nil {
-		return model.Manifest{}, err
+		return model.Manifest{}, nil, err
 	}
 	createdAt, err := time.Parse(time.RFC3339Nano, metadata.CreatedAt)
 	if err != nil || createdAt.Location() != time.UTC || !strings.HasSuffix(metadata.CreatedAt, "Z") {
-		return model.Manifest{}, validationError("store creation time is not UTC RFC3339Nano", err)
+		return model.Manifest{}, nil, validationError("store creation time is not UTC RFC3339Nano", err)
 	}
 	generations, err := root.OpenRoot("generations")
 	if err != nil {
-		return model.Manifest{}, validationError("open generations root", err)
+		return model.Manifest{}, nil, validationError("open generations root", err)
 	}
 	defer generations.Close()
 	entries, err := readRootDir(generations, ".")
 	if err != nil {
-		return model.Manifest{}, validationError("read generations", err)
+		return model.Manifest{}, nil, validationError("read generations", err)
 	}
 	numbered := make(map[uint64]string)
 	var highest uint64
@@ -74,7 +79,7 @@ func (s *Store) loadCurrent() (model.Manifest, error) {
 			continue
 		}
 		if !entry.IsDir() {
-			return model.Manifest{}, validationError("generation entry is not a directory", nil)
+			return model.Manifest{}, nil, validationError("generation entry is not a directory", nil)
 		}
 		numbered[generation] = entry.Name()
 		if generation > highest {
@@ -82,40 +87,42 @@ func (s *Store) loadCurrent() (model.Manifest, error) {
 		}
 	}
 	if _, ok := numbered[0]; !ok {
-		return model.Manifest{}, validationError("generation zero is missing", nil)
+		return model.Manifest{}, nil, validationError("generation zero is missing", nil)
 	}
 
 	var current model.Manifest
+	var currentViews json.RawMessage
 	for generation := uint64(0); generation <= highest; generation++ {
 		name, ok := numbered[generation]
 		if !ok {
-			return model.Manifest{}, validationError("generation chain has a gap", nil)
+			return model.Manifest{}, nil, validationError("generation chain has a gap", nil)
 		}
 		manifest, views, err := loadGeneration(generations, name)
 		if err != nil {
-			return model.Manifest{}, err
+			return model.Manifest{}, nil, err
 		}
 		if manifest.Generation != generation {
-			return model.Manifest{}, validationError("manifest generation does not match directory", nil)
+			return model.Manifest{}, nil, validationError("manifest generation does not match directory", nil)
 		}
 		if generation == 0 {
 			if manifest.ParentGeneration != nil || manifest.ParentManifestDigest != "" {
-				return model.Manifest{}, validationError("genesis has a parent", nil)
+				return model.Manifest{}, nil, validationError("genesis has a parent", nil)
 			}
 			if manifest.Digest != metadata.GenesisManifestDigest {
-				return model.Manifest{}, validationError("genesis digest does not match store metadata", nil)
+				return model.Manifest{}, nil, validationError("genesis digest does not match store metadata", nil)
 			}
 		} else {
 			if manifest.ParentGeneration == nil || *manifest.ParentGeneration != generation-1 || manifest.ParentManifestDigest != current.Digest {
-				return model.Manifest{}, validationError("manifest parent chain is invalid", nil)
+				return model.Manifest{}, nil, validationError("manifest parent chain is invalid", nil)
 			}
 		}
 		if err := validateManifestAndViews(root, manifest, views); err != nil {
-			return model.Manifest{}, err
+			return model.Manifest{}, nil, err
 		}
 		current = manifest
+		currentViews = bytes.Clone(views)
 	}
-	return copyManifest(current), nil
+	return copyManifest(current), currentViews, nil
 }
 
 func loadMetadata(root *os.Root) (storeMetadata, error) {

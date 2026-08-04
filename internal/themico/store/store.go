@@ -189,6 +189,32 @@ func (s *Store) Root() string {
 	return s.root
 }
 
+// AllocateID creates an ID using the Store's configured source.
+func (s *Store) AllocateID(prefix string) (string, error) {
+	value, err := s.opts.NewID(prefix)
+	if err != nil {
+		return "", err
+	}
+	if err := validateID(prefix, value); err != nil {
+		return "", err
+	}
+	return value, nil
+}
+
+// Now returns the Store's configured clock in UTC.
+func (s *Store) Now() time.Time {
+	return s.opts.Clock().UTC()
+}
+
+// CurrentState returns the current manifest and its exact views payload.
+func (s *Store) CurrentState() (model.Manifest, json.RawMessage, error) {
+	manifest, views, err := s.loadCurrentState()
+	if err != nil {
+		return model.Manifest{}, nil, err
+	}
+	return copyManifest(manifest), bytes.Clone(views), nil
+}
+
 func (s *Store) Current() (model.Manifest, error) {
 	manifest, err := s.loadCurrent()
 	if err != nil {

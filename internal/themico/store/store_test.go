@@ -1174,6 +1174,39 @@ func (barrier *renameBarrier) hook() error {
 	return nil
 }
 
+func TestStoreReadAndAllocationExtensionsReuseConfiguredAuthority(t *testing.T) {
+	root := t.TempDir()
+	opts := testOptions()
+	s := mustInit(t, root, opts)
+
+	candidateID, err := s.AllocateID("cand_")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if candidateID != "cand_00000000000000000000000000000002" {
+		t.Fatalf("candidateID=%q", candidateID)
+	}
+	if got := s.Now(); !got.Equal(time.Date(2026, 8, 3, 12, 34, 56, 123456789, time.UTC)) || got.Location() != time.UTC {
+		t.Fatalf("Now()=%v", got)
+	}
+
+	current, views, err := s.CurrentState()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if current.Generation != 0 || string(views) != `{}` {
+		t.Fatalf("current=%+v views=%s", current, views)
+	}
+	views[0] = '['
+	again, againViews, err := s.CurrentState()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again.Generation != 0 || string(againViews) != `{}` {
+		t.Fatalf("state was exposed: current=%+v views=%s", again, againViews)
+	}
+}
+
 func optionsWithRenameHook(opts store.Options, hook func() error) store.Options {
 	opts.BeforeGenerationRename = hook
 	return opts
