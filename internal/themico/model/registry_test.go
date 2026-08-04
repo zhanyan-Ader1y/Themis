@@ -88,6 +88,16 @@ func TestFactoriesExposeExactL3Headings(t *testing.T) {
 	}
 }
 
+func TestStrictPayloadDecodeRejectsNullForEveryFactory(t *testing.T) {
+	for _, factory := range model.Factories() {
+		t.Run(string(factory.Type), func(t *testing.T) {
+			if _, err := factory.DecodePayload([]byte("null")); err == nil {
+				t.Fatalf("%s payload accepted top-level null", factory.Type)
+			}
+		})
+	}
+}
+
 func TestStrictPayloadDecodeRejectsWrongTypeAndTrailingJSON(t *testing.T) {
 	factory, ok := model.LookupFactory(model.TypeDesignDecision)
 	if !ok {
@@ -134,6 +144,62 @@ func TestStrictPayloadDecodeReturnsNormalizedTypedValue(t *testing.T) {
 	}
 	if !reflect.DeepEqual(payload, want) {
 		t.Fatalf("payload = %#v, want %#v", payload, want)
+	}
+}
+
+func TestEveryFactoryDecodesOnlyItsConcretePayload(t *testing.T) {
+	cases := []struct {
+		knowledgeType model.KnowledgeType
+		validPayload  string
+		wrongPayload  string
+		assertType    func(any) bool
+	}{
+		{
+			knowledgeType: model.TypeDesignDecision,
+			validPayload:  `{"affected_units":[],"constraints":[],"alternatives":[],"consequences":[],"reevaluate_when":[]}`,
+			wrongPayload:  `{"symptoms":[]}`,
+			assertType: func(value any) bool {
+				_, ok := value.(model.DesignDecisionL2)
+				return ok
+			},
+		},
+		{
+			knowledgeType: model.TypeDevelopmentStandard,
+			validPayload:  `{"lifecycle_stages":[],"trigger":[],"required_actions":[],"prohibited_actions":[],"verification":[],"exception_policy":[]}`,
+			wrongPayload:  `{"affected_units":[]}`,
+			assertType: func(value any) bool {
+				_, ok := value.(model.DevelopmentStandardL2)
+				return ok
+			},
+		},
+		{
+			knowledgeType: model.TypeDevelopmentExperience,
+			validPayload:  `{"symptoms":[],"preconditions":[],"observed_facts":[],"recommended_action":[],"evidence_strength":"reproduced","risks":[],"stop_conditions":[]}`,
+			wrongPayload:  `{"required_actions":[]}`,
+			assertType: func(value any) bool {
+				_, ok := value.(model.DevelopmentExperienceL2)
+				return ok
+			},
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(string(testCase.knowledgeType), func(t *testing.T) {
+			factory, ok := model.LookupFactory(testCase.knowledgeType)
+			if !ok {
+				t.Fatalf("missing factory for %s", testCase.knowledgeType)
+			}
+			decoded, err := factory.DecodePayload([]byte(testCase.validPayload))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !testCase.assertType(decoded) {
+				t.Fatalf("%s decoded payload type = %T", testCase.knowledgeType, decoded)
+			}
+			if _, err := factory.DecodePayload([]byte(testCase.wrongPayload)); err == nil {
+				t.Fatalf("%s factory accepted mismatched payload", testCase.knowledgeType)
+			}
+		})
 	}
 }
 
@@ -285,6 +351,9 @@ func TestEnumClosedSets(t *testing.T) {
 			t.Fatalf("candidate status %q invalid", value)
 		}
 	}
+	if model.CandidateStatus("reviewed").Valid() {
+		t.Fatal("unknown candidate status valid")
+	}
 
 	recordStatuses := []model.RecordStatus{
 		model.RecordStatusActive,
@@ -296,6 +365,9 @@ func TestEnumClosedSets(t *testing.T) {
 		if !value.Valid() {
 			t.Fatalf("record status %q invalid", value)
 		}
+	}
+	if model.RecordStatus("deleted").Valid() {
+		t.Fatal("unknown record status valid")
 	}
 
 	relations := []model.RelationType{
@@ -317,6 +389,16 @@ func TestEnumClosedSets(t *testing.T) {
 	}
 	if model.RelationType("duplicates").Valid() {
 		t.Fatal("unknown relation type valid")
+	}
+}
+
+func TestFactoriesHeadingsCannotMutateRegistry(t *testing.T) {
+	factories := model.Factories()
+	factories[0].L3Headings[0] = "changed"
+
+	fresh := model.Factories()
+	if fresh[0].L3Headings[0] != "背景与问题" {
+		t.Fatal("Factories exposed mutable heading storage")
 	}
 }
 

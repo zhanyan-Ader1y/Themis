@@ -154,6 +154,9 @@ func normalizeDevelopmentExperience(payload any) (any, error) {
 }
 
 func decodeStrict(data []byte, destination any) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("payload must be a JSON object")
+	}
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(destination); err != nil {
