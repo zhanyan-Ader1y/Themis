@@ -3,14 +3,11 @@
 package store
 
 import (
-	"errors"
 	"os"
 	"syscall"
 	"testing"
 	"unsafe"
 )
-
-var errSyncRootProbe = errors.New("sync root probe")
 
 func TestFileRenameInformationLayoutMatchesNativeArchitecture(t *testing.T) {
 	var info fileRenameInformation
@@ -40,6 +37,28 @@ func TestFileRenameInformationLayoutMatchesNativeArchitecture(t *testing.T) {
 	}
 }
 
+func TestOpenDirectoryForSyncRelativeToVerifiedHandle(t *testing.T) {
+	root, err := os.OpenRoot(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	directory, err := root.Open(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer directory.Close()
+
+	handle, err := openDirectoryForSync(syscall.Handle(directory.Fd()), ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer syscall.CloseHandle(handle)
+	if err := syscall.FlushFileBuffers(handle); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestSyncRootDirCurrentObjectDoesNotUseRootName(t *testing.T) {
 	rootPath := t.TempDir()
 	root, err := os.OpenRoot(rootPath)
@@ -47,29 +66,8 @@ func TestSyncRootDirCurrentObjectDoesNotUseRootName(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer root.Close()
-
-	originalReopen := reopenDirectoryHandle
-	originalFlush := flushDirectoryHandle
-	t.Cleanup(func() {
-		reopenDirectoryHandle = originalReopen
-		flushDirectoryHandle = originalFlush
-	})
-	var opened syscall.Handle
-	reopenDirectoryHandle = func(handle syscall.Handle) (syscall.Handle, error) {
-		opened = handle
-		return syscall.InvalidHandle, errSyncRootProbe
-	}
-	flushDirectoryHandle = func(handle syscall.Handle) error {
-		t.Fatal("flush called after reopen failure")
-		return nil
-	}
-
-	err = syncRootDir(root, ".")
-	if !errors.Is(err, errSyncRootProbe) {
-		t.Fatalf("error: %v", err)
-	}
-	if opened == 0 {
-		t.Fatal("current-root sync did not try to reopen the verified handle")
+	if err := syncRootDir(root, "."); err != nil {
+		t.Fatal(err)
 	}
 }
 

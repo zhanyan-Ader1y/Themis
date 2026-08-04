@@ -11,17 +11,16 @@ import (
 )
 
 var (
-	ntOpenFile            = syscall.NewLazyDLL("ntdll.dll").NewProc("NtOpenFile")
-	ntSetInformationFile  = syscall.NewLazyDLL("ntdll.dll").NewProc("NtSetInformationFile")
-	reopenFile            = syscall.NewLazyDLL("kernel32.dll").NewProc("ReOpenFile")
-	reopenDirectoryHandle = reopenDirectory
-	flushDirectoryHandle  = syscall.FlushFileBuffers
+	ntOpenFile           = syscall.NewLazyDLL("ntdll.dll").NewProc("NtOpenFile")
+	ntSetInformationFile = syscall.NewLazyDLL("ntdll.dll").NewProc("NtSetInformationFile")
+	flushDirectoryHandle = syscall.FlushFileBuffers
 )
 
 const (
 	deleteAccess               = 0x00010000
-	genericWriteAccess         = 0x40000000
+	fileWriteDataAccess        = 0x00000002
 	synchronizeAccess          = 0x00100000
+	fileDirectoryFile          = 0x00000001
 	fileOpenReparsePoint       = 0x00200000
 	fileOpenForBackupIntent    = 0x00004000
 	fileSynchronousIONonalert  = 0x00000020
@@ -149,15 +148,15 @@ func ntStatusError(status uint32) error {
 }
 
 func syncRootDir(parent *os.Root, path string) error {
-	directory, err := parent.Open(path)
+	directory, err := parent.Open(".")
 	if err != nil {
-		return fmt.Errorf("open directory for sync %s: %w", path, err)
+		return fmt.Errorf("open sync parent: %w", err)
 	}
 	defer directory.Close()
 
-	handle, err := reopenDirectoryHandle(syscall.Handle(directory.Fd()))
+	handle, err := openDirectoryForSync(syscall.Handle(directory.Fd()), path)
 	if err != nil {
-		return fmt.Errorf("reopen directory for sync %s: %w", path, err)
+		return fmt.Errorf("open directory for sync %s: %w", path, err)
 	}
 	defer syscall.CloseHandle(handle)
 	if err := flushDirectoryHandle(handle); err != nil {
@@ -167,19 +166,43 @@ func syncRootDir(parent *os.Root, path string) error {
 	return nil
 }
 
-func reopenDirectory(handle syscall.Handle) (syscall.Handle, error) {
-	const (
-		fileFlagBackupSemantics  = 0x02000000
-		fileFlagOpenReparsePoint = 0x00200000
+func newEmptyNTUnicodeString() ntUnicodeString {
+	return ntUnicodeString{}
+}
+
+func openDirectoryForSync(parent syscall.Handle, path string) (syscall.Handle, error) {
+	var (
+		name      *ntUnicodeString
+		keepAlive []uint16
+		err       error
 	)
-	result, _, callErr := reopenFile.Call(
-		uintptr(handle),
-		genericWriteAccess,
-		syscall.FILE_SHARE_DELETE|syscall.FILE_SHARE_READ|syscall.FILE_SHARE_WRITE,
-		fileFlagBackupSemantics|fileFlagOpenReparsePoint,
-	)
-	if syscall.Handle(result) == syscall.InvalidHandle {
-		return syscall.InvalidHandle, callErr
+	if path == "." {
+		empty := newEmptyNTUnicodeString()
+		name = &empty
+	} else {
+		name, keepAlive, err = newNTUnicodeString(path)
+		if err != nil {
+			return syscall.InvalidHandle, err
+		}
 	}
-	return syscall.Handle(result), nil
+	attributes := objectAttributes{
+		Length:        uint32(unsafe.Sizeof(objectAttributes{})),
+		RootDirectory: parent,
+		ObjectName:    name,
+		Attributes:    objectCaseInsensitive,
+	}
+	var handle syscall.Handle
+	status, _, _ := ntOpenFile.Call(
+		uintptr(unsafe.Pointer(&handle)),
+		fileWriteDataAccess|synchronizeAccess,
+		uintptr(unsafe.Pointer(&attributes)),
+		uintptr(unsafe.Pointer(&ioStatusBlock{})),
+		syscall.FILE_SHARE_DELETE|syscall.FILE_SHARE_READ|syscall.FILE_SHARE_WRITE,
+		fileDirectoryFile|fileOpenForBackupIntent|fileSynchronousIONonalert,
+	)
+	runtime.KeepAlive(keepAlive)
+	if uint32(status) != statusSuccess {
+		return syscall.InvalidHandle, ntStatusError(uint32(status))
+	}
+	return handle, nil
 }
