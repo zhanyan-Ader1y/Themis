@@ -2,9 +2,11 @@
 
 ## 1. 使用方式
 
-本文定义后续实现必须提供的可运行验收证据。计划、代码存在、提交成功或文档声明本身都不能替代 fresh test、CLI replay 和文件系统观察。
+本文第 2 至第 9 节的 38 条条件定义完整 Themico 设计目标必须提供的可运行验收证据。计划、代码存在、提交成功或文档声明本身都不能替代 fresh test、CLI replay 和文件系统观察。
 
-每条验收必须映射到唯一的自动测试、集成测试或人工 replay。无法在当前平台证明的条件必须标记 GAP 或 unavailable，不能推断为通过。
+[首个可用交付范围](first-usable-delivery.md) 是顶层 Spec 授权的实施切片，使用其中第 8 节的独立验收集合作为当前交付门槛。该切片未要求的完整 lifecycle、跨类型派生、history、关系扩展和聚合 view/rebuild 条件继续保留在本文中，但不构成“首个可用交付完成”的 GAP。
+
+每条适用验收必须映射到唯一的自动测试、集成测试或人工 replay。无法在当前平台证明的条件必须标记 GAP 或 unavailable，不能推断为通过。
 
 ## 2. 知识模型与类型
 
@@ -70,4 +72,12 @@
 
 ## 10. 完成判定
 
-只有在以上条件全部获得 fresh evidence，且 acceptance mapping 没有未裁决 GAP 时，才能报告 Themico 核心实现满足本 Spec。该判定不等于用户接受，也不授权 push、PR、MCP adapter 或 Themis integration。
+### 10.1 首个可用交付
+
+只有 [首个可用交付范围](first-usable-delivery.md) 第 8 节的独立验收集合全部获得 fresh evidence，且该集合的 acceptance mapping 没有未裁决 GAP 时，才能报告“首个可用交付完成”。本文中被该实施切片明确延期的完整目标不计为该判定的 GAP，也不能被声称为已经实现。
+
+### 10.2 完整 Themico 设计
+
+只有本文第 2 至第 9 节全部 38 条条件获得 fresh evidence，且完整 acceptance mapping 没有未裁决 GAP 时，才能报告“完整 Themico 设计全部满足”。
+
+两种判定都不等于用户接受，也不授权 push、PR、MCP adapter 或 Themis integration。

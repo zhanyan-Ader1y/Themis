@@ -49,7 +49,7 @@ CLI 不验证 `approved_by` 或 `confirmed_by` 背后人的真实身份。身份
 - revise：创建不可变 candidate 或 record revision；
 - digest：计算 canonical JSON 和原始内容 digest；
 - query：执行确定性 L1 filter 和受预算约束的读取；
-- index：维护 generation `manifest.json` 中的 current pointers/projection references，以及 `views.json` 中按 project、domain、architecture unit、feature 重建的 record-ID 索引；
+- index：完整 Themico 目标包含维护 generation `manifest.json` 中的 current pointers/projection references，以及 `views.json` 中按 project、domain、architecture unit、feature 重建的 record-ID 索引；[首个可用交付范围](first-usable-delivery.md) 只要求 manifest current pointers，`views.json` 保持 canonical 空对象；
 - commit：通过 generation-directory 完成可见提交；
 - invalidate：识别 revision 变化后的旧投影；
 - rebuild：从 current authority 重建索引和 view；
