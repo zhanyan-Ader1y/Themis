@@ -69,11 +69,16 @@ type TypeConfirmation struct {
 }
 
 type Service struct {
-	store *store.Store
+	store  *store.Store
+	commit func(context.Context, store.CommitPlan) (model.Manifest, error)
 }
 
 func New(st *store.Store) *Service {
-	return &Service{store: st}
+	var commit func(context.Context, store.CommitPlan) (model.Manifest, error)
+	if st != nil {
+		commit = st.Commit
+	}
+	return &Service{store: st, commit: commit}
 }
 
 func (s *Service) Create(ctx context.Context, request CreateRequest) (model.CandidateRevision, error) {
@@ -275,6 +280,11 @@ func (s *Service) persist(ctx context.Context, revision model.CandidateRevision,
 	if err != nil {
 		return model.CandidateRevision{}, validation("encode candidate payload", err)
 	}
+	var committed model.CandidateRevision
+	if err := decodeExact(payload, &committed); err != nil {
+		return model.CandidateRevision{}, validation("decode committed candidate payload", err)
+	}
+	committed.ContentMarkdown = bytes.Clone(revision.ContentMarkdown)
 	if len(payload) > maxMachineJSON {
 		return model.CandidateRevision{}, validation("candidate payload exceeds size limit", nil)
 	}
@@ -296,7 +306,7 @@ func (s *Service) persist(ctx context.Context, revision model.CandidateRevision,
 	}
 	pointer := model.CandidatePointer{CandidateID: revision.CandidateID, Revision: revision.Revision, Status: revision.Status, Digest: rawDigest(payload), RecordID: revision.PublishedRecordID}
 	manifest.CurrentCandidates = replaceCandidatePointer(manifest.CurrentCandidates, pointer)
-	_, err = s.store.Commit(ctx, store.CommitPlan{
+	_, err = s.commit(ctx, store.CommitPlan{
 		ExpectedGeneration: manifest.Generation,
 		Writes: []store.ImmutableWrite{
 			{Path: candidatePath(revision.CandidateID, revision.Revision, "candidate.json"), Data: payload},
@@ -308,14 +318,14 @@ func (s *Service) persist(ctx context.Context, revision model.CandidateRevision,
 	if err != nil {
 		return model.CandidateRevision{}, err
 	}
-	return s.Inspect(ctx, revision.CandidateID)
+	return model.NormalizeCandidateRevision(committed), nil
 }
 
 func (s *Service) ready(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if s == nil || s.store == nil {
+	if s == nil || s.store == nil || s.commit == nil {
 		return validation("candidate service requires a store", nil)
 	}
 	return nil
