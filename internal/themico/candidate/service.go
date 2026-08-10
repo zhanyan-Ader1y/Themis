@@ -280,14 +280,14 @@ func (s *Service) persist(ctx context.Context, revision model.CandidateRevision,
 	if err != nil {
 		return model.CandidateRevision{}, validation("encode candidate payload", err)
 	}
+	if len(payload) > maxMachineJSON {
+		return model.CandidateRevision{}, validation("candidate payload exceeds size limit", nil)
+	}
 	var committed model.CandidateRevision
 	if err := decodeExact(payload, &committed); err != nil {
 		return model.CandidateRevision{}, validation("decode committed candidate payload", err)
 	}
 	committed.ContentMarkdown = bytes.Clone(revision.ContentMarkdown)
-	if len(payload) > maxMachineJSON {
-		return model.CandidateRevision{}, validation("candidate payload exceeds size limit", nil)
-	}
 	manifest, views, err := s.store.CurrentState()
 	if err != nil {
 		return model.CandidateRevision{}, err

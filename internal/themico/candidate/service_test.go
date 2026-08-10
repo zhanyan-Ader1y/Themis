@@ -1,4 +1,4 @@
-package candidate
+package candidate_test
 
 import (
 	"bytes"
@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zhanyan-Ader1y/Themis/internal/themico/candidate"
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/canonical"
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/model"
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/store"
@@ -38,10 +39,10 @@ func TestCreateBindsCandidatePayloadContentSourcesAndCurrentPointer(t *testing.T
 	if created.Schema != "themico/candidate-revision" || created.CreatedAt != fixedTime.Format(time.RFC3339Nano) {
 		t.Fatalf("unexpected authority fields: %+v", created)
 	}
-	if got, want := created.Sources, []model.SourceRef{{Path: "docs/source.txt", Digest: rawDigestForTest([]byte("source-v1"))}}; !reflect.DeepEqual(got, want) {
+	if got, want := created.Sources, []model.SourceRef{{Path: "docs/source.txt", Digest: rawDigest([]byte("source-v1"))}}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("sources=%+v want=%+v", got, want)
 	}
-	if created.L1Digest != mustDigest(t, created.L1) || created.L2Digest != mustDigest(t, created.L2) || created.L3Digest != rawDigestForTest(created.ContentMarkdown) {
+	if created.L1Digest != mustDigest(t, created.L1) || created.L2Digest != mustDigest(t, created.L2) || created.L3Digest != rawDigest(created.ContentMarkdown) {
 		t.Fatalf("invalid digests: %+v", created)
 	}
 
@@ -109,7 +110,7 @@ func TestReviseCreatesImmutableRevisionAndPreservesCandidateAuthority(t *testing
 		t.Fatal("old content changed")
 	}
 	current := mustInspect(t, fixture.service, created.CandidateID)
-	if current.Revision != revised.Revision || current.Sources[0].Digest != rawDigestForTest([]byte("source-v2")) {
+	if current.Revision != revised.Revision || current.Sources[0].Digest != rawDigest([]byte("source-v2")) {
 		t.Fatalf("current=%+v", current)
 	}
 }
@@ -131,10 +132,10 @@ func TestReviseRejectsStaleExpectedRevisionWithoutVisibleMutation(t *testing.T) 
 func TestCreateRejectsRegistryAndZoneErrorsWithoutMutation(t *testing.T) {
 	tests := []struct {
 		name   string
-		modify func(*CreateRequest)
+		modify func(*candidate.CreateRequest)
 	}{
-		{name: "unknown proposed type", modify: func(request *CreateRequest) { request.ProposedType = "unknown" }},
-		{name: "type zone mismatch", modify: func(request *CreateRequest) { request.Zone = model.ZoneProjectKnowledge }},
+		{name: "unknown proposed type", modify: func(request *candidate.CreateRequest) { request.ProposedType = "unknown" }},
+		{name: "type zone mismatch", modify: func(request *candidate.CreateRequest) { request.Zone = model.ZoneProjectKnowledge }},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -263,7 +264,7 @@ func TestSourceDigestBindsActualBytesAndHistoricalRevisionDoesNotDrift(t *testin
 	writeSource(t, fixture.root, "docs/source.txt", []byte("source-v2"))
 
 	persisted := decodeCandidatePayload(t, readCandidatePayload(t, fixture.store.Root(), created.CandidateID, created.Revision))
-	if got, want := persisted.Sources[0].Digest, rawDigestForTest([]byte("source-v1")); got != want {
+	if got, want := persisted.Sources[0].Digest, rawDigest([]byte("source-v1")); got != want {
 		t.Fatalf("digest=%q want=%q", got, want)
 	}
 }
@@ -271,16 +272,16 @@ func TestSourceDigestBindsActualBytesAndHistoricalRevisionDoesNotDrift(t *testin
 func TestConfirmTypeRejectsInvalidConfirmationWithoutMutation(t *testing.T) {
 	tests := []struct {
 		name   string
-		modify func(*TypeConfirmation)
+		modify func(*candidate.TypeConfirmation)
 	}{
-		{name: "schema", modify: func(value *TypeConfirmation) { value.Schema = "wrong" }},
-		{name: "confirmed by", modify: func(value *TypeConfirmation) { value.ConfirmedBy = "" }},
-		{name: "authority ref", modify: func(value *TypeConfirmation) { value.AuthorityRef = "" }},
-		{name: "confirmed at", modify: func(value *TypeConfirmation) { value.ConfirmedAt = "not-a-time" }},
-		{name: "unknown type", modify: func(value *TypeConfirmation) { value.KnowledgeType = "unknown" }},
-		{name: "zone mismatch", modify: func(value *TypeConfirmation) { value.KnowledgeType = model.TypeDesignDecision }},
-		{name: "candidate stale", modify: func(value *TypeConfirmation) { value.CandidateID = "cand_ffffffffffffffffffffffffffffffff" }},
-		{name: "revision stale", modify: func(value *TypeConfirmation) {
+		{name: "schema", modify: func(value *candidate.TypeConfirmation) { value.Schema = "wrong" }},
+		{name: "confirmed by", modify: func(value *candidate.TypeConfirmation) { value.ConfirmedBy = "" }},
+		{name: "authority ref", modify: func(value *candidate.TypeConfirmation) { value.AuthorityRef = "" }},
+		{name: "confirmed at", modify: func(value *candidate.TypeConfirmation) { value.ConfirmedAt = "not-a-time" }},
+		{name: "unknown type", modify: func(value *candidate.TypeConfirmation) { value.KnowledgeType = "unknown" }},
+		{name: "zone mismatch", modify: func(value *candidate.TypeConfirmation) { value.KnowledgeType = model.TypeDesignDecision }},
+		{name: "candidate stale", modify: func(value *candidate.TypeConfirmation) { value.CandidateID = "cand_ffffffffffffffffffffffffffffffff" }},
+		{name: "revision stale", modify: func(value *candidate.TypeConfirmation) {
 			value.CandidateRevision = "crev_ffffffffffffffffffffffffffffffff"
 		}},
 	}
@@ -351,7 +352,7 @@ func TestConfirmedCandidateCannotChangeType(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	request := ReviseRequest{
+	request := candidate.ReviseRequest{
 		CandidateID:      current.CandidateID,
 		ExpectedRevision: current.Revision,
 		ProposedType:     model.TypeDesignDecision,
@@ -362,7 +363,7 @@ func TestConfirmedCandidateCannotChangeType(t *testing.T) {
 		ContentMarkdown:  current.ContentMarkdown,
 		RevisedBy:        "agent:revision-writer",
 	}
-	if _, err := fixture.service.Revise(ctx, request); !errors.Is(err, ErrTypeImmutable) {
+	if _, err := fixture.service.Revise(ctx, request); !errors.Is(err, candidate.ErrTypeImmutable) {
 		t.Fatalf("err=%v", err)
 	}
 	after, err := fixture.service.Inspect(ctx, created.CandidateID)
@@ -395,7 +396,7 @@ func TestInspectUsesOnlyCurrentPointerAndValidatesDigests(t *testing.T) {
 		content := []byte("# orphan\n")
 		payload := validPersistedRevision(t, candidateID, revisionID, content)
 		writeImmutableFixture(t, fixture.store.Root(), candidateID, revisionID, payload, content)
-		if _, err := fixture.service.Inspect(context.Background(), candidateID); !errors.Is(err, ErrNotFound) {
+		if _, err := fixture.service.Inspect(context.Background(), candidateID); !errors.Is(err, candidate.ErrNotFound) {
 			t.Fatalf("err=%v", err)
 		}
 	})
@@ -424,7 +425,7 @@ func TestInspectUsesOnlyCurrentPointerAndValidatesDigests(t *testing.T) {
 		fixture := newFixture(t)
 		writeSource(t, fixture.root, "docs/source.txt", []byte("source"))
 		created := mustCreate(t, fixture.service, validCreateRequest())
-		path := candidatePayloadFilePath(fixture.store.Root(), created.CandidateID, created.Revision)
+		path := candidatePayloadPath(fixture.store.Root(), created.CandidateID, created.Revision)
 		if err := os.WriteFile(path, []byte(`{}`), 0o600); err != nil {
 			t.Fatal(err)
 		}
@@ -479,11 +480,11 @@ func TestCanceledMutationDoesNotChangeCurrent(t *testing.T) {
 }
 
 func TestNilServiceStoreAndMissingCandidateAreStableFailures(t *testing.T) {
-	if _, err := New(nil).Inspect(context.Background(), "cand_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"); !errors.Is(err, store.ErrValidation) {
+	if _, err := candidate.New(nil).Inspect(context.Background(), "cand_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"); !errors.Is(err, store.ErrValidation) {
 		t.Fatalf("nil store err=%v", err)
 	}
 	fixture := newFixture(t)
-	if _, err := fixture.service.Inspect(context.Background(), "cand_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"); !errors.Is(err, ErrNotFound) {
+	if _, err := fixture.service.Inspect(context.Background(), "cand_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"); !errors.Is(err, candidate.ErrNotFound) {
 		t.Fatalf("not found err=%v", err)
 	}
 }
@@ -493,7 +494,7 @@ var fixedTime = time.Date(2026, 8, 4, 1, 2, 3, 456789000, time.UTC)
 type fixture struct {
 	root    string
 	store   *store.Store
-	service *Service
+	service *candidate.Service
 }
 
 func newFixture(t *testing.T) fixture {
@@ -510,11 +511,11 @@ func newFixture(t *testing.T) fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return fixture{root: root, store: st, service: New(st)}
+	return fixture{root: root, store: st, service: candidate.New(st)}
 }
 
-func validCreateRequest() CreateRequest {
-	return CreateRequest{
+func validCreateRequest() candidate.CreateRequest {
+	return candidate.CreateRequest{
 		Zone:                    model.ZoneProjectExperience,
 		Scope:                   model.Scope{Project: "Themis", Domains: []string{"core", "core"}, ArchitectureUnits: []string{"themico"}, Features: []string{"candidates"}},
 		ProposedType:            model.TypeDevelopmentExperience,
@@ -532,16 +533,16 @@ func validCreateRequest() CreateRequest {
 	}
 }
 
-func validReviseRequest(current model.CandidateRevision) ReviseRequest {
-	return ReviseRequest{
+func validReviseRequest(current model.CandidateRevision) candidate.ReviseRequest {
+	return candidate.ReviseRequest{
 		CandidateID: current.CandidateID, ExpectedRevision: current.Revision, ProposedType: current.ProposedType,
 		L1: current.L1, L2: current.L2, SourcePaths: sourcePaths(current.Sources), Relations: current.Relations,
 		ContentMarkdown: append([]byte(nil), current.ContentMarkdown...), RevisedBy: "agent:revision-writer",
 	}
 }
 
-func validConfirmation(current model.CandidateRevision) TypeConfirmation {
-	return TypeConfirmation{
+func validConfirmation(current model.CandidateRevision) candidate.TypeConfirmation {
+	return candidate.TypeConfirmation{
 		Schema: "themico-type-confirmation", CandidateID: current.CandidateID, CandidateRevision: current.Revision,
 		KnowledgeType: current.ProposedType, ConfirmedBy: "human:reviewer", ConfirmedAt: "2026-08-03T20:00:00Z", AuthorityRef: "review/42",
 	}
@@ -559,7 +560,7 @@ func createAndConfirmExperienceCandidate(t *testing.T) (fixture, model.Candidate
 	return fixture, confirmed
 }
 
-func mustCreate(t *testing.T, service *Service, request CreateRequest) model.CandidateRevision {
+func mustCreate(t *testing.T, service *candidate.Service, request candidate.CreateRequest) model.CandidateRevision {
 	t.Helper()
 	created, err := service.Create(context.Background(), request)
 	if err != nil {
@@ -568,7 +569,7 @@ func mustCreate(t *testing.T, service *Service, request CreateRequest) model.Can
 	return created
 }
 
-func mustRevise(t *testing.T, service *Service, request ReviseRequest) model.CandidateRevision {
+func mustRevise(t *testing.T, service *candidate.Service, request candidate.ReviseRequest) model.CandidateRevision {
 	t.Helper()
 	revised, err := service.Revise(context.Background(), request)
 	if err != nil {
@@ -577,7 +578,7 @@ func mustRevise(t *testing.T, service *Service, request ReviseRequest) model.Can
 	return revised
 }
 
-func mustInspect(t *testing.T, service *Service, candidateID string) model.CandidateRevision {
+func mustInspect(t *testing.T, service *candidate.Service, candidateID string) model.CandidateRevision {
 	t.Helper()
 	current, err := service.Inspect(context.Background(), candidateID)
 	if err != nil {
@@ -622,7 +623,7 @@ func sourcePaths(sources []model.SourceRef) []string {
 	return paths
 }
 
-func candidatePayloadFilePath(root, candidateID, revision string) string {
+func candidatePayloadPath(root, candidateID, revision string) string {
 	return filepath.Join(root, "candidates", candidateID, "revisions", revision, "candidate.json")
 }
 
@@ -632,7 +633,7 @@ func candidateContentPath(root, candidateID, revision string) string {
 
 func readCandidatePayload(t *testing.T, root, candidateID, revision string) []byte {
 	t.Helper()
-	data, err := os.ReadFile(candidatePayloadFilePath(root, candidateID, revision))
+	data, err := os.ReadFile(candidatePayloadPath(root, candidateID, revision))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -666,7 +667,7 @@ func mustDigest(t *testing.T, value any) string {
 	return digest
 }
 
-func rawDigestForTest(data []byte) string {
+func rawDigest(data []byte) string {
 	digest := sha256.Sum256(data)
 	return fmt.Sprintf("sha256:%x", digest)
 }
@@ -703,7 +704,7 @@ func validPersistedRevision(t *testing.T, candidateID, revision string, content 
 	}
 	value.L1Digest = mustDigest(t, value.L1)
 	value.L2Digest = mustDigest(t, value.L2)
-	value.L3Digest = rawDigestForTest(content)
+	value.L3Digest = rawDigest(content)
 	data, err := canonical.Encode(value)
 	if err != nil {
 		t.Fatal(err)
@@ -713,11 +714,11 @@ func validPersistedRevision(t *testing.T, candidateID, revision string, content 
 
 func writeImmutableFixture(t *testing.T, root, candidateID, revision string, payload, content []byte) {
 	t.Helper()
-	directory := filepath.Dir(candidatePayloadFilePath(root, candidateID, revision))
+	directory := filepath.Dir(candidatePayloadPath(root, candidateID, revision))
 	if err := os.MkdirAll(directory, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(candidatePayloadFilePath(root, candidateID, revision), payload, 0o600); err != nil {
+	if err := os.WriteFile(candidatePayloadPath(root, candidateID, revision), payload, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(candidateContentPath(root, candidateID, revision), content, 0o600); err != nil {
@@ -736,7 +737,7 @@ func seedAggregateState(t *testing.T, st *store.Store) {
 	record := model.RecordRevision{
 		Schema: "themico/record-revision", RecordID: recordID, Revision: revisionID, KnowledgeType: model.TypeDesignDecision, Zone: model.ZoneProjectKnowledge, Status: model.RecordStatusActive,
 		Scope: model.Scope{Project: "Themis", Domains: []string{}, ArchitectureUnits: []string{}, Features: []string{}}, Sources: []model.SourceRef{}, Relations: []model.Relation{}, L1: l1, L2: l2,
-		L1Digest: mustDigest(t, l1), L2Digest: mustDigest(t, l2), L3Digest: rawDigestForTest(content), AuthorizationDigest: rawDigestForTest([]byte("approval")), CreatedAt: fixedTime.Format(time.RFC3339Nano), Generation: 1,
+		L1Digest: mustDigest(t, l1), L2Digest: mustDigest(t, l2), L3Digest: rawDigest(content), AuthorizationDigest: rawDigest([]byte("approval")), CreatedAt: fixedTime.Format(time.RFC3339Nano), Generation: 1,
 	}
 	recordPayload, err := canonical.Encode(record)
 	if err != nil {
