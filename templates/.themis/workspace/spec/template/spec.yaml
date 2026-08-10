@@ -1,0 +1,12 @@
+name: S-0001-Template
+finish: false
+specification:
+  finish: true
+plan:
+  finish: true
+review:
+  finish: true
+verify:
+  finish: true
+summary:
+  finish: false
