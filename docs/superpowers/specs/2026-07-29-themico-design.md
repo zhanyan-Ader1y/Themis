@@ -4,7 +4,9 @@
 
 Themico 是一个独立、本地优先、无内置模型的受治理知识库，用于保存、修订、发布和渐进读取供 Human 与 Agent 共同使用的项目知识。
 
-本文是 Themico 跨主题设计的唯一 current authority。本文确认产品定位、核心不变量、范围边界和主题责任；同目录下的七个 reference 细化单一主题，必须由本文索引解释，不能独立扩张范围、形成第二份 Spec，或覆盖其他 reference 的主题责任。
+本文是 Themico 跨主题设计的唯一 current authority。本文确认产品定位、核心不变量、范围边界和主题责任；同目录下的八个 reference 细化单一主题，必须由本文索引解释，不能独立扩张范围、形成第二份 Spec，或覆盖其他 reference 的主题责任。
+
+完整 Themico 目标与实施交付门槛必须分开解释。[首个可用交付范围](2026-07-29-themico-design/first-usable-delivery.md) 是本文授权的实施切片，只收敛首先必须形成的端到端闭环，不删除或改写本文及其他主题 reference 已确认的完整生命周期、关系、投影与集成边界。
 
 ## 2. 产品定位
 
@@ -133,4 +135,5 @@ Themico 可以独立使用，但本 Spec 不授权任何 MCP 或 Themis runtime 
 4. [存储、来源绑定与生命周期](2026-07-29-themico-design/storage-and-lifecycle.md)：`.themico` 布局、不可变对象、generation commit 和状态变化。
 5. [渐进查询、预算与投影](2026-07-29-themico-design/query-and-projection.md)：过滤、升级读取、关系扩展、trace、失效和重建。
 6. [Skill 与 reference 加载合同](2026-07-29-themico-design/skill-and-references.md)：单一 Skill、operation reference 和 registry-selected factory。
-7. [验收标准](2026-07-29-themico-design/acceptance.md)：后续实现必须提供的可运行证据。
+7. [验收标准](2026-07-29-themico-design/acceptance.md)：完整 Themico 目标与实施切片必须提供的可运行证据及各自完成判定。
+8. [首个可用交付范围](2026-07-29-themico-design/first-usable-delivery.md)：首先交付的端到端闭环、延期能力和独立验收集合。
