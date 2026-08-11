@@ -183,7 +183,7 @@ rg -c "SPEC-IMPL-002|SPEC-IMPL-003|SPEC-VERIFY-003|SPEC-ACCEPT-002" docs/superpo
 rg -n "待重新批准" docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md
 ```
 
-预期：第一条命中计数为 4；第二条命中标题行与状态行共 2 处。
+预期：第一条命中计数为 6（`rg -c` 按行计数：四条新增条目的定义行各命中 1 行,共 4 行;文件头状态行一次性提到全部四个标识符,算 1 行;SPEC-INVALIDATION-001 的增补句提到 SPEC-ACCEPT-002,再算 1 行;合计 6 行)；第二条命中标题行与状态行共 2 处。
 
 - [ ] **步骤 8：提交**
 
