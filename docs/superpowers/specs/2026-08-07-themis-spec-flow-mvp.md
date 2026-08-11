@@ -1,12 +1,12 @@
-# Themis Spec 流程 MVP — Specify（待重新批准）
+# Themis Spec 流程 MVP — Specify（已审批）
 
-> **状态:** **待重新批准** — 原版本于 2026-08-08 由项目所有者(zhanyan)批准;2026-08-10 依 `docs/superpowers/specs/2026-08-10-spec-flow-basic-detail-split-design.md` §5 新增 SPEC-IMPL-002、SPEC-IMPL-003、SPEC-VERIFY-003、SPEC-ACCEPT-002 并增补 SPEC-INVALIDATION-001,按 `docs/plan/README.md` 授权规则需重新批准。
+> **状态:** **已审批** — 2026-08-08 由项目所有者(zhanyan)首次批准;2026-08-10 依 `docs/superpowers/specs/2026-08-10-spec-flow-basic-detail-split-design.md` §5 新增 SPEC-IMPL-002、SPEC-IMPL-003、SPEC-VERIFY-003、SPEC-ACCEPT-002 并增补 SPEC-INVALIDATION-001,2026-08-11 由项目所有者(zhanyan)重新批准。
 >
 > **性质:** 本文件是 **specify（规格)**,回答"系统必须表现为什么",遵循本项目对 specify 的设定:外部可观测行为、EARS（受约束验收句式)、逐条可验证、**不描述内部架构**。内部架构与落地任务在审批通过后单独产出。
 >
 > **审批结论:** §3(D1–D7 易漂移点取向)、§4(五条顶层设计方案)、§2(行为契约)均按本文件所述锁定为 MVP 基线。§5 P4 的落地次序①–⑤作为基准保留。
 >
-> **落地状态:** **暂缓**。批准后仍有新增方案待讨论,讨论结束前不开始任何落地。
+> **落地状态:** 原"新增方案待讨论"已于 2026-08-10 结束,产出 basic/detail 落地分段设计与实施计划;该分段按 `docs/superpowers/plans/2026-08-10-spec-flow-basic-detail-split.md` 落地。§5 P4 的落地次序①–⑤仍未开始,需各自展开为实施计划后才可落地。
 
 ---
 
@@ -178,4 +178,4 @@
 
 ---
 
-> 审批状态以文件头为准。落地暂缓中:待新增方案讨论结束后,再用 writing-plans 把"落地①…⑤"展开为逐步、可测试、带提交点的实施计划;讨论结束前不开始任何落地。
+> 审批状态以文件头为准。"落地①…⑤"仍未开始:需先用 writing-plans 各自展开为逐步、可测试、带提交点的实施计划,展开前不开始这几项落地。
