@@ -13,22 +13,25 @@
 | 1 | Intake | 无 | 不可变来源记录；`Intent.md` 的来源引用 | 全部下游 | 停在 Intake |
 | 2 | 追问 | Intake 完成且 claims 经用户确认 | `QA.md` 追加一轮 | 意图定稿及其后全部 | 停在 Intake |
 | 3 | 意图定稿 | Why、期望结果、核心链路三者均明确 | `Intent.md` | R1 及其后全部 | 停在追问 |
-| 4 | R1 意图评审 | 意图定稿完成 | `intent-review.md` | 抽象设计及其后全部 | 停在意图定稿 |
-| 5 | 抽象设计 | R1 结论为批准 | `step<N>/specify.md` | R2 及其后 | 停在 R1 |
-| 6 | R2 抽象设计评审 | 抽象设计成形 | `step<N>/specify-review.md` | 详细设计及其后 | 停在抽象设计 |
-| 7 | 详细设计 | R2 结论为批准 | `step<N>/design.md` | 任务分组及其后 | 停在 R2 |
-| 8 | 任务分组 | 详细设计成形 | `step<N>/task/basic.md`、`step<N>/task/detail.md` | R3 及其后 | 停在详细设计 |
-| 9 | R3 详细方案评审 | 详细设计与两个 task 文件成形，且未解决反馈为空 | `step<N>/review.md` | 落地及其后 | 停在任务分组 |
-| 10 | impl/basic | R3 结论为批准 | `step<N>/impl/basic.md` | verify/basic 及其后 | 停在 R3 |
-| 11 | verify/basic | impl/basic 完成 | `step<N>/verify/basic.md` | impl/detail 及其后 | 停在 R3 |
-| 12 | impl/detail | verify/basic 结论为通过 | `step<N>/impl/detail.md` | verify/detail 及其后 | 停在 verify/basic |
-| 13 | verify/detail | impl/detail 完成 | `step<N>/verify/detail.md` | 验收及其后 | 停在 verify/basic |
-| 14 | 人工验收 | verify/detail 结论为通过 | `step<N>/acceptance.md` | 摘要 | 停在 verify/detail |
-| 15 | 摘要 | 验收结论为 accepted | `summary.md` | 无 | 停在验收 |
+| 4 | step 拆分 | 意图定稿完成 | `step.md`；各 `step<N>/` 目录 | R1 及其后全部 | 停在意图定稿 |
+| 5 | R1 意图评审 | 意图定稿完成且 step 拆分成形 | `intent-review.md` | 抽象设计及其后全部 | 停在意图定稿 |
+| 6 | 抽象设计 | R1 结论为批准 | `step<N>/specify.md` | R2 及其后 | 停在 R1 |
+| 7 | R2 抽象设计评审 | 抽象设计成形 | `step<N>/specify-review.md` | 详细设计及其后 | 停在抽象设计 |
+| 8 | 详细设计 | R2 结论为批准 | `step<N>/design.md` | 任务分组及其后 | 停在 R2 |
+| 9 | 任务分组 | 详细设计成形 | `step<N>/task/basic.md`、`step<N>/task/detail.md` | R3 及其后 | 停在详细设计 |
+| 10 | R3 详细方案评审 | 详细设计与两个 task 文件成形，且未解决反馈为空 | `step<N>/review.md` | 落地及其后 | 停在任务分组 |
+| 11 | impl/basic | R3 结论为批准 | `step<N>/impl/basic.md` | verify/basic 及其后 | 停在 R3 |
+| 12 | verify/basic | impl/basic 完成 | `step<N>/verify/basic.md` | impl/detail 及其后 | 停在 R3 |
+| 13 | impl/detail | verify/basic 结论为通过 | `step<N>/impl/detail.md` | verify/detail 及其后 | 停在 verify/basic |
+| 14 | verify/detail | impl/detail 完成 | `step<N>/verify/detail.md` | 验收及其后 | 停在 verify/basic |
+| 15 | 人工验收 | verify/detail 结论为通过 | `step<N>/acceptance.md` | 摘要 | 停在 verify/detail |
+| 16 | 摘要 | 验收结论为 accepted | `summary.md` | 无 | 停在验收 |
+
+R1 意图评审的前置闸门同时要求意图定稿与 step 拆分都已完成；R1 呈现的投影同时覆盖意图与步骤拆分两部分，不为 step 拆分单独增设闸门。
 
 ## 流程级不变量
 
-1. **人工节点固定四处**：全流程只有 R1、R2、R3、人工验收这四个节点由人类裁决。第 11 项 verify/basic 与第 13 项 verify/detail 这两次验证，判定角色都必须独立于实现者，但**均无人工节点**——不得把这两次验证也算作第五、第六个人工节点。
+1. **人工节点固定四处**：全流程只有 R1、R2、R3、人工验收这四个节点由人类裁决。第 12 项 verify/basic 与第 14 项 verify/detail 这两次验证节点**均无人工节点**——不得把这两次验证也算作第五、第六个人工节点；这两次验证具体由谁判定，见 `rules.md` 第 7 节。
 2. **两段恒定存在，空段是集合为空**：basic 与 detail 是恒定的有序两段，允许其中一段为空。basic 段为空时，不产生任何落地调用，节点顺序不因此改变——空段是"这一段要做的工作集合为空"，不是流程分岔出的另一条路径，**不得为"是否分段"设置任何判断分支或开关**，也不得因空段而跳过或重排节点。
 3. **失效级联作用于工件，不作用于已落地代码**：任一节点产出新修订时，其"失效波及"列所列的下游工件全部作废，不得再被当作最新（current）继续使用。但**已落地的 basic 代码不被这条规则自动失效，也不得被自动回滚或自动删除**；该情形属孤儿代码问题，由 `rules.md` 的孤儿阻断一节单独处理，不在本不变量的失效范围内。
 4. **失败即停，不预算不学习**：节点失败时，流程停在该节点"失败去向"列所指的已证闸门，等待人类或 Agent 决定下一步。全程**不进行失败次数预算，不做失败到经验学习的转化**——这类机制不属于本流程契约。

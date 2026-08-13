@@ -11,6 +11,7 @@
   QA.md
   state.md
   summary.md
+  step.md
   step<N>/
     specify.md
     specify-review.md
@@ -25,7 +26,7 @@
     acceptance.md
 ```
 
-`<spec-id>` 为一次 spec 运行的标识。`<N>` 为实现步骤序号：大步骤为整数，小步骤为小数。
+`<spec-id>` 为一次 spec 运行的标识。`<N>` 为实现步骤序号。
 
 ## 文件小节
 
@@ -36,6 +37,7 @@
 | `QA.md` | 第 N 轮 → 问 / 答 / 来源 |
 | `state.md` | 当前节点 / 各闸门 / 当前性 |
 | `summary.md` | 实际交付 / 绑定的验收结论 / 说明 |
+| `step.md` | `step<N> → 该步要做什么` |
 | `specify.md` | 行为条目（`### SPEC-<主题>-<序号>` + 验收判据）/ 来源覆盖 |
 | `specify-review.md` | 投影 / 未解决反馈 / 结论 |
 | `design.md` | 架构与边界 / 结构决策 / 取舍 / 事实依据 |
@@ -46,4 +48,4 @@
 | `verify/basic.md`、`verify/detail.md` | 执行身份 / 断言与实际结果 / 命令证据 / 结论 / 说明 |
 | `acceptance.md` | 交付视图 / 阻断核查 / 用户原话 / 结论 |
 
-`QA.md` 追加写入，既有轮次不改写。三个评审工件与三个闸门一一对应：`intent-review.md` 对 R1，`specify-review.md` 对 R2，`review.md` 对 R3。
+三个评审工件与三个闸门一一对应：`intent-review.md` 对 R1，`specify-review.md` 对 R2，`review.md` 对 R3。
