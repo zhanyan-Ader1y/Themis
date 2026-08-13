@@ -171,7 +171,7 @@
 - P3:§2 行为契约条目 —— **已通过**。
 - P4:**逐步落地次序**(基准,新增方案讨论已于 2026-08-10 结束,①–⑤仍未开始、需各自展开为实施计划后才可落地):
   - 落地① `.themis/spec/flow.md`(把本 specify 的行为契约转成执行器无关的流程契约)
-  - 落地② 工件模板(`.themis/spec/templates/`,配对 record/content + trace + EARS)
+  - 落地② 实例结构(`.themis/spec/template.md`,单文件记录目录树与文件小节;`SPEC-ARTIFACT-001` 约束工件文件内的阐述方式,不要求物理配对)
   - 落地③ 语义 references + `SKILL.md`(六个节点 operation)
   - 落地④ soft 执行器(`.themis/spec/enforcement/soft/`)+ 状态文件约定
   - 落地⑤ 一次真实端到端走查(replay),暴露"Agent 会在哪些闸门漂移"→ 作为未来 hard/CLI 的强制清单
