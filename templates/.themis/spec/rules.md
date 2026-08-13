@@ -284,6 +284,6 @@ SPEC-IMPL-001 原文以"必须…:不得…,不得…"单句同时给出判据�
 
 **拒绝条件：**
 
-- SPEC-IMPL-001:实现修改 current-request、plan 或验收要求,或做无关重构 → 拒绝。
+- **SPEC-IMPL-001** — 实现必须在 R3 批准范围内进行:不得修改 current-request、plan 或验收要求,不得做无关重构。
 
 **判定者：** verify/basic 与 verify/detail（比对工件中"与批准范围的偏差"）
