@@ -91,17 +91,20 @@ ls templates/.themis/spec 2>&1
 | 判定规则 | [rules.md](rules.md) | 这一步怎么判过不过 |
 | 实例结构 | [template.md](template.md) | 产物长什么样、放在哪 |
 
-本 README 只做索引与元信息，**不含任何流程或判定内容**。四份文件的职责边界不得互相渗透——判定规则不写进 `flow.md`，流程顺序不写进 `rules.md`，任何定义都不写进 `template.md`。评审时按此受检。
+**本 README 不在控制链路上。** 它是说明性文档，供人了解这套东西怎么运行，**不被流程加载，不承载任何运行时权威**。运行时必须被读到的内容写在 `SKILL.md` 正文与上表三份文件里，不在此处。
 
-## 加载链
+三份控制面文件的职责边界不得互相渗透——判定规则不写进 `flow.md`，流程顺序不写进 `rules.md`，任何定义都不写进 `template.md`。评审时按此受检。
+
+## 运行机制（说明）
 
 ```text
 SKILL.md
-→ README.md（索引，确认当前强制水平）
 → flow.md（定位当前节点、前置闸门是否满足）
 → rules.md 中该节点对应的小节（这一步怎么判）
 → template.md（要产出或更新哪些文件、哪些小节）
 ```
+
+本节只是把上面三份文件的关系讲给人听；实际加载由 `SKILL.md` 规定，不以本节为准。
 
 ## 当前强制水平
 
@@ -433,8 +436,17 @@ frontmatter 只保留宿主发现所需的 `name` 与 `description` 两个字段
 正文写四件事，不写第五件：
 
 1. **本 Skill 的职责**：接收外部消息，加载 `.themis/spec/` 的定义，按 `flow.md` 定位当前节点，按 `rules.md` 判定，按 `template.md` 产出。它**不拥有任何语义判断**——判定属 `rules.md`，顺序属 `flow.md`。
-2. **加载链**：逐字照抄 `templates/.themis/spec/README.md` 的"加载链"代码块。
-3. **稳定入口位置**：`.themis/spec/README.md`、`.themis/spec/flow.md`、`.themis/spec/rules.md`、`.themis/spec/template.md`。**四条路径全部在 `.themis/spec/` 下，不得出现 `.themis/core/`。**
+2. **加载链**：
+
+```text
+flow.md（定位当前节点、前置闸门是否满足）
+→ rules.md 中该节点对应的小节（这一步怎么判）
+→ template.md（要产出或更新哪些文件、哪些小节）
+```
+
+**加载链不经过 `README.md`**——它是说明性文档，不参与控制。因此运行时必须被读到的内容（当前强制水平、安全降级）必须写在本 SKILL.md 正文里，不能只放在 README。
+
+3. **稳定入口位置**：`.themis/spec/flow.md`、`.themis/spec/rules.md`、`.themis/spec/template.md`。**三条路径全部在 `.themis/spec/` 下，不得出现 `.themis/core/`，也不得把 `README.md` 列为入口。**
 4. **安全降级**：当前 validator、evaluator、recorder、digest 与 Invocation host 均 unavailable。缺少当前动作所需支持时停在最近已证闸门、指明 unavailable 的保证、保留续接点；不手写机器拥有的状态，不声称任何转移、持久化、失效、恢复或完成已由机器执行。
 
 - [ ] **步骤 3：删除旧入口**
@@ -471,7 +483,13 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-## Task 6：实体骨架树退场
+## Task 6：实体骨架树退场（本轮暂不执行）
+
+> **状态：暂缓。** 用户 2026-08-13 决定本轮不删除原有实现。执行者**跳过本任务**，直接进入 Task 7。
+>
+> **由此产生的临时重复必须知悉：** `templates/.themis/workspace/spec/template/**` 与新的 `template.md` 会同时存在，两者都在描述实例结构，且旧骨架里还留着已被 `rules.md` 取代的定义文字。**权威是 `.themis/spec/` 下的三份文件**；旧骨架自本轮起视为待退场的历史副本，不得据其判定任何闸门，也不得据其修改新控制面。Task 7 会核验这一点被写明。
+>
+> 下面的步骤保留原样，供将来执行本任务时使用。
 
 **前置：** Task 2、3、4 已完成——定义已在 `rules.md` 与 `flow.md`，结构已在 `template.md`。**前置未满足就删除，等于把定义直接丢掉。**
 
@@ -523,7 +541,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ## Task 7：一致性核验
 
-**前置：** Task 1–6 全部完成。
+**前置：** Task 1–5 全部完成（Task 6 本轮暂缓）。
 
 **文件：** 不修改任何文件。本任务只产出观察结论；发现不符时回到对应任务修正，不在本任务内"顺手改"。
 
@@ -569,7 +587,16 @@ rg -n "R1|R2|R3" templates/.themis/spec/flow.md
 
 预期：`template.md` 三份评审工件齐全；`flow.md` 中 R1、R2、R3 各作为独立节点出现，且各自的产出与 `template.md` 的三份工件对应。
 
-- [ ] **步骤 6：向用户报告**
+- [ ] **步骤 6：核验旧骨架仍在且未被误当权威**
+
+```bash
+find templates/.themis/workspace/spec/template -type f | wc -l
+rg -n --hidden "workspace/spec/template" templates/.themis/spec templates/.themis/skills
+```
+
+预期：第一条为 26（旧骨架本轮保留，未删）；第二条**无输出**——新控制面不得引用旧骨架，否则旧副本会被当成结构权威。
+
+- [ ] **步骤 7：向用户报告**
 
 报告实际观察输出，不得用"应该没问题"替代证据。明确声明：本次交付是 Prompt 层定义面，**机器强制 unavailable**，闸门依赖 Agent 遵守与人工评审。
 
