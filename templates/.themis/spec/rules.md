@@ -8,7 +8,7 @@
 
 ## 1. 来源与分层事实源
 
-**适用节点：** Intake、追问、意图定稿、抽象设计、详细设计、落地、验证
+**适用节点：** Intake、追问、意图定稿、抽象设计、详细设计、impl/basic、impl/detail、verify/basic、verify/detail
 
 **判据：**
 
@@ -84,7 +84,7 @@
 
 ## 5. `[basic]` 标识
 
-**适用节点：** 抽象设计、任务分组、验证
+**适用节点：** 抽象设计、任务分组、verify/basic、verify/detail
 
 **判据：**（引自 `docs/superpowers/specs/2026-08-10-spec-flow-basic-detail-split-design.md` §3.3）
 
