@@ -170,16 +170,27 @@ Intake（不可变来源 + 来源绑定 claims）
   state.md
   step<N>/
     specify.md
+    specify-review.md
     design.md
-    design-review.md
     task/
-      basic.md  detail.md  review.md
+      basic.md  detail.md
+    review.md
     impl/
       basic.md  detail.md
     verify/
       basic.md  detail.md
     acceptance.md
 ```
+
+**三个评审闸门 ↔ 三份评审工件,一一对应:**
+
+| 闸门 | 评的对象 | 工件 |
+|---|---|---|
+| R1 | 意图 | `intent-review.md` |
+| R2 | 抽象设计 | `step<N>/specify-review.md` |
+| R3 | 详细设计与任务 | `step<N>/review.md` |
+
+`SPEC-REVIEW-R3` 是**一个**闸门,覆盖"详细设计与任务"两样东西,因此只对应一份工件;放在 `task/` 下会让人误以为它只评任务,故置于 step 层。旧骨架的 `design-review.md` 按名字指向详细设计,与 R2 所评的抽象设计错位,由 `specify-review.md` 取代。
 
 **两个新增文件:**
 
@@ -195,11 +206,11 @@ Intake（不可变来源 + 来源绑定 claims）
 | `intent-review.md` | 投影 / 未解决反馈 / 结论 |
 | `state.md` | 当前节点 / 各闸门 / 当前性 |
 | `specify.md` | 行为条目（`### SPEC-<主题>-<序号>` + 验收判据）/ 来源覆盖 |
+| `specify-review.md` | 投影 / 未解决反馈 / 结论 |
 | `design.md` | 架构与边界 / 结构决策 / 取舍 / 事实依据 |
-| `design-review.md` | 投影 / 未解决反馈 / 结论 |
 | `task/basic.md` | 基础任务 → `### T-B<n>` |
 | `task/detail.md` | 详细实现任务 → `### T-D<n>` |
-| `task/review.md` | 评审范围 / 分类核查 / 未解决反馈 / 结论 |
+| `review.md` | 评审范围 / 分类核查 / 未解决反馈 / 结论 |
 | `impl/basic.md`、`impl/detail.md` | 执行身份 / 实际改动 / 与批准范围的偏差 / 命令记录 |
 | `verify/basic.md`、`verify/detail.md` | 执行身份 / 断言与实际结果 / 命令证据 / 结论 / 说明 |
 | `acceptance.md` | 交付视图 / 阻断核查 / 用户原话 / 结论 |
