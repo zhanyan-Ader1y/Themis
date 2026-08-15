@@ -70,7 +70,9 @@ CLI 不判断自然语言内容是否正确，也不声称验证 Human 的真实
 
 正式 source 首批只支持 repository/root-relative 本地文件。CLI 直接读取 source bytes、校验路径 containment，并保存 digest 绑定；URL 抓取和未物化外部来源不在当前核心范围。
 
-`.themico/` 使用不可变 payload 与 generation-directory commit。只有完整、合法且连续连接的新 generation directory 才能改变可见 current state；中断残留和未被合法 generation 引用的对象不构成 current authority。历史 revision 必须保留。
+Themico 安装到仓库根目录的 `.themico/`，并把控制面与工作区分开：`core/` 保存 Skill references 与 type factories，`workspace/` 保存受治理 store。宿主发现入口 `SKILL.md` 留在 `.claude/skills/themico/`，只负责转发。
+
+`.themico/workspace/` 使用不可变 payload 与 generation-directory commit。只有完整、合法且连续连接的新 generation directory 才能改变可见 current state；中断残留和未被合法 generation 引用的对象不构成 current authority。历史 revision 必须保留。store 的提交不修改 `core/`。
 
 所有 machine JSON 使用 UTF-8，拒绝未知字段、重复键和浮点数；digest 使用项目定义的 canonical JSON，并带 `sha256:` 前缀。
 
@@ -132,7 +134,7 @@ Themico 可以独立使用，但本 Spec 不授权任何 MCP 或 Themis runtime 
 1. [Knowledge Record 与聚合模型](2026-07-29-themico-design/knowledge-model.md)：原子记录、scope、关系归属和聚合 view 边界。
 2. [知识类型与 L1/L2/L3 合同](2026-07-29-themico-design/types-and-layers.md)：类型闭集、Zone compatibility、分层字段和固定 L3 章节。
 3. [Agent、Human 与 CLI 权威边界](2026-07-29-themico-design/agent-cli-authority.md)：提案、授权、确定性执行和失败关闭。
-4. [存储、来源绑定与生命周期](2026-07-29-themico-design/storage-and-lifecycle.md)：`.themico` 布局、不可变对象、generation commit 和状态变化。
+4. [存储、来源绑定与生命周期](2026-07-29-themico-design/storage-and-lifecycle.md)：`.themico` 包布局、control-plane/workspace 分离、不可变对象、generation commit 和状态变化。
 5. [渐进查询、预算与投影](2026-07-29-themico-design/query-and-projection.md)：过滤、升级读取、关系扩展、trace、失效和重建。
 6. [Skill 与 reference 加载合同](2026-07-29-themico-design/skill-and-references.md)：单一 Skill、operation reference 和 registry-selected factory。
 7. [验收标准](2026-07-29-themico-design/acceptance.md)：完整 Themico 目标与实施切片必须提供的可运行证据及各自完成判定。

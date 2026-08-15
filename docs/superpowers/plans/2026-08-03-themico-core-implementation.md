@@ -33,8 +33,11 @@
 - CLI 二进制名固定为 `themico`，避免与后续 Themis lifecycle runtime 的 `themis` CLI 混淆。
 - CLI stdout 只输出一个 JSON result envelope；诊断不得以自由文本改变 status，stderr 仅用于不可编码的进程级故障。
 - 查询轨迹中的 Agent 语义说明不是 CLI machine authority；首个 CLI trace 只保存可重放的过滤、选择、读取、关系扩展和预算事实，Skill 将 Agent explanation 作为独立非权威输出返回。
-- 首个存储实现使用 `.themico/`、不可变 payload 和 generation-directory commit；不实现通用数据库、通用 transaction framework、rollback、自动修复、upgrade 或 migration。
-- `.themico` 已存在时 `themico init` 必须在任何写入前失败；首个实现不接管或转换未知现有目录。
+- Themico 安装到仓库根目录的 `.themico/`，分为控制面 `core/` 与受治理工作区 `workspace/`；store root 为 `.themico/workspace/`，`core/` 保存 Skill references 且不被 generation commit 写入。
+- 公共 `SKILL.md` 位于 `.claude/skills/themico/`，因为宿主只从该目录发现 Skill；common/operation/type references 位于 `.themico/core/references/`。
+- 首个存储实现使用 `.themico/workspace/`、不可变 payload 和 generation-directory commit；不实现通用数据库、通用 transaction framework、rollback、自动修复、upgrade 或 migration。
+- `themico init` 只拥有 workspace：`.themico/workspace/` 已存在时必须在任何写入前失败，不接管或转换未知现有 store；`.themico/` 或 `.themico/core/` 已存在不构成失败条件，init 按需创建缺失的包目录与空 `core/`，且不读取或改写既有 control-plane 内容。
+- repository-relative source path 相对仓库根解析，不相对包目录或 workspace。
 - 可见提交只能通过把完整 staging generation rename 到新的、不存在的 `generations/gen-%020d` 完成；查询只读取最高的完整合法 generation。
 - 并发 writer 基于相同 generation 时只能有一个成功提交；失败方返回 `conflict`，不能覆盖获胜 generation。
 - 当前计划只实现独立 Themico 核心 CLI 与单一 Skill/references；MCP adapter 和 Themis Global Rule/Capability/Workspace 的正式接线必须另立计划。
@@ -102,7 +105,9 @@ internal/themico/
     └── skill_contract_test.go
 
 templates/.claude/skills/themico/
-├── SKILL.md
+└── SKILL.md                               仅宿主发现入口与转发说明
+
+templates/.themico/core/
 └── references/
     ├── common/
     │   ├── operation-contract.md
@@ -159,27 +164,29 @@ docs/plan/themico-core/
 运行时数据布局固定为：
 
 ```text
-<root>/.themico/
-├── store.json
-├── candidates/<candidate-id>/revisions/<candidate-revision>/
-│   ├── candidate.json
-│   └── content.md
-├── records/<record-id>/revisions/<record-revision>/
-│   ├── record.json
-│   └── content.md
-├── projections/<record-id>/<record-revision>/
-│   ├── l1.json
-│   └── l2.json
-├── preparations/<prepare-id>/prepare.json
-├── assessments/<assessment-digest>.json
-├── approvals/<approval-digest>.json
-└── generations/
-    ├── gen-00000000000000000000/
-    │   ├── manifest.json
-    │   └── views.json
-    └── gen-00000000000000000001/
-        ├── manifest.json
-        └── views.json
+<repository-root>/.themico/
+├── core/                                  控制面：Skill references 与 type factories
+└── workspace/                             受治理 store
+    ├── store.json
+    ├── candidates/<candidate-id>/revisions/<candidate-revision>/
+    │   ├── candidate.json
+    │   └── content.md
+    ├── records/<record-id>/revisions/<record-revision>/
+    │   ├── record.json
+    │   └── content.md
+    ├── projections/<record-id>/<record-revision>/
+    │   ├── l1.json
+    │   └── l2.json
+    ├── preparations/<prepare-id>/prepare.json
+    ├── assessments/<assessment-digest>.json
+    ├── approvals/<approval-digest>.json
+    └── generations/
+        ├── gen-00000000000000000000/
+        │   ├── manifest.json
+        │   └── views.json
+        └── gen-00000000000000000001/
+            ├── manifest.json
+            └── views.json
 ```
 
 `records`、`candidates`、`projections`、`preparations`、`assessments` 和 `approvals` 中的对象均不可变。只有一个完整 generation directory 的出现才能改变可见 current state；未被任何合法 generation 引用的中断残留不构成 current authority。
@@ -623,7 +630,7 @@ rename complete generation -> Current returns new generation
 
 - [ ] **步骤 4：实现 store layout**
 
-`store.Init(root, opts)` 必须先检查 `<root>/.themico` 不存在，在同一父目录创建 `.themico.init-<operation-id>` 完整 staging store，fsync 后通过单次 rename 发布为 `.themico`；rename 前失败必须删除本次 staging，rename 冲突必须返回 `precondition_failed`，不得接管既有目录。`store.Open(root, opts)` 必须验证 `store.json` identity、generation 0 manifest digest，以及从 generation 0 到 current generation 的连续 parent chain。
+`store.Init(root, opts)` 只拥有 workspace：按需创建 `<root>/.themico` 与空 `core/`，检查 `<root>/.themico/workspace` 不存在，在包目录内创建 `workspace.init-<operation-id>` 完整 staging store，fsync 后通过单次 rename 发布为 `workspace`；rename 前失败必须删除本次 staging，rename 冲突必须返回 `precondition_failed`，不得接管既有 store。已安装的 `core/` 内容不阻止初始化，也不被读取或改写。`store.Open(root, opts)` 以 `<root>/.themico/workspace` 为 store root，验证 `store.json` identity、generation 0 manifest digest，以及从 generation 0 到 current generation 的连续 parent chain。
 
 Store 的构造和可测试依赖固定为：
 
@@ -634,9 +641,13 @@ type Options struct {
 	BeforeGenerationRename func() error
 }
 
+func WorkspaceRoot(root string) string
+func CoreRoot(root string) string
+
 func Init(root string, opts Options) (*Store, error)
 func Open(root string, opts Options) (*Store, error)
 func (s *Store) Root() string
+func (s *Store) RepositoryRoot() string
 ```
 
 每个 generation manifest 必须包含 `generation`、`parent_generation`、`parent_manifest_digest` 和自身 canonical digest；`Current` 只接受从 generation 0 连续连接且目录/manifest 完整合法的最高 generation，不把编号更高但断链的目录视为 current。
@@ -1237,38 +1248,38 @@ git commit -m "feat: expose Themico CLI operations"
 
 **文件：**
 - 新建：`templates/.claude/skills/themico/SKILL.md`
-- 新建：`templates/.claude/skills/themico/references/common/operation-contract.md`
-- 新建：`templates/.claude/skills/themico/references/common/result-contract.md`
-- 新建：`templates/.claude/skills/themico/references/common/governance.md`
-- 新建：`templates/.claude/skills/themico/references/common/knowledge-record.md`
-- 新建：`templates/.claude/skills/themico/references/common/l1-discovery.md`
-- 新建：`templates/.claude/skills/themico/references/common/type-registry.md`
-- 新建：`templates/.claude/skills/themico/references/operations/query.md`
-- 新建：`templates/.claude/skills/themico/references/operations/inspect.md`
-- 新建：`templates/.claude/skills/themico/references/operations/create-candidate.md`
-- 新建：`templates/.claude/skills/themico/references/operations/create-derived-candidate.md`
-- 新建：`templates/.claude/skills/themico/references/operations/revise-candidate.md`
-- 新建：`templates/.claude/skills/themico/references/operations/confirm-type.md`
-- 新建：`templates/.claude/skills/themico/references/operations/validate.md`
-- 新建：`templates/.claude/skills/themico/references/operations/prepare.md`
-- 新建：`templates/.claude/skills/themico/references/operations/publish.md`
-- 新建：`templates/.claude/skills/themico/references/operations/supersede.md`
-- 新建：`templates/.claude/skills/themico/references/operations/deprecate.md`
-- 新建：`templates/.claude/skills/themico/references/operations/archive.md`
-- 新建：`templates/.claude/skills/themico/references/operations/verify-projection.md`
-- 新建：`templates/.claude/skills/themico/references/operations/rebuild.md`
-- 新建：`templates/.claude/skills/themico/references/types/design-decision/factory.md`
-- 新建：`templates/.claude/skills/themico/references/types/design-decision/l2.md`
-- 新建：`templates/.claude/skills/themico/references/types/design-decision/l3.md`
-- 新建：`templates/.claude/skills/themico/references/types/design-decision/semantic-check.md`
-- 新建：`templates/.claude/skills/themico/references/types/development-standard/factory.md`
-- 新建：`templates/.claude/skills/themico/references/types/development-standard/l2.md`
-- 新建：`templates/.claude/skills/themico/references/types/development-standard/l3.md`
-- 新建：`templates/.claude/skills/themico/references/types/development-standard/semantic-check.md`
-- 新建：`templates/.claude/skills/themico/references/types/development-experience/factory.md`
-- 新建：`templates/.claude/skills/themico/references/types/development-experience/l2.md`
-- 新建：`templates/.claude/skills/themico/references/types/development-experience/l3.md`
-- 新建：`templates/.claude/skills/themico/references/types/development-experience/semantic-check.md`
+- 新建：`templates/.themico/core/references/common/operation-contract.md`
+- 新建：`templates/.themico/core/references/common/result-contract.md`
+- 新建：`templates/.themico/core/references/common/governance.md`
+- 新建：`templates/.themico/core/references/common/knowledge-record.md`
+- 新建：`templates/.themico/core/references/common/l1-discovery.md`
+- 新建：`templates/.themico/core/references/common/type-registry.md`
+- 新建：`templates/.themico/core/references/operations/query.md`
+- 新建：`templates/.themico/core/references/operations/inspect.md`
+- 新建：`templates/.themico/core/references/operations/create-candidate.md`
+- 新建：`templates/.themico/core/references/operations/create-derived-candidate.md`
+- 新建：`templates/.themico/core/references/operations/revise-candidate.md`
+- 新建：`templates/.themico/core/references/operations/confirm-type.md`
+- 新建：`templates/.themico/core/references/operations/validate.md`
+- 新建：`templates/.themico/core/references/operations/prepare.md`
+- 新建：`templates/.themico/core/references/operations/publish.md`
+- 新建：`templates/.themico/core/references/operations/supersede.md`
+- 新建：`templates/.themico/core/references/operations/deprecate.md`
+- 新建：`templates/.themico/core/references/operations/archive.md`
+- 新建：`templates/.themico/core/references/operations/verify-projection.md`
+- 新建：`templates/.themico/core/references/operations/rebuild.md`
+- 新建：`templates/.themico/core/references/types/design-decision/factory.md`
+- 新建：`templates/.themico/core/references/types/design-decision/l2.md`
+- 新建：`templates/.themico/core/references/types/design-decision/l3.md`
+- 新建：`templates/.themico/core/references/types/design-decision/semantic-check.md`
+- 新建：`templates/.themico/core/references/types/development-standard/factory.md`
+- 新建：`templates/.themico/core/references/types/development-standard/l2.md`
+- 新建：`templates/.themico/core/references/types/development-standard/l3.md`
+- 新建：`templates/.themico/core/references/types/development-standard/semantic-check.md`
+- 新建：`templates/.themico/core/references/types/development-experience/factory.md`
+- 新建：`templates/.themico/core/references/types/development-experience/l2.md`
+- 新建：`templates/.themico/core/references/types/development-experience/l3.md`
+- 新建：`templates/.themico/core/references/types/development-experience/semantic-check.md`
 - 新建：`internal/themico/integration/skill_contract_test.go`
 
 **接口：**
@@ -1279,6 +1290,7 @@ git commit -m "feat: expose Themico CLI operations"
 测试必须读取上述固定路径，确认：
 
 ```text
+SKILL.md 位于 templates/.claude/skills/themico/，references 位于 templates/.themico/core/references/
 只有 SKILL.md 有宿主 YAML frontmatter
 SKILL name 恰为 themico
 common references 6 个
@@ -1340,7 +1352,7 @@ go test ./internal/themico/integration -run TestSkillContract -count=1
 ```
 
 ```bash
-git add templates/.claude/skills/themico internal/themico/integration/skill_contract_test.go
+git add templates/.claude/skills/themico templates/.themico/core internal/themico/integration/skill_contract_test.go
 ```
 
 ```bash

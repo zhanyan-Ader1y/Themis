@@ -17,7 +17,7 @@ CLI 确定性 L1 filter
 → CLI fact trace + Agent semantic explanation
 ```
 
-各阶段必须保持职责分离。CLI 不执行自然语言语义排序；Agent 不绕过 CLI 直接遍历 `.themico` 并声称获得正式 current state。
+各阶段必须保持职责分离。CLI 不执行自然语言语义排序；Agent 不绕过 CLI 直接遍历 `.themico/workspace/` 并声称获得正式 current state。
 
 ## 3. CLI 确定性 L1 filter
 

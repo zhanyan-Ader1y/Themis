@@ -25,7 +25,24 @@ var (
 const (
 	storeSchema    = "themico/store"
 	manifestSchema = "themico/manifest"
+
+	// packageName is the Themico package directory installed at the repository root.
+	packageName = ".themico"
+	// coreName holds the control plane: the Skill references and type factories.
+	coreName = "core"
+	// workspaceName holds the governed store this package writes.
+	workspaceName = "workspace"
 )
+
+// WorkspaceRoot returns the governed store root inside the Themico package.
+func WorkspaceRoot(root string) string {
+	return filepath.Join(root, packageName, workspaceName)
+}
+
+// CoreRoot returns the control-plane root inside the Themico package.
+func CoreRoot(root string) string {
+	return filepath.Join(root, packageName, coreName)
+}
 
 type Options struct {
 	Clock                  func() time.Time
@@ -64,16 +81,56 @@ type storeMetadata struct {
 
 func Init(root string, opts Options) (*Store, error) {
 	opts = optionsWithDefaults(opts)
-	parent, err := os.OpenRoot(root)
+	repository, err := os.OpenRoot(root)
 	if err != nil {
 		return nil, fmt.Errorf("open initialization parent: %w", err)
 	}
+	defer repository.Close()
+
+	// The package directory may already carry an installed control plane, so
+	// initialization owns the workspace only. Directories created here are removed
+	// again if initialization fails, leaving the repository exactly as it was.
+	published := false
+	switch err := repository.Mkdir(packageName, 0o700); {
+	case err == nil:
+		// Durably record the new package entry before anything is published inside it.
+		if err := syncRootDir(repository, "."); err != nil {
+			return nil, err
+		}
+		defer func() {
+			// Remove only a package this call created and left empty; a concurrent
+			// writer's contents must never be discarded.
+			if !published {
+				_ = repository.Remove(packageName)
+			}
+		}()
+	case !errors.Is(err, os.ErrExist):
+		return nil, fmt.Errorf("create package directory: %w", err)
+	}
+	parent, err := repository.OpenRoot(packageName)
+	if err != nil {
+		return nil, fmt.Errorf("open package directory: %w", err)
+	}
 	defer parent.Close()
-	const storeName = ".themico"
-	if _, err := parent.Lstat(storeName); err == nil {
+	if _, err := parent.Lstat(workspaceName); err == nil {
 		return nil, fmt.Errorf("%w: store already exists", ErrPrecondition)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("%w: inspect store root: %v", ErrPrecondition, err)
+	}
+	switch err := parent.Mkdir(coreName, 0o700); {
+	case err == nil:
+		if err := syncRootDir(parent, "."); err != nil {
+			return nil, err
+		}
+		defer func() {
+			// Removing the empty control plane this call added runs before the
+			// package cleanup above, so a package created here can then be removed.
+			if !published {
+				_ = parent.Remove(coreName)
+			}
+		}()
+	case !errors.Is(err, os.ErrExist):
+		return nil, fmt.Errorf("create control plane directory: %w", err)
 	}
 
 	operationID, err := opts.NewID("op_")
@@ -83,14 +140,13 @@ func Init(root string, opts Options) (*Store, error) {
 	if err := validateID("op_", operationID); err != nil {
 		return nil, err
 	}
-	stagingName := ".themico.init-" + operationID
+	stagingName := workspaceName + ".init-" + operationID
 	if err := parent.Mkdir(stagingName, 0o700); err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return nil, fmt.Errorf("%w: initialization staging exists", ErrPrecondition)
 		}
 		return nil, fmt.Errorf("create initialization staging: %w", err)
 	}
-	published := false
 	defer func() {
 		if !published {
 			_ = parent.RemoveAll(stagingName)
@@ -143,19 +199,20 @@ func Init(root string, opts Options) (*Store, error) {
 		return nil, fmt.Errorf("canonicalize store metadata: %w", err)
 	}
 
-	if err := staging.Mkdir(filepath.Join("generations", generationName(0)), 0o700); err != nil {
+	genesis := filepath.Join("generations", generationName(0))
+	if err := staging.Mkdir(genesis, 0o700); err != nil {
 		return nil, fmt.Errorf("create genesis generation: %w", err)
 	}
 	if err := writeNewSyncedRoot(staging, "store.json", metadataBytes); err != nil {
 		return nil, err
 	}
-	if err := writeNewSyncedRoot(staging, filepath.Join("generations", generationName(0), "manifest.json"), manifestBytes); err != nil {
+	if err := writeNewSyncedRoot(staging, filepath.Join(genesis, "manifest.json"), manifestBytes); err != nil {
 		return nil, err
 	}
-	if err := writeNewSyncedRoot(staging, filepath.Join("generations", generationName(0), "views.json"), viewsBytes); err != nil {
+	if err := writeNewSyncedRoot(staging, filepath.Join(genesis, "views.json"), viewsBytes); err != nil {
 		return nil, err
 	}
-	if err := syncRootDir(staging, filepath.Join("generations", generationName(0))); err != nil {
+	if err := syncRootDir(staging, genesis); err != nil {
 		return nil, err
 	}
 	if err := syncRootDir(staging, "generations"); err != nil {
@@ -164,7 +221,7 @@ func Init(root string, opts Options) (*Store, error) {
 	if err := syncRootDir(parent, stagingName); err != nil {
 		return nil, err
 	}
-	if err := renameRootNoReplace(parent, stagingName, storeName); err != nil {
+	if err := renameRootNoReplace(parent, stagingName, workspaceName); err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return nil, fmt.Errorf("%w: store appeared during initialization", ErrPrecondition)
 		}
@@ -174,11 +231,11 @@ func Init(root string, opts Options) (*Store, error) {
 	if err := syncRootDir(parent, "."); err != nil {
 		return nil, err
 	}
-	return &Store{root: filepath.Join(root, storeName), opts: opts}, nil
+	return &Store{root: WorkspaceRoot(root), opts: opts}, nil
 }
 
 func Open(root string, opts Options) (*Store, error) {
-	store := &Store{root: filepath.Join(root, ".themico"), opts: optionsWithDefaults(opts)}
+	store := &Store{root: WorkspaceRoot(root), opts: optionsWithDefaults(opts)}
 	if _, err := store.loadCurrent(); err != nil {
 		return nil, err
 	}
@@ -187,6 +244,11 @@ func Open(root string, opts Options) (*Store, error) {
 
 func (s *Store) Root() string {
 	return s.root
+}
+
+// RepositoryRoot returns the repository directory containing the Themico package.
+func (s *Store) RepositoryRoot() string {
+	return filepath.Dir(filepath.Dir(s.root))
 }
 
 // AllocateID creates an ID using the Store's configured source.

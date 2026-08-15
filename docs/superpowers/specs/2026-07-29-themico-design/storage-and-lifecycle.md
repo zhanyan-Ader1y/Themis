@@ -2,14 +2,28 @@
 
 ## 1. 主题责任
 
-本文定义 `.themico` 本地存储、不可变对象、generation-directory commit、source binding、current/history 和正式生命周期操作。自然语言内容是否正确不属于存储层判断。
+本文定义 `.themico` 本地包布局、不可变对象、generation-directory commit、source binding、current/history 和正式生命周期操作。自然语言内容是否正确不属于存储层判断。
 
-## 2. 固定存储布局
+## 2. 包布局与控制面/工作区分离
 
-首批核心存储布局固定为：
+Themico 安装到仓库根目录的 `.themico/`，并按 Themis 的既有划分把控制面与工作区分开：
 
 ```text
-<root>/.themico/
+<repository-root>/.themico/
+├── core/         控制面：Skill references 与 type factories
+└── workspace/    工作区：受治理的 store
+```
+
+`core/` 保存 Prompt-level 语义合同，由 Human 与 Agent 阅读，不由 store 的 generation commit 写入。`workspace/` 保存机器权威 payload，只能由 `themico` CLI 通过受治理操作写入。两者不得互相写入：control-plane reference 的变化不产生 generation，store 的 commit 也不修改 `core/`。
+
+宿主发现入口不在包内。公共 `SKILL.md` 位于 `.claude/skills/themico/SKILL.md`，因为 Claude Code 只从 `.claude/skills/` 发现 Skill；它只负责转发，语义合同仍在 `.themico/core/` 中。
+
+## 3. 固定 workspace 布局
+
+受治理 store 布局固定为：
+
+```text
+<repository-root>/.themico/workspace/
 ├── store.json
 ├── candidates/<candidate-id>/revisions/<candidate-revision>/
 │   ├── candidate.json
@@ -29,9 +43,17 @@
         └── views.json
 ```
 
-`.themico` 已存在时，`themico init` 必须在任何写入前失败，不接管、转换或修复未知现有目录。初始化在同一父目录构造完整 staging store，完成文件与目录持久化后以单次 rename 发布为 `.themico`。
+store root 是 `.themico/workspace/`，不是 `.themico/`。所有 immutable payload 路径、generation directory 和 root containment 检查都以 workspace 为界；`core/` 不在 store 的可写根内。
 
-## 3. 不可变 payload
+初始化只拥有 `workspace/`。`.themico/workspace/` 已存在时，`themico init` 必须在任何写入前失败，不接管、转换或修复未知现有 store。`.themico/` 或 `.themico/core/` 已存在不构成失败条件：控制面与工作区可按任意顺序安装，init 按需创建缺失的包目录与空 `core/`，且不读取、改写或删除既有 control-plane 内容。
+
+初始化在 `.themico/` 内构造完整 staging store，完成文件与目录持久化后以单次 rename 发布为 `workspace`。rename 前中断只留下 staging 残留，不产生可见 store；发布瞬间 `workspace` 已出现时必须失败，不替换既有目录。init 新建 `.themico/` 或 `core/` 时必须在其中发布任何内容前持久化该目录项。
+
+初始化失败时只回收本次创建且仍为空的目录，不删除既有 control-plane 内容，也不删除并发 writer 已写入的内容。
+
+repository-relative source path 相对仓库根解析，而不是相对包目录或 workspace。
+
+## 4. 不可变 payload
 
 以下对象一旦写入不得覆盖或原地修改：
 
@@ -45,7 +67,7 @@
 
 内容、来源、关系或状态变化都创建新 revision 或新对象。未被任何合法 generation 引用的对象可能是中断残留，但不构成 current authority，也不得由查询默认返回。
 
-## 4. generation-directory commit
+## 5. generation-directory commit
 
 `generation-directory` 是唯一改变可见 current state 的提交边界。
 
@@ -70,7 +92,7 @@ rename 前中断、staging 残留或 orphan payload 不改变 current state。�
 
 Themico 不提供通用 rollback。可见状态的后续修正通过新的受治理 generation 表达。
 
-## 5. current 与 history
+## 6. current 与 history
 
 - manifest 中的 current pointer 是正式 currentness 的唯一机器来源；
 - 默认查询只返回 current active record revisions；
@@ -79,9 +101,9 @@ Themico 不提供通用 rollback。可见状态的后续修正通过新的受治
 - 历史保留不等于历史内容仍然 current；
 - 文件修改时间、目录排序或“最新写入”的 payload 不能代替 manifest current pointer。
 
-## 6. 本地 source binding
+## 7. 本地 source binding
 
-正式 source 首批只支持 store root 下 repository/root-relative 本地文件。每个 source binding 至少保存规范化相对路径、实际 source bytes 的 digest，以及绑定它的 candidate 或 record revision。
+正式 source 首批只支持仓库根下的 repository-relative 本地文件，解析基准是仓库根，不是包目录或 workspace。每个 source binding 至少保存规范化相对路径、实际 source bytes 的 digest，以及绑定它的 candidate 或 record revision。
 
 CLI 必须：
 
@@ -94,7 +116,7 @@ CLI 必须：
 
 URL 抓取、远程文档、仅在对话中存在的来源和未物化外部来源不属于当前正式 source。可先作为 draft 说明，但不能伪装成已完成的 source binding。
 
-## 7. machine JSON 与 digest
+## 8. machine JSON 与 digest
 
 所有 machine JSON：
 
@@ -107,13 +129,13 @@ URL 抓取、远程文档、仅在对话中存在的来源和未物化外部来�
 
 canonical JSON 的 object key 按 Unicode code point 排序，array 保持原顺序，整数使用最短十进制表示，不输出无意义空白。digest 格式固定为 `sha256:<64 位小写十六进制>`。
 
-## 8. 生命周期语义
+## 9. 生命周期语义
 
-### 8.1 publish
+### 9.1 publish
 
 publish 从已确认类型、通过机器校验和 semantic assessment 的 candidate 创建新的 active record。publish 必须有精确绑定 prepare 的 Human Approval，并在一个 generation 中同时写入 record、投影、assessment、Approval 与 current pointer。
 
-### 8.2 supersede
+### 9.2 supersede
 
 supersede 用于同一知识语义身份的正式替代。一次原子提交必须：
 
@@ -125,19 +147,19 @@ supersede 用于同一知识语义身份的正式替代。一次原子提交必�
 
 CLI 校验结构、binding 和原子性，不判断两条自然语言内容是否确属同一语义身份；该判断由 semantic assessment 与 Human Review 承担。
 
-### 8.3 deprecate
+### 9.3 deprecate
 
 deprecate 表示知识已不建议继续采用，但仍需保留审阅、追溯或历史查询。操作创建新的 record revision，复用已绑定内容，保存 reason 与 Approval，并将 status 改为 deprecated。默认查询排除该 revision。
 
-### 8.4 archive
+### 9.4 archive
 
 archive 表示知识退出日常 current 使用，但仍完整保留。操作创建新的 archived revision，保存 reason 与 Approval，不物理删除 record、content、source、关系或历史投影。默认查询排除该 revision。
 
-### 8.5 跨类型派生
+### 9.5 跨类型派生
 
 跨类型提炼不是 supersede，也不是原地改型。它必须创建新 candidate，经独立类型确认、assessment、prepare、Approval 和 publish，并以 `derived_from` 指向原记录。原记录不会因派生自动改变状态。
 
-## 9. 安全与容量边界
+## 10. 安全与容量边界
 
 当前实现合同要求：
 

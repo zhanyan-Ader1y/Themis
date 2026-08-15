@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -29,6 +30,16 @@ const (
 	secondRecordRevisionID = "rev_00000000000000000000000000000002"
 )
 
+// packagePath locates an entry inside the Themico package directory.
+func packagePath(root string, parts ...string) string {
+	return filepath.Join(append([]string{root, ".themico"}, parts...)...)
+}
+
+// workspacePath locates an entry inside the governed store under the package.
+func workspacePath(root string, parts ...string) string {
+	return packagePath(root, append([]string{"workspace"}, parts...)...)
+}
+
 func TestInitMakesGenerationZeroVisibleAndOpenPreservesIdentity(t *testing.T) {
 	root := t.TempDir()
 	opts := testOptions()
@@ -37,7 +48,7 @@ func TestInitMakesGenerationZeroVisibleAndOpenPreservesIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if initialized.Root() != filepath.Join(root, ".themico") {
+	if initialized.Root() != workspacePath(root) {
 		t.Fatalf("root: %q", initialized.Root())
 	}
 	manifest, err := initialized.Current()
@@ -46,7 +57,7 @@ func TestInitMakesGenerationZeroVisibleAndOpenPreservesIdentity(t *testing.T) {
 	}
 	assertGenesis(t, manifest)
 
-	storeBytes, err := os.ReadFile(filepath.Join(root, ".themico", "store.json"))
+	storeBytes, err := os.ReadFile(workspacePath(root, "store.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,6 +79,121 @@ func TestInitMakesGenerationZeroVisibleAndOpenPreservesIdentity(t *testing.T) {
 	}
 }
 
+func TestInitSeparatesControlPlaneFromGovernedWorkspace(t *testing.T) {
+	root := t.TempDir()
+	initialized := mustInit(t, root, testOptions())
+
+	if initialized.Root() != workspacePath(root) {
+		t.Fatalf("store root: got %q want %q", initialized.Root(), workspacePath(root))
+	}
+	if initialized.RepositoryRoot() != root {
+		t.Fatalf("repository root: got %q want %q", initialized.RepositoryRoot(), root)
+	}
+	if store.WorkspaceRoot(root) != workspacePath(root) || store.CoreRoot(root) != packagePath(root, "core") {
+		t.Fatalf("package roots: workspace %q core %q", store.WorkspaceRoot(root), store.CoreRoot(root))
+	}
+
+	for _, directory := range []string{"core", "workspace"} {
+		info, err := os.Lstat(packagePath(root, directory))
+		if err != nil || !info.IsDir() {
+			t.Fatalf("%s directory: %v", directory, err)
+		}
+	}
+	for _, directory := range []string{"candidates", "records", "projections", "preparations", "assessments", "approvals", "generations"} {
+		info, err := os.Lstat(workspacePath(root, directory))
+		if err != nil || !info.IsDir() {
+			t.Fatalf("workspace/%s: %v", directory, err)
+		}
+		if _, err := os.Lstat(packagePath(root, directory)); !os.IsNotExist(err) {
+			t.Fatalf("store directory %s escaped the workspace: %v", directory, err)
+		}
+	}
+	if _, err := os.Lstat(packagePath(root, "store.json")); !os.IsNotExist(err) {
+		t.Fatalf("store metadata escaped the workspace: %v", err)
+	}
+
+	entries, err := os.ReadDir(packagePath(root, "core"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("init populated the control plane: %v", entries)
+	}
+
+	packageEntries, err := os.ReadDir(packagePath(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, entry := range packageEntries {
+		names = append(names, entry.Name())
+	}
+	if !reflect.DeepEqual(names, []string{"core", "workspace"}) {
+		t.Fatalf("package entries: %v want exactly [core workspace]", names)
+	}
+	if _, err := os.Stat(workspacePath(root, "generations", "gen-00000000000000000000", "manifest.json")); err != nil {
+		t.Fatalf("genesis manifest is not inside the workspace: %v", err)
+	}
+}
+
+func TestInitInstallsWorkspaceBesideAnExistingControlPlane(t *testing.T) {
+	root := t.TempDir()
+	reference := packagePath(root, "core", "references", "common", "type-registry.md")
+	if err := os.MkdirAll(filepath.Dir(reference), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, reference, []byte("# registry\n"))
+
+	initialized, err := store.Init(root, testOptions())
+	if err != nil {
+		t.Fatalf("init beside an installed control plane: %v", err)
+	}
+	manifest, err := initialized.Current()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertGenesis(t, manifest)
+
+	got, err := os.ReadFile(reference)
+	if err != nil || string(got) != "# registry\n" {
+		t.Fatalf("installed reference changed: %q %v", got, err)
+	}
+
+	if _, err := store.Init(root, testOptions()); !errors.Is(err, store.ErrPrecondition) {
+		t.Fatalf("second init: %v", err)
+	}
+}
+
+func TestFailedInitLeavesAnExistingControlPlaneUntouched(t *testing.T) {
+	root := t.TempDir()
+	reference := packagePath(root, "core", "references", "common", "type-registry.md")
+	if err := os.MkdirAll(filepath.Dir(reference), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, reference, []byte("# registry\n"))
+
+	opts := testOptions()
+	opts.NewID = func(string) (string, error) { return "op_NOT_HEX", nil }
+	if _, err := store.Init(root, opts); !errors.Is(err, store.ErrValidation) {
+		t.Fatalf("error: %v", err)
+	}
+
+	got, err := os.ReadFile(reference)
+	if err != nil || string(got) != "# registry\n" {
+		t.Fatalf("installed reference changed: %q %v", got, err)
+	}
+	if _, err := os.Lstat(workspacePath(root)); !os.IsNotExist(err) {
+		t.Fatalf("failed init published a workspace: %v", err)
+	}
+	entries, err := os.ReadDir(packagePath(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name() != "core" {
+		t.Fatalf("failed init left residue beside the control plane: %v", entries)
+	}
+}
+
 func TestInitRejectsInvalidInjectedStoreID(t *testing.T) {
 	for _, invalidID := range []string{
 		"op_NOT_HEX",
@@ -80,8 +206,8 @@ func TestInitRejectsInvalidInjectedStoreID(t *testing.T) {
 			if _, err := store.Init(root, opts); !errors.Is(err, store.ErrValidation) {
 				t.Fatalf("error: %v", err)
 			}
-			if _, err := os.Lstat(filepath.Join(root, ".themico")); !os.IsNotExist(err) {
-				t.Fatalf("store unexpectedly exists: %v", err)
+			if _, err := os.Lstat(packagePath(root)); !os.IsNotExist(err) {
+				t.Fatalf("failed init left package residue: %v", err)
 			}
 		})
 	}
@@ -89,8 +215,8 @@ func TestInitRejectsInvalidInjectedStoreID(t *testing.T) {
 
 func TestInitExistingStoreFailsWithoutChangingBytes(t *testing.T) {
 	root := t.TempDir()
-	storeRoot := filepath.Join(root, ".themico")
-	if err := os.Mkdir(storeRoot, 0o755); err != nil {
+	storeRoot := workspacePath(root)
+	if err := os.MkdirAll(storeRoot, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	sentinel := filepath.Join(storeRoot, "sentinel")
@@ -113,7 +239,7 @@ func TestInitExistingStoreFailsWithoutChangingBytes(t *testing.T) {
 
 func TestInitDoesNotReplaceTargetThatAppearsAtPublication(t *testing.T) {
 	root := t.TempDir()
-	parent := filepath.Join(root, ".themico")
+	parent := workspacePath(root)
 	ready := make(chan struct{})
 	release := make(chan struct{})
 	opts := testOptions()
@@ -133,7 +259,7 @@ func TestInitDoesNotReplaceTargetThatAppearsAtPublication(t *testing.T) {
 		result <- err
 	}()
 	<-ready
-	if err := os.Mkdir(parent, 0o700); err != nil {
+	if err := os.MkdirAll(parent, 0o700); err != nil {
 		t.Fatal(err)
 	}
 	close(release)
@@ -155,7 +281,7 @@ func TestInitDoesNotReplaceTargetThatAppearsAtPublication(t *testing.T) {
 
 func TestCommitDoesNotReplaceEmptyGenerationTargetCreatedAtHook(t *testing.T) {
 	root := t.TempDir()
-	finalRoot := filepath.Join(root, ".themico", "generations", "gen-00000000000000000001")
+	finalRoot := workspacePath(root, "generations", "gen-00000000000000000001")
 	opts := testOptions()
 	opts.BeforeGenerationRename = func() error {
 		return os.Mkdir(finalRoot, 0o700)
@@ -217,18 +343,18 @@ func TestInitPublicationStaysAnchoredWhenParentPathIsReplaced(t *testing.T) {
 	if err := <-result; err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(root, ".themico", "store.json")); err != nil {
+	if _, err := os.Stat(workspacePath(root, "store.json")); err != nil {
 		t.Fatalf("store was not published under anchored parent: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(outside, ".themico")); !os.IsNotExist(err) {
+	if _, err := os.Stat(packagePath(outside)); !os.IsNotExist(err) {
 		t.Fatalf("store was published under replacement parent: %v", err)
 	}
 }
 
 func TestCommitPublicationStaysAnchoredWhenStorePathIsReplaced(t *testing.T) {
 	root := t.TempDir()
-	storeRoot := filepath.Join(root, ".themico")
-	relocated := filepath.Join(root, ".themico-relocated")
+	storeRoot := workspacePath(root)
+	relocated := packagePath(root, "workspace-relocated")
 	var setupErr error
 	opts := testOptions()
 	opts.BeforeGenerationRename = func() error {
@@ -295,7 +421,7 @@ func TestCommitRejectsSymlinkEscapeWhenSupported(t *testing.T) {
 	root := t.TempDir()
 	s := mustInit(t, root, testOptions())
 	outside := t.TempDir()
-	link := filepath.Join(root, ".themico", "records", recordID)
+	link := workspacePath(root, "records", recordID)
 	if err := os.Symlink(outside, link); err != nil {
 		t.Skipf("symlink setup unavailable: %v", err)
 	}
@@ -314,7 +440,7 @@ func TestCommitRejectsSymlinkSwapBeforeImmutableCreateWhenSupported(t *testing.T
 	root := t.TempDir()
 	s := mustInit(t, root, testOptions())
 	outside := t.TempDir()
-	parent := filepath.Join(root, ".themico", "records", recordID)
+	parent := workspacePath(root, "records", recordID)
 	mustMkdirAll(t, parent)
 	path := "records/" + recordID + "/revisions/" + recordRevisionID + "/content.md"
 	plan := commitPlan(0, path, []byte("payload"))
@@ -665,10 +791,10 @@ func TestCommitPreflightsAndCanonicalizesEveryMachineJSONWrite(t *testing.T) {
 			if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
 				t.Fatalf("error: %v", err)
 			}
-			if _, err := os.Stat(filepath.Join(root, ".themico", filepath.FromSlash(validPath))); !os.IsNotExist(err) {
+			if _, err := os.Stat(workspacePath(root, filepath.FromSlash(validPath))); !os.IsNotExist(err) {
 				t.Fatalf("valid payload written before invalid JSON was rejected: %v", err)
 			}
-			if _, err := os.Stat(filepath.Join(root, ".themico", filepath.FromSlash(invalidPath))); !os.IsNotExist(err) {
+			if _, err := os.Stat(workspacePath(root, filepath.FromSlash(invalidPath))); !os.IsNotExist(err) {
 				t.Fatalf("invalid payload was written: %v", err)
 			}
 		})
@@ -681,7 +807,7 @@ func TestCommitPreflightsAndCanonicalizesEveryMachineJSONWrite(t *testing.T) {
 	if _, err := s.Commit(context.Background(), plan); err != nil {
 		t.Fatal(err)
 	}
-	got, err := os.ReadFile(filepath.Join(root, ".themico", filepath.FromSlash(validPath)))
+	got, err := os.ReadFile(workspacePath(root, filepath.FromSlash(validPath)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -717,7 +843,7 @@ func TestOpenRejectsMalformedOrNonUTCCreatedAt(t *testing.T) {
 		t.Run(createdAt, func(t *testing.T) {
 			root := t.TempDir()
 			mustInit(t, root, testOptions())
-			path := filepath.Join(root, ".themico", "store.json")
+			path := workspacePath(root, "store.json")
 			data, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)
@@ -802,7 +928,7 @@ func TestCommitPublishesGenerationOneAndCopiesReturnedData(t *testing.T) {
 	data[0] = 'X'
 	got.CurrentRecords[0].RecordID = "mutated"
 
-	writtenContent, err := os.ReadFile(filepath.Join(root, ".themico", "records", recordID, "revisions", recordRevisionID, "content.md"))
+	writtenContent, err := os.ReadFile(workspacePath(root, "records", recordID, "revisions", recordRevisionID, "content.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -844,10 +970,10 @@ func TestCommitPreRenameFaultLeavesPriorCurrentAndOrphanPayload(t *testing.T) {
 	if current.Generation != 0 {
 		t.Fatalf("generation: %d", current.Generation)
 	}
-	if got, readErr := os.ReadFile(filepath.Join(root, ".themico", filepath.FromSlash(path))); readErr != nil || string(got) != "orphan" {
+	if got, readErr := os.ReadFile(workspacePath(root, filepath.FromSlash(path))); readErr != nil || string(got) != "orphan" {
 		t.Fatalf("orphan payload: %q, %v", got, readErr)
 	}
-	entries, readErr := os.ReadDir(filepath.Join(root, ".themico", "generations"))
+	entries, readErr := os.ReadDir(workspacePath(root, "generations"))
 	if readErr != nil {
 		t.Fatal(readErr)
 	}
@@ -870,7 +996,7 @@ func TestCommitRefusesImmutableOverwriteWithoutChangingBytes(t *testing.T) {
 	if !errors.Is(err, store.ErrPrecondition) {
 		t.Fatalf("error: %v", err)
 	}
-	got, readErr := os.ReadFile(filepath.Join(root, ".themico", filepath.FromSlash(path)))
+	got, readErr := os.ReadFile(workspacePath(root, filepath.FromSlash(path)))
 	if readErr != nil {
 		t.Fatal(readErr)
 	}
@@ -952,7 +1078,7 @@ func TestConcurrentCommitHasOneWinnerAndOneConflict(t *testing.T) {
 func TestOpenIgnoresUnnumberedStagingGeneration(t *testing.T) {
 	root := t.TempDir()
 	s := mustInit(t, root, testOptions())
-	staging := filepath.Join(root, ".themico", "generations", ".staging-incomplete")
+	staging := workspacePath(root, "generations", ".staging-incomplete")
 	mustMkdirAll(t, staging)
 	mustWrite(t, filepath.Join(staging, "manifest.json"), []byte(`{}`))
 	current, err := s.Current()
@@ -972,7 +1098,7 @@ func TestOpenAndCurrentRejectInvalidGenerationChain(t *testing.T) {
 		{
 			name: "higher broken generation",
 			mutate: func(t *testing.T, root string, _ model.Manifest) {
-				dir := filepath.Join(root, ".themico", "generations", "gen-00000000000000000002")
+				dir := workspacePath(root, "generations", "gen-00000000000000000002")
 				mustMkdirAll(t, dir)
 				mustWrite(t, filepath.Join(dir, "manifest.json"), []byte(`{}`))
 			},
@@ -980,7 +1106,7 @@ func TestOpenAndCurrentRejectInvalidGenerationChain(t *testing.T) {
 		{
 			name: "parent mismatch",
 			mutate: func(t *testing.T, root string, manifest model.Manifest) {
-				dir := filepath.Join(root, ".themico", "generations", "gen-00000000000000000001")
+				dir := workspacePath(root, "generations", "gen-00000000000000000001")
 				mustMkdirAll(t, dir)
 				views := json.RawMessage(`{}`)
 				viewsDigest, err := canonical.Digest(views)
@@ -1014,7 +1140,7 @@ func TestOpenAndCurrentRejectInvalidGenerationChain(t *testing.T) {
 		{
 			name: "views digest mismatch",
 			mutate: func(t *testing.T, root string, _ model.Manifest) {
-				mustWrite(t, filepath.Join(root, ".themico", "generations", "gen-00000000000000000000", "views.json"), []byte(`{"broken":true}`))
+				mustWrite(t, workspacePath(root, "generations", "gen-00000000000000000000", "views.json"), []byte(`{"broken":true}`))
 			},
 		},
 	}
@@ -1051,7 +1177,7 @@ func TestOpenRejectsStrictMachineJSONViolations(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			mustInit(t, root, testOptions())
-			overwrite(t, filepath.Join(root, ".themico", "store.json"), test.data)
+			overwrite(t, workspacePath(root, "store.json"), test.data)
 			if _, err := store.Open(root, testOptions()); !errors.Is(err, store.ErrValidation) {
 				t.Fatalf("error: %v", err)
 			}
@@ -1083,7 +1209,7 @@ func TestOpenRejectsMissingOrMismatchedReferencedPayload(t *testing.T) {
 			if _, err := s.Commit(context.Background(), plan); err != nil {
 				t.Fatal(err)
 			}
-			test.mutate(t, filepath.Join(root, ".themico", filepath.FromSlash(path)))
+			test.mutate(t, workspacePath(root, filepath.FromSlash(path)))
 			if _, err := store.Open(root, testOptions()); !errors.Is(err, store.ErrValidation) {
 				t.Fatalf("Open error: %v", err)
 			}
@@ -1094,7 +1220,7 @@ func TestOpenRejectsMissingOrMismatchedReferencedPayload(t *testing.T) {
 func TestHigherBrokenGenerationIsNotWriterBaseline(t *testing.T) {
 	root := t.TempDir()
 	s := mustInit(t, root, testOptions())
-	broken := filepath.Join(root, ".themico", "generations", "gen-00000000000000000002")
+	broken := workspacePath(root, "generations", "gen-00000000000000000002")
 	mustMkdirAll(t, broken)
 	mustWrite(t, filepath.Join(broken, "manifest.json"), []byte(`{}`))
 
@@ -1113,7 +1239,7 @@ func TestCommitRejectsInvalidViewsWithoutWritingPayload(t *testing.T) {
 	if _, err := s.Commit(context.Background(), plan); !errors.Is(err, store.ErrValidation) {
 		t.Fatalf("error: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(root, ".themico", filepath.FromSlash(path))); !os.IsNotExist(err) {
+	if _, err := os.Stat(workspacePath(root, filepath.FromSlash(path))); !os.IsNotExist(err) {
 		t.Fatalf("payload written despite invalid views: %v", err)
 	}
 }
@@ -1144,7 +1270,7 @@ func TestDefaultIDSourceUsesRequiredFormat(t *testing.T) {
 	if _, err := store.Init(root, opts); err != nil {
 		t.Fatal(err)
 	}
-	data, err := os.ReadFile(filepath.Join(root, ".themico", "store.json"))
+	data, err := os.ReadFile(workspacePath(root, "store.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

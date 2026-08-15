@@ -31,7 +31,7 @@
 
 ## 5. 存储、提交与并发
 
-13. **初始化安全**：`.themico` 不存在时初始化 generation 0；已存在时在任何写入前失败，既有 bytes 不改变。
+13. **初始化安全**：`.themico/workspace/` 不存在时按需创建包目录与空 `core/`，并在 workspace 中初始化 generation 0；workspace 已存在时在任何写入前失败，既有 bytes 不改变。已安装的 control-plane 内容不阻止初始化，也不被 init 读取或改写；初始化失败只回收本次创建且仍为空的目录。
 14. **generation commit**：只有完整 staging generation rename 到新的 generation directory 后，新 state 才可见；rename 前故障和 orphan payload 不进入 current 查询。
 15. **连续 current chain**：CLI 只接受从 generation 0 连续连接、parent digest 正确且 payload 完整的最高 generation；编号更高但断链的目录不能成为 current。
 16. **并发 conflict**：两个 writer 基于同一 expected generation apply 时恰好一个成功，另一个返回 conflict；失败方不能覆盖获胜 generation。

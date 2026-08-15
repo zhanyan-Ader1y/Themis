@@ -16,6 +16,8 @@
 
 不得为三个知识类型创建三个公共 Skill，也不得让 operation reference 变成独立的宿主路由入口。`SKILL.md` 只保留 Claude Code 宿主发现所需的最小 frontmatter；流程和语义合同使用中文 Markdown。
 
+发现入口与控制面分离：`SKILL.md` 位于 `.claude/skills/themico/`，因为宿主只从该目录发现 Skill；common references、operation references 与三个 type factory 位于 `.themico/core/references/`，与受治理的 `.themico/workspace/` 分开。Skill 与 reference 都不得直接写入 workspace。
+
 ## 3. 固定加载顺序
 
 一次操作的加载顺序分为已有记录与尚未分类的新 candidate 两条路径。
@@ -61,7 +63,7 @@ common/operation-contract
 - 合法 machine status；
 - fail-closed 行为。
 
-operation reference 不复制三种类型的完整 L2/L3 合同，也不定义新的 Zone、类型、状态或关系。若 operation 与 CLI command 不可用，reference 必须要求 draft-only 降级，不能指导 Agent 手工改写 `.themico`。
+operation reference 不复制三种类型的完整 L2/L3 合同，也不定义新的 Zone、类型、状态或关系。若 operation 与 CLI command 不可用，reference 必须要求 draft-only 降级，不能指导 Agent 手工改写 `.themico/workspace/`。
 
 ## 5. common type registry
 
@@ -139,5 +141,5 @@ CLI unavailable、registry 不可读或 type binding 不明确时，Skill 只能
 - 为已有记录加载多个 factory 后由 Agent投票选类型；
 - 依据目录名自动注册新类型；
 - 让 type factory 直接写 record 或 current pointer；
-- 使用 Python、Shell、PowerShell、`jq`、`yq` 或手工 JSON 替代 CLI operation；
+- 使用 Python、Shell、PowerShell、`jq`、`yq` 或手工 JSON 替代 CLI operation，或直接编辑 `.themico/workspace/`；
 - 在 MCP adapter 或 Themis lifecycle 尚未另行设计时声称已经接线。

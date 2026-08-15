@@ -132,7 +132,9 @@ publish 只能复核已经冻结的输入、currentness 和 Approval，不能重
 
 ### 4.6 Generation store 与 `views.json`
 
-首个交付继续使用顶层 Spec 定义的 generation-directory store。`manifest.json` 中的 current pointers 是 candidate 与 record currentness 的唯一机器来源。
+首个交付继续使用顶层 Spec 定义的 generation-directory store，store root 为 `.themico/workspace/`。`init` 只拥有 `workspace/`：它按需创建包目录与空 `core/`，在 workspace 已存在时失败，并允许控制面与工作区按任意顺序安装。`core/` 由 Skill reference 交付填充，不被 generation commit 写入。`manifest.json` 中的 current pointers 是 candidate 与 record currentness 的唯一机器来源。
+
+repository-relative source 相对仓库根解析，不相对包目录或 workspace。
 
 `views.json` 在首个交付中只承担 generation 格式所要求的合法最小对象角色，固定为 canonical 空对象 `{}`。它不表示完整聚合索引，不是基础 query 的权威来源，也不能被产品说明或证据声称为已经实现 project、domain、architecture unit 或 feature view。
 
@@ -161,6 +163,8 @@ CLI 层只负责参数解析、strict decode、service 调用、domain error 映
 
 首个交付必须提供一个公共 `themico` Skill。一次 Invocation 只加载一个必要 operation reference，并按 registry 只加载一个 type factory。
 
+宿主发现入口为 `.claude/skills/themico/SKILL.md`，只保留宿主所需的最小 frontmatter 与转发说明；common references、operation references 和三个 type factory 全部位于 `.themico/core/references/` 下，与受治理 workspace 分离。
+
 首个交付所需 operation references 为：
 
 - `query`；
@@ -174,13 +178,13 @@ CLI 层只负责参数解析、strict decode、service 调用、domain error 映
 
 common references 必须提供 operation、result、governance、Knowledge Record、L1 discovery 和 type registry 合同；三个 type factory 各自提供 factory、L2、L3 和 semantic-check reference。
 
-CLI 或所需 reference unavailable 时，Skill 只能形成 draft 并报告 unavailable，不能手工修改 `.themico`，也不能声称结果已 published、current 或 valid。
+CLI 或所需 reference unavailable 时，Skill 只能形成 draft 并报告 unavailable，不能手工修改 `.themico/workspace/`，也不能声称结果已 published、current 或 valid。
 
 ## 5. 端到端数据流与失败关闭
 
 首个交付的 authority 变化如下：
 
-1. `init` 创建 generation 0；已存在 `.themico` 时在任何写入前失败。
+1. `init` 按需创建 `.themico/` 与空 `.themico/core/`，并发布含 generation 0 的 `.themico/workspace/`；workspace 已存在时在任何写入前失败。
 2. candidate mutation 写入不可变 revision，并通过 expected generation 更新 current candidate pointer。
 3. Human 类型确认只对确切 candidate revision 生效，并创建固化类型的新 revision。
 4. validate 和 independent assessment 不改变 published record current state。
@@ -265,6 +269,7 @@ CLI 或所需 reference unavailable 时，Skill 只能形成 draft 并报告 una
 - validate 对直接 relation 的类型、目标存在性与跨 Zone 显式声明进行校验；
 - publish 原子写入 record、projection 与 candidate published binding；
 - generation chain 连续性、parent digest 与 current payload 完整性校验；
+- `init` 产生的 `core/`/`workspace/` 分离，store payload 不逃逸到包根或 `core/`，已安装 control plane 时仍能初始化并保持其 bytes 不变，且失败初始化只回收本次创建的空目录；
 - L1 基础过滤、exact-ID L2/L3、byte budget exact boundary；
 - record、projection、content 或 manifest binding 篡改后读取失败关闭；
 - CLI help、缺参、unknown command、strict JSON 和单一 envelope；
@@ -308,10 +313,11 @@ CLI 或所需 reference unavailable 时，Skill 只能形成 draft 并报告 una
 14. 每次读取校验 record、projection、content、digest 和 manifest pointer binding，篡改时失败关闭。
 15. `views.json` 保持 canonical 空对象，未被声明为聚合索引或 query authority。
 16. 核心 CLI command surface 可构建、可运行，stdout 只有一个严格 result envelope。
-17. 单一公共 `themico` Skill 只加载一个 operation reference 和 registry 选择的一个 factory。
-18. 自动测试、人工 replay、`go test ./... -count=1`、`go vet ./...`、`go build ./...` 和 `git diff --check` 均有 fresh 结果；无法证明的项目显式标记 GAP 或 unavailable。
-19. 产品说明只陈述实际可用能力，并明确本文件第 6 节能力尚未交付。
-20. 没有新增 Python、产品 YAML、功能版本、版本目录或计划外外部集成。
+17. 单一公共 `themico` Skill 只加载一个 operation reference 和 registry 选择的一个 factory；references 位于 `.themico/core/`，发现入口位于 `.claude/skills/themico/SKILL.md`。
+18. `init` 建立 `core/` 与 `workspace/` 分离，store payload 全部落在 `workspace/` 内，`core/` 不被 generation commit 写入；控制面与工作区可按任意顺序安装。
+19. 自动测试、人工 replay、`go test ./... -count=1`、`go vet ./...`、`go build ./...` 和 `git diff --check` 均有 fresh 结果；无法证明的项目显式标记 GAP 或 unavailable。
+20. 产品说明只陈述实际可用能力，并明确本文件第 6 节能力尚未交付。
+21. 没有新增 Python、产品 YAML、功能版本、版本目录或计划外外部集成。
 
 该判定只证明本实施切片完成，不表示完整 Themico 设计的全部生命周期、关系、投影和集成目标已经实现，也不等于用户接受或 push 授权。
 

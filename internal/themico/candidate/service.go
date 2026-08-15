@@ -332,7 +332,7 @@ func (s *Service) ready(ctx context.Context) error {
 }
 
 func (s *Service) bindSources(paths []string) ([]model.SourceRef, error) {
-	repositoryRoot := filepath.Dir(s.store.Root())
+	repositoryRoot := s.store.RepositoryRoot()
 	root, err := os.OpenRoot(repositoryRoot)
 	if err != nil {
 		return nil, validation("open repository root", err)
