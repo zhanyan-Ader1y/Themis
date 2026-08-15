@@ -1395,7 +1395,27 @@ CLI 只比较 identity 字段是否不同，不声称两者在现实中确为不
 
 - [ ] **步骤 5：实现 PreparePublish**
 
-`prepare.go` 的 `PreparePublish` 依次：`Inspect` current candidate → `validate.Candidate` 且要求 `Report.OK` → `checkAssessment` → 读取 `CurrentState()` 取 `expectedGeneration` → `AllocateID("kr_")` 与 `AllocateID("rev_")` → 构造 record revision、L1/L2 projection 与 content 的 canonical bytes → 计算每个 write 的 digest → 组装 `model.Prepare` → 计算 `Digest` → 以单次 commit 写入 `preparations/<prepare-id>/prepare.json` 与 `assessments/<assessment-digest>.json`。
+`prepare.go` 的 `PreparePublish` 依次：`Inspect` current candidate → `validate.Candidate` 且要求 `Report.OK` → `checkAssessment` → 读取 `CurrentState()` → `AllocateID("kr_")` 与 `AllocateID("rev_")` → 构造 record revision、L1/L2 projection 与 content 的 canonical bytes → 计算每个 write 的 digest → 组装 `model.Prepare` → 计算 `Digest` → 以单次 commit 写入 `preparations/<prepare-id>/prepare.json` 与 `assessments/<assessment-digest>.json`。
+
+**`ExpectedGeneration` 必须记录本次 prepare commit *产生* 的 generation，而不是 commit 前读到的 generation。** `store.Commit` 把 generation 设为 `current + 1`，prepare 自身的 commit 因此会推进 generation；若记录 commit 前的值，随后的 publish 必然返回 `conflict`。实现方式是先用读到的 generation 作为 `CommitPlan.ExpectedGeneration` 提交，再把 `Commit` 返回的 `manifest.Generation` 写入 `Prepare.ExpectedGeneration`。由于 `Prepare.Digest` 覆盖该字段，必须在确定该值之后再计算 digest 并写入 prepare 工件——即先提交 assessment、再以第二次 commit 写入 prepare，或在同一次 commit 中先算出 `current+1` 作为 `ExpectedGeneration`。采用后者：`expectedGeneration := manifest.Generation + 1`，其中 `manifest` 来自 commit 前的 `CurrentState()`。
+
+对应的失败测试：
+
+```go
+func TestPreparedGenerationMatchesTheStateItsCommitProduces(t *testing.T) {
+	fixture := newFixture(t)
+	prepare := fixture.preparePublish(t)
+
+	current, _, err := fixture.store.CurrentState()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if prepare.ExpectedGeneration != current.Generation {
+		t.Fatalf("prepare expects generation %d but the store is at %d — publish would always conflict",
+			prepare.ExpectedGeneration, current.Generation)
+	}
+}
+```
 
 首个交付只发布新记录，`Invalidations` 恒为空切片（不是 `nil`），字段仍必须存在并参与 digest。
 
@@ -2329,7 +2349,16 @@ func TestConcurrentPublishLetsExactlyOneWinWithoutOverwriting(t *testing.T) {
 }
 ```
 
-两个 prepare 必须基于同一 expected generation 创建，因此第二个 publish 只能返回 `conflict`。
+两个 prepare 顺序创建，各自的 commit 都会推进 generation，因此它们的 `ExpectedGeneration` 必然不同：先 publish 的一方匹配 current 而成功并再次推进 generation，另一方的 expected generation 随即过时，只能返回 `conflict`。断言恰好一个 `succeeded`、一个 `conflict`，并额外断言失败方没有覆盖获胜 generation：
+
+```go
+	current := mustCurrentManifest(t, repository)
+	if len(current.CurrentRecords) != 1 {
+		t.Fatalf("current records=%d want exactly the winner's record", len(current.CurrentRecords))
+	}
+```
+
+本测试证明的是"基于过时 expected generation 的 publish 不能覆盖获胜 generation"，不依赖两个 prepare 共享同一 generation。
 
 - [ ] **步骤 4：实现中断测试**
 
