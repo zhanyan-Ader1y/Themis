@@ -286,6 +286,68 @@ type DevelopmentExperienceL2 struct {
 	StopConditions    []string `json:"stop_conditions"`
 }
 
+// SemanticAssessmentStatus is the closed assessment verdict set.
+type SemanticAssessmentStatus string
+
+const (
+	AssessmentPass SemanticAssessmentStatus = "pass"
+	AssessmentFail SemanticAssessmentStatus = "fail"
+)
+
+func (value SemanticAssessmentStatus) Valid() bool {
+	return value == AssessmentPass || value == AssessmentFail
+}
+
+// SemanticAssessment is an independent Agent verdict bound to one candidate revision.
+type SemanticAssessment struct {
+	Schema            string                   `json:"schema"`
+	CandidateID       string                   `json:"candidate_id"`
+	CandidateRevision string                   `json:"candidate_revision"`
+	Status            SemanticAssessmentStatus `json:"status"`
+	CheckerIdentity   string                   `json:"checker_identity"`
+	CheckedAt         string                   `json:"checked_at"`
+	Notes             string                   `json:"notes"`
+}
+
+// Prepare freezes every input one authorized publish may commit.
+type Prepare struct {
+	Schema             string          `json:"schema"`
+	PrepareID          string          `json:"prepare_id"`
+	Operation          string          `json:"operation"`
+	CandidateID        string          `json:"candidate_id"`
+	CandidateRevision  string          `json:"candidate_revision"`
+	CandidateDigest    string          `json:"candidate_digest"`
+	AssessmentDigest   string          `json:"assessment_digest"`
+	Sources            []SourceRef     `json:"sources"`
+	ExpectedGeneration uint64          `json:"expected_generation"`
+	RecordID           string          `json:"record_id"`
+	RecordRevision     string          `json:"record_revision"`
+	L1Digest           string          `json:"l1_digest"`
+	L2Digest           string          `json:"l2_digest"`
+	L3Digest           string          `json:"l3_digest"`
+	Writes             []PreparedWrite `json:"writes"`
+	Invalidations      []ProjectionRef `json:"invalidations"`
+	CreatedAt          string          `json:"created_at"`
+	Digest             string          `json:"digest"`
+}
+
+// PreparedWrite is one frozen immutable target inside a prepare.
+type PreparedWrite struct {
+	Path   string `json:"path"`
+	Digest string `json:"digest"`
+}
+
+// Approval is the Human authorization bound to one exact prepare.
+type Approval struct {
+	Schema        string `json:"schema"`
+	Operation     string `json:"operation"`
+	PrepareID     string `json:"prepare_id"`
+	PrepareDigest string `json:"prepare_digest"`
+	ApprovedBy    string `json:"approved_by"`
+	ApprovedAt    string `json:"approved_at"`
+	AuthorityRef  string `json:"authority_ref"`
+}
+
 // NormalizeStrings returns a sorted, duplicate-free copy for set-semantic strings.
 func NormalizeStrings(values []string) []string {
 	if values == nil {
