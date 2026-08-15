@@ -8,6 +8,10 @@
 
 **技术栈：** Go 1.26 标准库、JSON 机器合同、Markdown L3 与 Skill references、本地文件系统、Go 单元/集成/故障注入测试。首个计划不实现 Claude API、MCP adapter、Embedding、向量数据库、SQLite、Web UI、自动知识摄取或 Themis lifecycle 集成。
 
+**Spec：** `docs/superpowers/specs/2026-07-29-themico-design/first-usable-delivery.md`（首个可用交付范围，顶层 authority 为 `docs/superpowers/specs/2026-07-29-themico-design.md`）。执行者必须同时阅读计划与该 Spec。
+
+**当前进度：** 任务 1–5 已完成并合入 `main`（`44207c2..8f80edc`），提供 Spec authority、Go module 与 result envelope、知识模型与 registry、canonical JSON 与 generation store、candidate 生命周期。任务 6–12 是按首个可用交付范围重组后的剩余工作，逐个独立实现、测试、提交与 review。
+
 ## 全局约束
 
 - 当前顶层权威入口是 `docs/superpowers/specs/2026-07-29-themico-design.md`；本计划第一个任务必须把本轮已确认的设计增量写入该 authority，再开始代码实现。
@@ -21,7 +25,9 @@
 - 跨类型提炼必须创建新 candidate/record，并通过 `derived_from` 关系连接原记录。
 - Agent 只能产生 proposal、candidate content、semantic assessment、explanation 和 relevance decision，不能产生 published/current/valid authority。
 - Human 负责类型确认、publication、supersede、deprecate 和 archive 的授权；CLI 只校验授权工件的结构和绑定，不声称验证人的真实身份。
-- CLI 是唯一 machine authority：负责结构、枚举、ID、revision、canonical digest、本地 source binding、registry、currentness、确定性过滤、byte budget、关系完整性、可见提交、投影索引、失效和重建。当前核心不定义独立 Catalog artifact 或命令；计划中原先的 `Catalog` 责任由 generation `manifest.json` 的 current pointers/projection references 与 `views.json` 的可重建聚合索引承担。任务 7 的生命周期 commit 可在投影模块接线前写空合法 views；任务 10 通过显式 rebuild 生成新 generation 填充或恢复聚合索引，不把空、stale 或部分 views 声称为完整 current 索引。
+- CLI 是唯一 machine authority：负责结构、枚举、ID、revision、canonical digest、本地 source binding、registry、currentness、确定性过滤、byte budget、关系完整性和可见提交。当前核心不定义独立 Catalog artifact 或命令；currentness 由 generation `manifest.json` 的 current pointers/projection references 承担。
+- 本计划范围是 `docs/superpowers/specs/2026-07-29-themico-design/first-usable-delivery.md` 定义的首个可用交付。`views.json` 固定为 canonical 空对象 `{}`，只满足 generation 格式要求；它不是聚合索引，也不是 query authority，任何任务都不得把它声称为完整 current 索引。
+- 以下能力属于后续独立计划，任何任务都不得实现、预留空 command、占位 handler 或未接线 reference：supersede、deprecate、archive、history query、跨类型派生与 `create-derived-candidate`、relation traversal、多跳查询、跨 Zone 查询扩展、cycle analysis、Agent relevance ranking、聚合 view、`rebuild` 命令、URL source、MCP、Embedding、向量数据库、SQLite、Web UI、Themis lifecycle 接线、token budget。
 - 正式 source 首批只支持 repository/root-relative 本地文件；CLI 必须直接读取 bytes 并计算 `sha256`。URL 抓取和未物化外部来源留给后续计划。
 - 所有 machine JSON 使用 UTF-8、拒绝未知字段、拒绝重复键、拒绝浮点数，digest 使用项目定义的 canonical JSON 加 `sha256:` 前缀。
 - 单个 machine JSON 输入上限为 1 MiB，单个 L3 Markdown 上限为 4 MiB，单个 source file 上限为 16 MiB；超过上限返回 `validation_failed`，不能截断。
@@ -80,19 +86,15 @@ internal/themico/
 │   ├── relation.go
 │   └── validate_test.go
 ├── governance/
+│   ├── assessment.go
 │   ├── prepare.go
 │   ├── approval.go
 │   ├── publish.go
-│   ├── lifecycle.go
 │   └── governance_test.go
 ├── query/
 │   ├── query.go
 │   ├── inspect.go
 │   └── query_test.go
-├── projection/
-│   ├── projection.go
-│   ├── views.go
-│   └── projection_test.go
 ├── cli/
 │   ├── cli.go
 │   ├── commands.go
@@ -124,12 +126,7 @@ templates/.themico/core/
     │   ├── confirm-type.md
     │   ├── validate.md
     │   ├── prepare.md
-    │   ├── publish.md
-    │   ├── supersede.md
-    │   ├── deprecate.md
-    │   ├── archive.md
-    │   ├── verify-projection.md
-    │   └── rebuild.md
+    │   └── publish.md
     └── types/
         ├── design-decision/
         │   ├── factory.md
@@ -154,7 +151,8 @@ docs/superpowers/specs/2026-07-29-themico-design/
 ├── storage-and-lifecycle.md
 ├── query-and-projection.md
 ├── skill-and-references.md
-└── acceptance.md
+├── acceptance.md
+└── first-usable-delivery.md
 
 docs/plan/themico-core/
 ├── implementation-evidence.md
@@ -193,7 +191,9 @@ docs/plan/themico-core/
 
 ---
 
-### 任务 1：把已确认的 Themico 设计增量固化为 current Spec
+> **任务 1–5 已完成**，代码已合入 `main`（`44207c2..8f80edc`）。以下记录保留作为接口来源与设计依据，**执行者不得重新实施**。剩余工作从任务 6 开始。
+
+### 任务 1：把已确认的 Themico 设计增量固化为 current Spec（已完成）
 
 **文件：**
 - 修改：`docs/superpowers/specs/2026-07-29-themico-design.md`
@@ -302,7 +302,7 @@ git commit -m "docs: refine Themico core authority"
 
 ---
 
-### 任务 2：建立 Go module、CLI 进程合同和封闭结果状态
+### 任务 2：建立 Go module、CLI 进程合同和封闭结果状态（已完成）
 
 **文件：**
 - 新建：`go.mod`
@@ -455,7 +455,7 @@ git commit -m "feat: establish Themico CLI contract"
 
 ---
 
-### 任务 3：实现统一 Record model 和显式 type registry/factory
+### 任务 3：实现统一 Record model 和显式 type registry/factory（已完成）
 
 **文件：**
 - 新建：`internal/themico/model/model.go`
@@ -580,7 +580,7 @@ git commit -m "feat: define Themico knowledge model"
 
 ---
 
-### 任务 4：实现 canonical JSON、稳定 identity 和 generation store
+### 任务 4：实现 canonical JSON、稳定 identity 和 generation store（已完成）
 
 **文件：**
 - 新建：`internal/themico/canonical/canonical.go`
@@ -691,7 +691,7 @@ git commit -m "feat: add Themico generation store"
 
 ---
 
-### 任务 5：实现 candidate create、revise、type confirmation 和 inspect
+### 任务 5：实现 candidate create、revise、type confirmation 和 inspect（已完成）
 
 **文件：**
 - 新建：`internal/themico/candidate/service.go`
@@ -812,7 +812,7 @@ git commit -m "feat: implement Themico candidates"
 
 ---
 
-### 任务 6：实现结构、Markdown、source 和 typed relation 校验
+### 任务 6：实现最小确定性 validate
 
 **文件：**
 - 新建：`internal/themico/validate/candidate.go`
@@ -821,63 +821,381 @@ git commit -m "feat: implement Themico candidates"
 - 新建：`internal/themico/validate/validate_test.go`
 
 **接口：**
-- 产出：`validate.Candidate(store, candidateID, revision) Report`。
-- Report 只表达机器可证明问题；内容真实性留给 semantic assessment 和 Human Review。
+- 消费：`store.Open(root string, opts store.Options) (*store.Store, error)`；`candidate.New(st *store.Store) *candidate.Service`；`(*candidate.Service).Inspect(ctx context.Context, candidateID string) (model.CandidateRevision, error)`；`model.LookupFactory(knowledgeType model.KnowledgeType) (model.Factory, bool)`；`model.Factory.L3Headings []string`；`model.Factory.DecodePayload func([]byte) (any, error)`；`canonical.Digest(value any) (string, error)`。
+- 产出：
 
-- [ ] **步骤 1：写三种 L3 heading 失败测试**
+```go
+package validate
 
-每种类型准备一个完整通过 fixture，再分别删除一个必填 heading，预期 issue code：
+// Report is the deterministic machine verdict for one candidate revision.
+type Report struct {
+	CandidateID       string        `json:"candidate_id"`
+	CandidateRevision string        `json:"candidate_revision"`
+	OK                bool          `json:"ok"`
+	Issues            []result.Issue `json:"issues"`
+}
+
+func Candidate(ctx context.Context, st *store.Store, candidateID, candidateRevision string) (Report, error)
+```
+
+`Report.Issues` 使用 `result.Issue{Code, Path, Message}`，按 `Path`、`Code`、`Message` 升序排序，`nil` 归一化为空切片。`Candidate` 只在无法读取 store 或 candidate 时返回 error；机器可判定的合同问题一律进入 `Issues` 并令 `OK=false`。
+
+本任务只做首个交付范围内的校验：类型/Zone 兼容、typed L2 payload、固定 L3 章节、L1/L2/L3 digest、candidate 精确 current revision、source currentness，以及**已提供 relation** 的类型、目标 identity 格式、目标存在性与跨 Zone 显式声明。不做关系遍历、多跳展开、cycle analysis 或自然语言正确性判断。
+
+- [ ] **步骤 1：写 issue code 表与 Markdown 失败测试**
+
+在 `validate_test.go` 中固定 issue code 闭集：
 
 ```text
-markdown.missing_heading
+type.unregistered
+type.zone_incompatible
+type.not_confirmed
+l2.payload_invalid
 markdown.frontmatter_forbidden
+markdown.missing_h1
+markdown.missing_heading
+markdown.unknown_heading
 markdown.heading_order
-l2.unknown_field
+digest.l1_mismatch
+digest.l2_mismatch
+digest.l3_mismatch
+candidate.revision_stale
 source.stale
-relation.target_missing
+source.unreadable
 relation.type_forbidden
-relation.cycle
+relation.target_invalid
+relation.target_missing
+relation.cross_zone_not_explicit
 ```
 
-- [ ] **步骤 2：实现 Markdown validator**
+先写三种类型各一个完整通过 fixture，再分别构造缺失章节、章节乱序、多余 H2 和 frontmatter 四种失败：
 
-校验第一个非空行是单一 H1；禁止文件以 `---` frontmatter 开头；每个 Factory 的 H2 必须且只出现一次，并按 Spec 顺序出现；额外 H2 返回 `markdown.unknown_heading`。H3 及更深标题允许存在。
-
-- [ ] **步骤 3：实现 relation registry**
-
-关系闭集固定为：
-
-```text
-depends_on
-constrains
-derived_from
-applies_to
-challenges
-corrects
-recovers_from
-follows
-related_to
-supersedes
+```go
+func TestCandidateRejectsMalformedL3(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		code    string
+	}{
+		{
+			name:    "frontmatter",
+			content: "---\ntitle: x\n---\n\n# 标题\n\n## 背景与问题\n正文\n",
+			code:    "markdown.frontmatter_forbidden",
+		},
+		{
+			name:    "missing heading",
+			content: designDecisionContentWithout(t, "约束"),
+			code:    "markdown.missing_heading",
+		},
+		{
+			name:    "unknown heading",
+			content: designDecisionContent(t) + "\n## 额外章节\n正文\n",
+			code:    "markdown.unknown_heading",
+		},
+		{
+			name:    "heading order",
+			content: designDecisionContentSwapped(t, "决策", "约束"),
+			code:    "markdown.heading_order",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			fixture := newFixture(t)
+			created := fixture.confirmedCandidate(t, model.TypeDesignDecision, []byte(test.content))
+			report := mustValidate(t, fixture.store, created.CandidateID, created.Revision)
+			if report.OK || !hasIssue(report, test.code) {
+				t.Fatalf("report=%+v want issue %s", report, test.code)
+			}
+		})
+	}
+}
 ```
 
-`supersedes` 只能由 governance operation 生成，candidate 自由输入时拒绝。`depends_on`、`derived_from`、`supersedes` 必须无环；`related_to` 允许双向，但 CLI 不自动生成反向边。
+- [ ] **步骤 2：运行测试确认失败**
 
-- [ ] **步骤 4：实现 source/current target 校验**
+Run: `go test ./internal/themico/validate -run TestCandidateRejectsMalformedL3 -v`
+Expected: FAIL，`undefined: validate.Candidate`。
 
-Validate 必须重新读取 source bytes 并比较 digest；target relation 默认允许引用 current 或 history record，但必须存在。跨 Zone relation 必须在 relation 中显式 `cross_zone: true`，否则返回 `relation.cross_zone_not_explicit`。
+- [ ] **步骤 3：实现 Markdown validator**
 
-- [ ] **步骤 5：实现稳定 issue 排序**
+`markdown.go`：
 
-所有 issue 按 `path`、`code`、`message` 排序；同一输入重复校验输出 byte-identical JSON。
+```go
+package validate
 
-- [ ] **步骤 6：运行测试并提交**
+// checkMarkdown verifies the fixed Chinese section contract for one knowledge type.
+func checkMarkdown(content []byte, headings []string) []result.Issue {
+	issues := make([]result.Issue, 0)
+	text := string(content)
+	if strings.HasPrefix(strings.TrimLeft(text, "﻿"), "---") {
+		issues = append(issues, issue("markdown.frontmatter_forbidden", "content.md", "L3 must not start with YAML frontmatter"))
+		return issues
+	}
+
+	var h1 int
+	seen := make(map[string]int, len(headings))
+	order := make([]string, 0, len(headings))
+	for index, line := range strings.Split(text, "\n") {
+		trimmed := strings.TrimRight(line, "\r")
+		switch {
+		case strings.HasPrefix(trimmed, "# "):
+			h1++
+		case strings.HasPrefix(trimmed, "## "):
+			title := strings.TrimSpace(strings.TrimPrefix(trimmed, "## "))
+			seen[title] = index
+			order = append(order, title)
+		}
+	}
+	if h1 != 1 {
+		issues = append(issues, issue("markdown.missing_h1", "content.md", "L3 must contain exactly one H1"))
+	}
+
+	expected := make(map[string]struct{}, len(headings))
+	for _, heading := range headings {
+		expected[heading] = struct{}{}
+		if _, ok := seen[heading]; !ok {
+			issues = append(issues, issue("markdown.missing_heading", "content.md#"+heading, "required H2 is missing"))
+		}
+	}
+	for _, title := range order {
+		if _, ok := expected[title]; !ok {
+			issues = append(issues, issue("markdown.unknown_heading", "content.md#"+title, "H2 is not part of this knowledge type"))
+		}
+	}
+
+	previous := -1
+	for _, heading := range headings {
+		line, ok := seen[heading]
+		if !ok {
+			continue
+		}
+		if line < previous {
+			issues = append(issues, issue("markdown.heading_order", "content.md#"+heading, "required H2 appears out of order"))
+		}
+		previous = line
+	}
+	return issues
+}
+```
+
+重复 H2 由 `seen` 记录最后一次出现位置，乱序时必然触发 `markdown.heading_order`；H3 及更深标题不参与校验。
+
+- [ ] **步骤 4：运行 Markdown 测试确认通过**
+
+Run: `go test ./internal/themico/validate -run TestCandidateRejectsMalformedL3 -v`
+Expected: PASS。
+
+- [ ] **步骤 5：写 relation 与 source 失败测试**
+
+```go
+func TestCandidateChecksProvidedRelationsAndSources(t *testing.T) {
+	fixture := newFixture(t)
+	published := fixture.publishedRecord(t)
+
+	for _, test := range []struct {
+		name     string
+		mutate   func(*testing.T, *fixtureState) (string, string)
+		code     string
+	}{
+		{
+			name: "forbidden type",
+			mutate: func(t *testing.T, state *fixtureState) (string, string) {
+				return state.candidateWithRelation(t, model.Relation{
+					Type:           model.RelationSupersedes,
+					TargetRecordID: published.RecordID,
+				})
+			},
+			code: "relation.type_forbidden",
+		},
+		{
+			name: "missing target",
+			mutate: func(t *testing.T, state *fixtureState) (string, string) {
+				return state.candidateWithRelation(t, model.Relation{
+					Type:           model.RelationRelatedTo,
+					TargetRecordID: "kr_99999999999999999999999999999999",
+				})
+			},
+			code: "relation.target_missing",
+		},
+		{
+			name: "implicit cross zone",
+			mutate: func(t *testing.T, state *fixtureState) (string, string) {
+				return state.candidateWithRelation(t, model.Relation{
+					Type:           model.RelationRelatedTo,
+					TargetRecordID: published.RecordID,
+				})
+			},
+			code: "relation.cross_zone_not_explicit",
+		},
+		{
+			name: "source drift",
+			mutate: func(t *testing.T, state *fixtureState) (string, string) {
+				id, revision := state.candidateWithSource(t, "docs/source.txt", []byte("v1"))
+				writeSource(t, state.root, "docs/source.txt", []byte("v2"))
+				return id, revision
+			},
+			code: "source.stale",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			id, revision := test.mutate(t, fixture)
+			report := mustValidate(t, fixture.store, id, revision)
+			if report.OK || !hasIssue(report, test.code) {
+				t.Fatalf("report=%+v want issue %s", report, test.code)
+			}
+		})
+	}
+}
+```
+
+"implicit cross zone" fixture 必须让 candidate 与目标 record 处于不同 Zone 且 `CrossZone` 为 `false`。
+
+- [ ] **步骤 6：实现 relation 与 source 校验**
+
+`relation.go`：
+
+```go
+package validate
+
+// candidateRelationTypes is the closed set a candidate may declare itself.
+// supersedes is generated by governance operations only.
+var candidateRelationTypes = map[model.RelationType]struct{}{
+	model.RelationDependsOn:    {},
+	model.RelationConstrains:   {},
+	model.RelationDerivedFrom:  {},
+	model.RelationAppliesTo:    {},
+	model.RelationChallenges:   {},
+	model.RelationCorrects:     {},
+	model.RelationRecoversFrom: {},
+	model.RelationFollows:      {},
+	model.RelationRelatedTo:    {},
+}
+
+// checkRelations validates only the relations this revision declares. Traversal,
+// multi-hop expansion and cycle analysis are a later plan.
+func checkRelations(relations []model.Relation, zone model.Zone, targets map[string]model.RecordPointer, zones map[string]model.Zone) []result.Issue {
+	issues := make([]result.Issue, 0)
+	for index, relation := range relations {
+		path := fmt.Sprintf("relations[%d]", index)
+		if _, ok := candidateRelationTypes[relation.Type]; !ok {
+			issues = append(issues, issue("relation.type_forbidden", path, "relation type cannot be declared by a candidate"))
+			continue
+		}
+		if !strings.HasPrefix(relation.TargetRecordID, "kr_") || len(relation.TargetRecordID) != len("kr_")+32 {
+			issues = append(issues, issue("relation.target_invalid", path, "target record ID is malformed"))
+			continue
+		}
+		pointer, found := targets[relation.TargetRecordID]
+		if !found {
+			issues = append(issues, issue("relation.target_missing", path, "target record does not exist"))
+			continue
+		}
+		if relation.TargetRecordRevision != "" && relation.TargetRecordRevision != pointer.Revision {
+			issues = append(issues, issue("relation.target_missing", path, "target record revision is not current"))
+			continue
+		}
+		if zones[relation.TargetRecordID] != zone && !relation.CrossZone {
+			issues = append(issues, issue("relation.cross_zone_not_explicit", path, "cross-zone relation must set cross_zone"))
+		}
+	}
+	return issues
+}
+```
+
+`candidate.go` 中 source 校验重新读取仓库根下的实际 bytes 并比较 digest：
+
+```go
+func checkSources(repositoryRoot string, sources []model.SourceRef) []result.Issue {
+	issues := make([]result.Issue, 0)
+	root, err := os.OpenRoot(repositoryRoot)
+	if err != nil {
+		return append(issues, issue("source.unreadable", "sources", "repository root is unreadable"))
+	}
+	defer root.Close()
+	for index, source := range sources {
+		path := fmt.Sprintf("sources[%d]", index)
+		data, err := readLimited(root, filepath.FromSlash(source.Path), maxSourceBytes)
+		if err != nil {
+			issues = append(issues, issue("source.unreadable", path, "source cannot be read"))
+			continue
+		}
+		if rawDigest(data) != source.Digest {
+			issues = append(issues, issue("source.stale", path, "source bytes changed after binding"))
+		}
+	}
+	return issues
+}
+```
+
+`maxSourceBytes` 为 `16 << 20`；`rawDigest` 返回 `"sha256:" + hex`，与 candidate service 中的实现保持一致。
+
+- [ ] **步骤 7：实现 Candidate 聚合与稳定排序**
+
+`candidate.go` 的 `Candidate` 依次执行：读取 current manifest 与 candidate → 比较 `candidateRevision` 是否为精确 current revision（否则 `candidate.revision_stale` 并立即返回）→ 要求 `Status == model.CandidateStatusTypeConfirmed`（否则 `type.not_confirmed`）→ `model.LookupFactory(revision.KnowledgeType)`（否则 `type.unregistered`）→ 比较 `factory.Zone` 与 `revision.Zone`（否则 `type.zone_incompatible`）→ `factory.DecodePayload(revision.L2.Payload)`（否则 `l2.payload_invalid`）→ `checkMarkdown` → 用 `canonical.Digest` 重算 L1/L2 并与 `revision.L1Digest`/`L2Digest` 比较、用 `rawDigest(revision.ContentMarkdown)` 与 `revision.L3Digest` 比较 → `checkSources` → `checkRelations`。
+
+最后统一排序并归一化：
+
+```go
+slices.SortFunc(issues, func(left, right result.Issue) int {
+	if left.Path != right.Path {
+		return strings.Compare(left.Path, right.Path)
+	}
+	if left.Code != right.Code {
+		return strings.Compare(left.Code, right.Code)
+	}
+	return strings.Compare(left.Message, right.Message)
+})
+return Report{
+	CandidateID:       revision.CandidateID,
+	CandidateRevision: revision.Revision,
+	OK:                len(issues) == 0,
+	Issues:            issues,
+}, nil
+```
+
+- [ ] **步骤 8：写确定性重复校验测试**
+
+```go
+func TestCandidateProducesIdenticalReportsForIdenticalInput(t *testing.T) {
+	fixture := newFixture(t)
+	created := fixture.confirmedCandidate(t, model.TypeDevelopmentExperience, experienceContent(t))
+
+	first := mustValidate(t, fixture.store, created.CandidateID, created.Revision)
+	second := mustValidate(t, fixture.store, created.CandidateID, created.Revision)
+
+	firstBytes, err := canonical.Encode(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondBytes, err := canonical.Encode(second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(firstBytes, secondBytes) {
+		t.Fatalf("report is not deterministic:\n%s\n%s", firstBytes, secondBytes)
+	}
+	if !first.OK {
+		t.Fatalf("valid candidate reported issues: %+v", first.Issues)
+	}
+}
+```
+
+- [ ] **步骤 9：运行全部 validate 测试**
+
+Run: `go test ./internal/themico/validate -count=1`
+Expected: PASS。
+
+- [ ] **步骤 10：格式化、验证并提交**
 
 ```bash
 gofmt -w internal/themico/validate
 ```
 
 ```bash
-go test ./internal/themico/validate
+go test ./... -count=1
+```
+
+```bash
+go vet ./...
 ```
 
 ```bash
@@ -885,37 +1203,63 @@ git add internal/themico/validate
 ```
 
 ```bash
-git commit -m "feat: validate Themico knowledge contracts"
+git commit -m "feat: validate Themico candidate contracts"
 ```
 
 ---
 
-### 任务 7：实现 semantic assessment、prepare、Human Approval 和 publish
+### 任务 7：实现 semantic assessment、prepare、Human Approval 与 publish
 
 **文件：**
+- 新建：`internal/themico/governance/assessment.go`
 - 新建：`internal/themico/governance/prepare.go`
 - 新建：`internal/themico/governance/approval.go`
 - 新建：`internal/themico/governance/publish.go`
 - 新建：`internal/themico/governance/governance_test.go`
 
 **接口：**
-- 产出：`PreparePublish` 和 `Publish`。
-- Prepare 固化全部 expected inputs 和 writes；Publish 不重新解释 proposal，只重新检查 currentness 和 Approval binding。
-
-- [ ] **步骤 1：写 publish gate 失败测试**
-
-覆盖：未确认 type、机器校验失败、同一 proposer 充当 semantic checker、assessment fail、无 Approval、Approval 绑定错误、source stale、generation conflict。每个失败都必须证明 record/pointer 未变。
-
-- [ ] **步骤 2：定义 semantic assessment**
+- 消费：`validate.Candidate(ctx, st, candidateID, candidateRevision) (validate.Report, error)`；`(*store.Store).CurrentState() (model.Manifest, json.RawMessage, error)`；`(*store.Store).Commit(ctx, store.CommitPlan) (model.Manifest, error)`；`(*store.Store).AllocateID(prefix string) (string, error)`；`(*store.Store).Now() time.Time`；`store.ImmutableWrite{Path, Data}`；`store.CommitPlan{ExpectedGeneration, Writes, Manifest, Views}`；`store.ErrConflict`、`store.ErrValidation`、`store.ErrPrecondition`。
+- 产出：
 
 ```go
+package governance
+
+type Service struct{ /* unexported */ }
+
+func New(st *store.Store) *Service
+
+func (s *Service) PreparePublish(ctx context.Context, request PrepareRequest) (model.Prepare, error)
+func (s *Service) Publish(ctx context.Context, request PublishRequest) (model.RecordRevision, error)
+
+type PrepareRequest struct {
+	CandidateID string
+	Assessment  model.SemanticAssessment
+}
+
+type PublishRequest struct {
+	PrepareID string
+	Approval  model.Approval
+}
+```
+
+- [ ] **步骤 1：把治理工件加入 model**
+
+在 `internal/themico/model/model.go` 追加（字段顺序即 JSON 契约，`canonical.Encode` 负责按 key 排序）：
+
+```go
+// SemanticAssessmentStatus is the closed assessment verdict set.
 type SemanticAssessmentStatus string
 
 const (
-	SemanticAssessmentPass SemanticAssessmentStatus = "pass"
-	SemanticAssessmentFail SemanticAssessmentStatus = "fail"
+	AssessmentPass SemanticAssessmentStatus = "pass"
+	AssessmentFail SemanticAssessmentStatus = "fail"
 )
 
+func (value SemanticAssessmentStatus) Valid() bool {
+	return value == AssessmentPass || value == AssessmentFail
+}
+
+// SemanticAssessment is an independent Agent verdict bound to one candidate revision.
 type SemanticAssessment struct {
 	Schema            string                   `json:"schema"`
 	CandidateID       string                   `json:"candidate_id"`
@@ -925,17 +1269,36 @@ type SemanticAssessment struct {
 	CheckedAt         string                   `json:"checked_at"`
 	Notes             string                   `json:"notes"`
 }
-```
 
-CLI 验证 assessment 与 candidate binding、`status`、timestamp 和 `checker_identity != proposed_by`，但不判断 notes 是否正确。Assessment JSON canonical digest 后保存为不可变对象。
+// Prepare freezes every input one authorized publish may commit.
+type Prepare struct {
+	Schema            string           `json:"schema"`
+	PrepareID         string           `json:"prepare_id"`
+	Operation         string           `json:"operation"`
+	CandidateID       string           `json:"candidate_id"`
+	CandidateRevision string           `json:"candidate_revision"`
+	CandidateDigest   string           `json:"candidate_digest"`
+	AssessmentDigest  string           `json:"assessment_digest"`
+	Sources           []SourceRef      `json:"sources"`
+	ExpectedGeneration uint64          `json:"expected_generation"`
+	RecordID          string           `json:"record_id"`
+	RecordRevision    string           `json:"record_revision"`
+	L1Digest          string           `json:"l1_digest"`
+	L2Digest          string           `json:"l2_digest"`
+	L3Digest          string           `json:"l3_digest"`
+	Writes            []PreparedWrite  `json:"writes"`
+	Invalidations     []ProjectionRef  `json:"invalidations"`
+	CreatedAt         string           `json:"created_at"`
+	Digest            string           `json:"digest"`
+}
 
-- [ ] **步骤 3：定义 prepare artifact**
+// PreparedWrite is one frozen immutable target inside a prepare.
+type PreparedWrite struct {
+	Path   string `json:"path"`
+	Digest string `json:"digest"`
+}
 
-Prepare 包含：operation=`publish`、candidate ID/revision/digest、assessment digest、source bindings、expected generation、allocated record ID/revision、L1/L2/L3 digests、完整 write set、invalidation set、created_at。Prepare 保存后不可修改。
-
-- [ ] **步骤 4：定义 Human Approval**
-
-```go
+// Approval is the Human authorization bound to one exact prepare.
 type Approval struct {
 	Schema        string `json:"schema"`
 	Operation     string `json:"operation"`
@@ -947,28 +1310,242 @@ type Approval struct {
 }
 ```
 
-CLI 只接受 `operation=publish` 且所有 binding 完全匹配的 Approval。空 `approved_by` 或 `authority_ref` 返回 unauthorized。
+`Prepare.Digest` 参与 canonical digest 计算前必须为空字符串，计算后再回填，与 `Manifest.Digest` 的既有做法一致。
 
-- [ ] **步骤 5：实现 publish generation commit**
+- [ ] **步骤 2：写 publish gate 失败测试**
 
-Publish 写入 immutable record revision、L1、L2、assessment、approval，然后提交新 generation manifest。Record status 为 `active`；candidate pointer 变为 `published` 并记录 record ID；generation views 在任务 10 前写空合法对象。空 views 只表示聚合索引尚未由投影模块构建，不是完整 Catalog 或 current 索引；query 任务 8 直接使用 manifest pointers 与 record projections，不得依赖空 views。
+```go
+func TestPublishGatesFailClosed(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		arrange func(*testing.T, *fixtureState) PublishRequest
+		wantErr error
+	}{
+		{name: "missing approval", arrange: withoutApproval, wantErr: store.ErrPrecondition},
+		{name: "wrong operation", arrange: withApprovalOperation("supersede"), wantErr: store.ErrPrecondition},
+		{name: "wrong prepare digest", arrange: withApprovalDigest("sha256:" + strings.Repeat("0", 64)), wantErr: store.ErrPrecondition},
+		{name: "empty approver", arrange: withApprovalApprover(""), wantErr: store.ErrPrecondition},
+		{name: "source drift", arrange: withSourceDrift, wantErr: store.ErrValidation},
+		{name: "generation advanced", arrange: withAdvancedGeneration, wantErr: store.ErrConflict},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			fixture := newFixture(t)
+			request := test.arrange(t, fixture)
+			before := mustCurrent(t, fixture.store)
 
-- [ ] **步骤 6：验证中断不产生可见发布**
+			if _, err := fixture.governance.Publish(context.Background(), request); !errors.Is(err, test.wantErr) {
+				t.Fatalf("error: %v want %v", err, test.wantErr)
+			}
 
-使用 store pre-rename fault，断言所有 orphan payload 不被 `Current`、`Query` 或 `Inspect` 返回；重新执行必须先重新 prepare，因为 expected generation/currentness 需要重新读取。
+			after := mustCurrent(t, fixture.store)
+			if len(after.CurrentRecords) != len(before.CurrentRecords) {
+				t.Fatalf("failed publish changed current records: %+v", after.CurrentRecords)
+			}
+			if after.Generation != before.Generation {
+				t.Fatalf("failed publish advanced generation %d -> %d", before.Generation, after.Generation)
+			}
+		})
+	}
+}
+```
 
-- [ ] **步骤 7：运行测试并提交**
+- [ ] **步骤 3：运行测试确认失败**
+
+Run: `go test ./internal/themico/governance -run TestPublishGatesFailClosed -v`
+Expected: FAIL，`undefined: governance.New`。
+
+- [ ] **步骤 4：实现 assessment 校验**
+
+`assessment.go`：
+
+```go
+package governance
+
+const assessmentSchema = "themico/semantic-assessment"
+
+// checkAssessment proves binding and structure only. Whether the notes are
+// correct is a Human judgment the CLI never makes.
+func checkAssessment(assessment model.SemanticAssessment, candidate model.CandidateRevision) error {
+	if assessment.Schema != assessmentSchema {
+		return validationError("assessment schema is invalid", nil)
+	}
+	if !assessment.Status.Valid() {
+		return validationError("assessment status is invalid", nil)
+	}
+	if assessment.Status != model.AssessmentPass {
+		return preconditionError("assessment did not pass", nil)
+	}
+	if assessment.CandidateID != candidate.CandidateID || assessment.CandidateRevision != candidate.Revision {
+		return preconditionError("assessment is not bound to the candidate revision", nil)
+	}
+	if strings.TrimSpace(assessment.CheckerIdentity) == "" {
+		return validationError("assessment checker identity is required", nil)
+	}
+	if assessment.CheckerIdentity == candidate.ProposedBy {
+		return preconditionError("assessment checker must differ from the proposer", nil)
+	}
+	if _, err := time.Parse(time.RFC3339, assessment.CheckedAt); err != nil {
+		return validationError("assessment time is invalid", err)
+	}
+	return nil
+}
+```
+
+CLI 只比较 identity 字段是否不同，不声称两者在现实中确为不同的人或进程。
+
+- [ ] **步骤 5：实现 PreparePublish**
+
+`prepare.go` 的 `PreparePublish` 依次：`Inspect` current candidate → `validate.Candidate` 且要求 `Report.OK` → `checkAssessment` → 读取 `CurrentState()` 取 `expectedGeneration` → `AllocateID("kr_")` 与 `AllocateID("rev_")` → 构造 record revision、L1/L2 projection 与 content 的 canonical bytes → 计算每个 write 的 digest → 组装 `model.Prepare` → 计算 `Digest` → 以单次 commit 写入 `preparations/<prepare-id>/prepare.json` 与 `assessments/<assessment-digest>.json`。
+
+首个交付只发布新记录，`Invalidations` 恒为空切片（不是 `nil`），字段仍必须存在并参与 digest。
+
+write set 固定为四个不可变目标：
+
+```text
+records/<record-id>/revisions/<record-revision>/record.json
+records/<record-id>/revisions/<record-revision>/content.md
+projections/<record-id>/<record-revision>/l1.json
+projections/<record-id>/<record-revision>/l2.json
+```
+
+Prepare 自身的 commit 不改变 current record pointers，只增加不可变工件。
+
+- [ ] **步骤 6：实现 Approval 校验**
+
+`approval.go`：
+
+```go
+package governance
+
+const approvalSchema = "themico/approval"
+
+// checkApproval verifies the authorization artifact's structure and its exact
+// binding. It never claims to have verified the human behind approved_by.
+func checkApproval(approval model.Approval, prepare model.Prepare) error {
+	if approval.Schema != approvalSchema {
+		return validationError("approval schema is invalid", nil)
+	}
+	if approval.Operation != operationPublish || prepare.Operation != operationPublish {
+		return preconditionError("approval operation does not match publish", nil)
+	}
+	if approval.PrepareID != prepare.PrepareID || approval.PrepareDigest != prepare.Digest {
+		return preconditionError("approval is not bound to this prepare", nil)
+	}
+	if strings.TrimSpace(approval.ApprovedBy) == "" || strings.TrimSpace(approval.AuthorityRef) == "" {
+		return preconditionError("approval identity and authority reference are required", nil)
+	}
+	if _, err := time.Parse(time.RFC3339, approval.ApprovedAt); err != nil {
+		return validationError("approval time is invalid", err)
+	}
+	return nil
+}
+```
+
+- [ ] **步骤 7：实现 publish generation commit**
+
+`publish.go` 的 `Publish`：读取 prepare → `checkApproval` → 重新读取 current candidate 并要求仍是 prepare 冻结的 revision → 重新校验 source currentness（漂移返回 `store.ErrValidation`）→ 要求 `CurrentState()` 的 generation 等于 `prepare.ExpectedGeneration`（否则 `store.ErrConflict`）→ 在**一次** `store.Commit` 中写入：
+
+```go
+plan := store.CommitPlan{
+	ExpectedGeneration: prepare.ExpectedGeneration,
+	Writes: []store.ImmutableWrite{
+		{Path: recordPath(prepare.RecordID, prepare.RecordRevision, "record.json"), Data: recordBytes},
+		{Path: recordPath(prepare.RecordID, prepare.RecordRevision, "content.md"), Data: contentBytes},
+		{Path: projectionPath(prepare.RecordID, prepare.RecordRevision, "l1.json"), Data: l1Bytes},
+		{Path: projectionPath(prepare.RecordID, prepare.RecordRevision, "l2.json"), Data: l2Bytes},
+		{Path: approvalPath(approvalDigest), Data: approvalBytes},
+	},
+	Manifest: manifest,
+	Views:    views,
+}
+```
+
+`manifest` 在 `CurrentState()` 返回值基础上追加 active `model.RecordPointer`、追加 `model.ProjectionRef`，并把 candidate pointer 的 `Status` 改为 `model.CandidateStatusPublished`、`RecordID` 设为 `prepare.RecordID`。`views` 原样透传 `CurrentState()` 返回的 bytes——首个交付固定为 `{}`，本任务不得改写它。
+
+同一 candidate 的 published 绑定必须由 candidate pointer 承担，任务 8 的 query 据此判断 candidate 与 record 的关系。
+
+- [ ] **步骤 8：写 publish 成功与原子性测试**
+
+```go
+func TestPublishCommitsRecordProjectionAndCandidateBindingAtomically(t *testing.T) {
+	fixture := newFixture(t)
+	prepare := fixture.preparePublish(t)
+	before := mustCurrent(t, fixture.store)
+
+	record, err := fixture.governance.Publish(context.Background(), PublishRequest{
+		PrepareID: prepare.PrepareID,
+		Approval:  fixture.approvalFor(t, prepare),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	after := mustCurrent(t, fixture.store)
+	if after.Generation != before.Generation+1 {
+		t.Fatalf("generation %d -> %d want exactly one commit", before.Generation, after.Generation)
+	}
+	if record.Status != model.RecordStatusActive || record.RecordID != prepare.RecordID {
+		t.Fatalf("record=%+v", record)
+	}
+
+	pointer, ok := recordPointer(after, prepare.RecordID)
+	if !ok || pointer.Revision != prepare.RecordRevision || pointer.Status != model.RecordStatusActive {
+		t.Fatalf("record pointer=%+v ok=%v", pointer, ok)
+	}
+	projection, ok := projectionRef(after, prepare.RecordID)
+	if !ok || projection.Revision != prepare.RecordRevision || projection.L3Digest != prepare.L3Digest {
+		t.Fatalf("projection ref=%+v ok=%v", projection, ok)
+	}
+	candidate, ok := candidatePointer(after, prepare.CandidateID)
+	if !ok || candidate.Status != model.CandidateStatusPublished || candidate.RecordID != prepare.RecordID {
+		t.Fatalf("candidate pointer=%+v ok=%v", candidate, ok)
+	}
+}
+```
+
+- [ ] **步骤 9：写中断不产生可见发布的测试**
+
+```go
+func TestPublishInterruptedBeforeRenameLeavesCurrentStateUnchanged(t *testing.T) {
+	fixture := newFixtureWithOptions(t, func(opts *store.Options) {
+		opts.BeforeGenerationRename = func() error { return errors.New("injected pre-rename fault") }
+	})
+	prepare := fixture.preparePublish(t)
+	before := mustCurrent(t, fixture.store)
+
+	if _, err := fixture.governance.Publish(context.Background(), PublishRequest{
+		PrepareID: prepare.PrepareID,
+		Approval:  fixture.approvalFor(t, prepare),
+	}); err == nil {
+		t.Fatal("publish unexpectedly succeeded")
+	}
+
+	after := mustCurrent(t, fixture.store)
+	if after.Generation != before.Generation {
+		t.Fatalf("interrupted publish advanced generation %d -> %d", before.Generation, after.Generation)
+	}
+	if _, ok := recordPointer(after, prepare.RecordID); ok {
+		t.Fatal("interrupted publish exposed a record pointer")
+	}
+}
+```
+
+- [ ] **步骤 10：运行测试并提交**
 
 ```bash
-gofmt -w internal/themico/governance
+gofmt -w internal/themico/governance internal/themico/model
 ```
 
 ```bash
-go test ./internal/themico/governance
+go test ./internal/themico/governance -count=1
 ```
 
 ```bash
-git add internal/themico/governance
+go test ./... -count=1
+```
+
+```bash
+git add internal/themico/governance internal/themico/model
 ```
 
 ```bash
@@ -977,7 +1554,7 @@ git commit -m "feat: govern Themico publication"
 
 ---
 
-### 任务 8：实现确定性 L1 查询、渐进 inspect、预算和 query trace
+### 任务 8：实现 record inspect 与基础 query
 
 **文件：**
 - 新建：`internal/themico/query/query.go`
@@ -985,187 +1562,310 @@ git commit -m "feat: govern Themico publication"
 - 新建：`internal/themico/query/query_test.go`
 
 **接口：**
-- 产出：`query.Search`、`query.Inspect`。
-- CLI 只做确定性候选选择和读取；Agent 语义排序及最终解释不进入 CLI authority。
-
-- [ ] **步骤 1：写渐进读取失败测试**
-
-准备两个 Zone、三个 type、current/history 和跨 Zone relation fixtures，验证：
-
-```text
-默认 query 只返回 current active L1
-history 必须显式 include_history=true
-L2/L3 必须由 exact record IDs 请求
-cross_zone=false 时不扩展跨 Zone relation
-relation_depth 最大为 2
-预算不足返回 budget_exceeded 且不返回截断 L3
-```
-
-- [ ] **步骤 2：定义 QueryRequest**
+- 消费：`(*store.Store).Current() (model.Manifest, error)`；`(*store.Store).Root() string`；`model.RecordPointer`、`model.ProjectionRef`、`model.Projection`、`model.RecordRevision`；`canonical.Encode`、`canonical.Digest`。
+- 产出：
 
 ```go
+package query
+
 type Request struct {
 	Zones              []model.Zone          `json:"zones"`
 	Types              []model.KnowledgeType `json:"types"`
 	Statuses           []model.RecordStatus  `json:"statuses"`
-	TagsAny            []string              `json:"tags_any"`
 	Project            string                `json:"project"`
 	DomainsAny         []string              `json:"domains_any"`
 	ArchitectureAny    []string              `json:"architecture_units_any"`
 	FeaturesAny        []string              `json:"features_any"`
-	IncludeHistory     bool                  `json:"include_history"`
-	CrossZone          bool                  `json:"cross_zone"`
-	RelationDepth      int                   `json:"relation_depth"`
+	TagsAny            []string              `json:"tags_any"`
+	TriggersAny        []string              `json:"triggers_any"`
 	ContentBudgetBytes int64                 `json:"content_budget_bytes"`
+}
+
+type Candidate struct {
+	RecordID string             `json:"record_id"`
+	Revision string             `json:"record_revision"`
+	Zone     model.Zone         `json:"zone"`
+	Type     model.KnowledgeType `json:"knowledge_type"`
+	Status   model.RecordStatus `json:"status"`
+	L1       model.L1           `json:"l1"`
+}
+
+type Result struct {
+	Generation uint64      `json:"generation"`
+	Candidates []Candidate `json:"candidates"`
+	Trace      Trace       `json:"trace"`
+}
+
+type InspectRequest struct {
+	RecordIDs          []string `json:"record_ids"`
+	Depth              int      `json:"depth"`
+	ContentBudgetBytes int64    `json:"content_budget_bytes"`
+}
+
+type Item struct {
+	RecordID string              `json:"record_id"`
+	Revision string              `json:"record_revision"`
+	Zone     model.Zone          `json:"zone"`
+	Type     model.KnowledgeType  `json:"knowledge_type"`
+	Status   model.RecordStatus  `json:"status"`
+	Scope    model.Scope         `json:"scope"`
+	L1       model.L1            `json:"l1"`
+	L2       *model.L2           `json:"l2,omitempty"`
+	L3       string              `json:"l3,omitempty"`
+}
+
+type InspectResult struct {
+	Generation uint64 `json:"generation"`
+	Items      []Item `json:"items"`
+	Trace      Trace  `json:"trace"`
+}
+
+// Trace records replayable machine facts only. Agent relevance and semantic
+// explanation stay outside CLI authority.
+type Trace struct {
+	ObservedGeneration uint64   `json:"observed_generation"`
+	SearchedZones      []string `json:"searched_zones"`
+	CandidateIDs       []string `json:"candidate_ids"`
+	SelectedIDs        []string `json:"selected_ids"`
+	ExcludedIDs        []string `json:"excluded_ids"`
+	ContentBytes       int64    `json:"content_bytes"`
+	RemainingBytes     int64    `json:"remaining_bytes"`
+}
+
+var ErrBudgetExceeded = errors.New("themico query budget exceeded")
+
+func Search(ctx context.Context, st *store.Store, request Request) (Result, error)
+func Inspect(ctx context.Context, st *store.Store, request InspectRequest) (InspectResult, error)
+```
+
+首个交付不实现 history、relation expansion、cross-Zone 扩展和 relevance ranking，因此 `Request` 不含相关字段——不得预留未接线的开关。
+
+- [ ] **步骤 1：写 query 过滤与排序测试**
+
+```go
+func TestSearchReturnsOnlyCurrentActiveL1InStableOrder(t *testing.T) {
+	fixture := newFixture(t)
+	decision := fixture.publish(t, model.TypeDesignDecision, "themis", []string{"core"}, []string{"governance"})
+	standard := fixture.publish(t, model.TypeDevelopmentStandard, "themis", []string{"core"}, []string{"review"})
+	experience := fixture.publish(t, model.TypeDevelopmentExperience, "themis", []string{"store"}, []string{"commit"})
+
+	result, err := Search(context.Background(), fixture.store, Request{
+		Zones:              []model.Zone{model.ZoneProjectKnowledge},
+		ContentBudgetBytes: 1 << 20,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := recordIDs(result.Candidates)
+	want := sortedIDs(decision.RecordID, standard.RecordID)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("candidates=%v want %v (experience %s is in the other zone)", got, want, experience.RecordID)
+	}
+	for _, candidate := range result.Candidates {
+		if candidate.Status != model.RecordStatusActive {
+			t.Fatalf("non-active candidate: %+v", candidate)
+		}
+	}
+}
+
+func TestSearchAppliesDeterministicFilters(t *testing.T) {
+	fixture := newFixture(t)
+	matching := fixture.publishWithL1(t, model.TypeDesignDecision, model.L1{
+		Title: "决策", Summary: "摘要", Triggers: []string{"发布"}, Tags: []string{"governance"},
+	})
+	fixture.publishWithL1(t, model.TypeDesignDecision, model.L1{
+		Title: "其他", Summary: "摘要", Triggers: []string{"查询"}, Tags: []string{"query"},
+	})
+
+	for _, test := range []struct {
+		name    string
+		request Request
+	}{
+		{name: "tags", request: Request{TagsAny: []string{"governance"}}},
+		{name: "triggers", request: Request{TriggersAny: []string{"发布"}}},
+		{name: "types", request: Request{Types: []model.KnowledgeType{model.TypeDesignDecision}, TagsAny: []string{"governance"}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			request := test.request
+			request.Zones = []model.Zone{model.ZoneProjectKnowledge}
+			request.ContentBudgetBytes = 1 << 20
+
+			result, err := Search(context.Background(), fixture.store, request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(result.Candidates) != 1 || result.Candidates[0].RecordID != matching.RecordID {
+				t.Fatalf("candidates=%v want only %s", recordIDs(result.Candidates), matching.RecordID)
+			}
+		})
+	}
 }
 ```
 
-Zones 必填；空 type/status filter 表示全部注册 type 和默认 active。结果按 record ID、revision 排序。
+`Zones` 必填且非空，否则返回 `store.ErrValidation`；空 `Types`/`Statuses` 分别表示全部注册类型与仅 `active`。结果按 `RecordID`、`Revision` 升序。
 
-- [ ] **步骤 3：实现 L1 filter 和 trace**
+- [ ] **步骤 2：运行测试确认失败**
 
-Trace 必须记录：observed generation、searched zones、filters、candidate IDs、selected IDs、excluded IDs/reasons、relation expansions、content bytes 和剩余预算。CLI 不写“为什么语义相关”，只写机器过滤原因。
+Run: `go test ./internal/themico/query -run TestSearch -v`
+Expected: FAIL，`undefined: query.Search`。
 
-- [ ] **步骤 4：实现 Inspect depth**
+- [ ] **步骤 3：实现 Search**
 
-`Inspect(recordIDs, depth, budget)` 的 depth 只接受 `1|2|3`。Depth 1 返回治理摘要和 L1；depth 2 增加 L2；depth 3 增加完整 L3 Markdown。任一完整 item 超出剩余预算时整个请求返回 budget_exceeded，不静默截断。
+`query.go` 从 `st.Current()` 取合法 current manifest，对每个 `model.RecordPointer` 只接受 `Status` 落在请求 status 集合中的项，按 `ProjectionRef` 读取 `projections/<record-id>/<record-revision>/l1.json`，逐项验证：projection 的 `RecordID`/`Revision` 与 pointer 一致、`L1Digest` 与重算值一致、`L3Digest` 与 `ProjectionRef.L3Digest` 一致。任一绑定失效即返回 `store.ErrValidation` 失败关闭，不得跳过该记录继续返回部分结果，也不得从 L3 生成摘要。
 
-- [ ] **步骤 5：运行测试并提交**
+scope 过滤语义：`Project` 非空时要求精确相等；`DomainsAny`、`ArchitectureAny`、`FeaturesAny`、`TagsAny`、`TriggersAny` 非空时要求交集非空。
+
+- [ ] **步骤 4：写 inspect depth 与预算边界测试**
+
+```go
+func TestInspectReturnsRequestedDepth(t *testing.T) {
+	fixture := newFixture(t)
+	published := fixture.publish(t, model.TypeDesignDecision, "themis", []string{"core"}, []string{"governance"})
+
+	for _, test := range []struct {
+		depth  int
+		wantL2 bool
+		wantL3 bool
+	}{
+		{depth: 1, wantL2: false, wantL3: false},
+		{depth: 2, wantL2: true, wantL3: false},
+		{depth: 3, wantL2: true, wantL3: true},
+	} {
+		t.Run(fmt.Sprintf("depth-%d", test.depth), func(t *testing.T) {
+			result, err := Inspect(context.Background(), fixture.store, InspectRequest{
+				RecordIDs:          []string{published.RecordID},
+				Depth:              test.depth,
+				ContentBudgetBytes: 1 << 20,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			item := result.Items[0]
+			if (item.L2 != nil) != test.wantL2 || (item.L3 != "") != test.wantL3 {
+				t.Fatalf("depth %d: L2=%v L3=%v", test.depth, item.L2 != nil, item.L3 != "")
+			}
+		})
+	}
+}
+
+func TestInspectRejectsInvalidDepthAndEnforcesExactBudget(t *testing.T) {
+	fixture := newFixture(t)
+	published := fixture.publish(t, model.TypeDesignDecision, "themis", []string{"core"}, []string{"governance"})
+
+	for _, depth := range []int{0, 4, -1} {
+		if _, err := Inspect(context.Background(), fixture.store, InspectRequest{
+			RecordIDs:          []string{published.RecordID},
+			Depth:              depth,
+			ContentBudgetBytes: 1 << 20,
+		}); !errors.Is(err, store.ErrValidation) {
+			t.Fatalf("depth %d: %v", depth, err)
+		}
+	}
+
+	exact := mustInspectBytes(t, fixture.store, published.RecordID, 3)
+	if _, err := Inspect(context.Background(), fixture.store, InspectRequest{
+		RecordIDs:          []string{published.RecordID},
+		Depth:              3,
+		ContentBudgetBytes: exact,
+	}); err != nil {
+		t.Fatalf("exact budget must succeed: %v", err)
+	}
+	result, err := Inspect(context.Background(), fixture.store, InspectRequest{
+		RecordIDs:          []string{published.RecordID},
+		Depth:              3,
+		ContentBudgetBytes: exact - 1,
+	})
+	if !errors.Is(err, ErrBudgetExceeded) {
+		t.Fatalf("error: %v want ErrBudgetExceeded", err)
+	}
+	if len(result.Items) != 0 {
+		t.Fatalf("budget failure returned partial items: %+v", result.Items)
+	}
+}
+```
+
+- [ ] **步骤 5：新增 `store.ErrNotFound` sentinel**
+
+`internal/themico/store/store.go` 当前只有 `ErrValidation`、`ErrPrecondition`、`ErrConflict`。在同一 `var` 块追加：
+
+```go
+var (
+	ErrValidation   = errors.New("themico store validation failed")
+	ErrPrecondition = errors.New("themico store precondition failed")
+	ErrConflict     = errors.New("themico store conflict")
+	ErrNotFound     = errors.New("themico store object not found")
+)
+```
+
+该 sentinel 供 query/inspect 表达"请求的 record ID 不在 current manifest 中"，由任务 9 映射为 `not_found`。本步骤不改变任何既有行为。
+
+- [ ] **步骤 6：实现 Inspect**
+
+`inspect.go` 只接受 `Depth` 为 `1`、`2`、`3`，`ContentBudgetBytes` 范围为 `1` 到 `16 << 20`，越界返回 `store.ErrValidation`。记录必须由 exact record ID 请求，未找到返回 `store.ErrNotFound`。
+
+预算按**实际返回 bytes** 计数：对每个 item 先 `canonical.Encode` 得到完整 bytes 长度，若超出剩余预算则整个请求返回 `ErrBudgetExceeded` 且 `Items` 为空——不截断 L3、不删除章节、不返回半个对象。每次读取同样执行本任务步骤 3 的 digest 与 pointer 绑定校验。
+
+- [ ] **步骤 7：写篡改失败关闭测试**
+
+```go
+func TestReadsFailClosedWhenBindingsAreTampered(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		tamper func(*testing.T, *fixtureState, model.RecordRevision)
+	}{
+		{name: "projection l1", tamper: overwriteProjectionL1},
+		{name: "record content", tamper: overwriteRecordContent},
+		{name: "record payload", tamper: overwriteRecordPayload},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			fixture := newFixture(t)
+			published := fixture.publish(t, model.TypeDesignDecision, "themis", []string{"core"}, []string{"governance"})
+			test.tamper(t, fixture, published)
+
+			if _, err := Search(context.Background(), fixture.store, Request{
+				Zones:              []model.Zone{model.ZoneProjectKnowledge},
+				ContentBudgetBytes: 1 << 20,
+			}); !errors.Is(err, store.ErrValidation) {
+				t.Fatalf("search error: %v want validation failure", err)
+			}
+			if _, err := Inspect(context.Background(), fixture.store, InspectRequest{
+				RecordIDs:          []string{published.RecordID},
+				Depth:              3,
+				ContentBudgetBytes: 1 << 20,
+			}); !errors.Is(err, store.ErrValidation) {
+				t.Fatalf("inspect error: %v want validation failure", err)
+			}
+		})
+	}
+}
+```
+
+- [ ] **步骤 8：运行测试并提交**
 
 ```bash
 gofmt -w internal/themico/query
 ```
 
 ```bash
-go test ./internal/themico/query
+go test ./internal/themico/query -count=1
 ```
 
 ```bash
-git add internal/themico/query
+go test ./... -count=1
 ```
 
 ```bash
-git commit -m "feat: add progressive Themico query"
+git add internal/themico/query internal/themico/store
+```
+
+```bash
+git commit -m "feat: add Themico query and record inspect"
 ```
 
 ---
 
-### 任务 9：实现 supersede、deprecate、archive 和跨类型派生
-
-**文件：**
-- 新建：`internal/themico/governance/lifecycle.go`
-- 修改：`internal/themico/governance/governance_test.go`
-- 修改：`internal/themico/candidate/service.go`
-- 修改：`internal/themico/candidate/service_test.go`
-
-**接口：**
-- 产出：`PrepareSupersede`、`PrepareStatusChange`、`ApplyLifecycle`、`candidate.CreateDerived`。
-- 不实现物理删除。
-
-- [ ] **步骤 1：写 supersede 原子性失败测试**
-
-测试一个新 candidate 替代 active record：同一 generation 中新 record 变 active，旧 record 产生 status=`superseded` 的新 revision，新 record 获得 system-managed `supersedes` relation；Approval 错误时两者都不变。
-
-- [ ] **步骤 2：实现 supersede prepare/apply**
-
-Prepare 绑定 old current revision、新 candidate revision、assessment、source、expected generation 和完整双 record write set。只允许同一知识语义身份的 Human-reviewed replacement；CLI 只验证结构/绑定，不判断“语义身份相同”。
-
-- [ ] **步骤 3：实现 deprecate 和 archive**
-
-两者都创建新的 record revision，复用相同 L1/L2/L3 bytes，改变 status 并保存 reason/Approval。`archive` 不删除历史或 content；默认 query 排除 deprecated、superseded、archived。
-
-- [ ] **步骤 4：实现跨类型派生**
-
-`CreateDerived` 必须创建新 candidate ID，要求 `derived_from` 指向现有 record，允许提出不同 type，但仍需独立 type confirmation、semantic assessment、prepare 和 publish。测试从 `development_experience` 派生 `development_standard` 后原经验保持 active 且 type 不变。
-
-- [ ] **步骤 5：运行测试并提交**
-
-```bash
-gofmt -w internal/themico/candidate internal/themico/governance
-```
-
-```bash
-go test ./internal/themico/candidate ./internal/themico/governance
-```
-
-```bash
-git add internal/themico/candidate internal/themico/governance
-```
-
-```bash
-git commit -m "feat: manage Themico knowledge lifecycle"
-```
-
----
-
-### 任务 10：实现投影校验、失效传播和聚合 view 重建
-
-**文件：**
-- 新建：`internal/themico/projection/projection.go`
-- 新建：`internal/themico/projection/views.go`
-- 新建：`internal/themico/projection/projection_test.go`
-
-**接口：**
-- 产出：`projection.Verify`、`projection.BuildViews`、`projection.Rebuild`。
-- Rebuild 只重建已有 L1/L2 的索引和聚合视图，不调用 Agent，不从 L3 自动生成新语义摘要。
-
-- [ ] **步骤 1：写 projection source-binding 失败测试**
-
-覆盖：L1 与 L2 指向不同 record revision、L3 digest 不匹配、current pointer 指向旧 projection、view 包含不存在 record、删除 current views 后 rebuild 恢复。
-
-- [ ] **步骤 2：实现 Verify**
-
-Verify 检查 record revision、L1、L2、L3、manifest pointer 和 digest 全部一致；返回 `projection.stale`、`projection.missing`、`projection.digest_mismatch` 的稳定 issue。
-
-- [ ] **步骤 3：实现四种 aggregate view**
-
-`views.json` 只保存以下 rebuildable indexes：
-
-```go
-type Views struct {
-	Projects          []ViewEntry `json:"projects"`
-	Domains           []ViewEntry `json:"domains"`
-	ArchitectureUnits []ViewEntry `json:"architecture_units"`
-	Features          []ViewEntry `json:"features"`
-}
-
-type ViewEntry struct {
-	Key       string   `json:"key"`
-	RecordIDs []string `json:"record_ids"`
-}
-```
-
-每个 record ID 只来自 current manifest；排序稳定；view 不保存独立 narrative、结论或 authority。
-
-- [ ] **步骤 4：实现 Rebuild generation**
-
-Rebuild 从 current record revisions 重新读取 L1/L2，生成新 views 和 manifest projection references，再以新 generation 提交。权威 record bytes 不改变；如果任何 record/projection 校验失败，整个 rebuild 返回 validation_failed 且不提交。任务 10 首次成功 rebuild 是把任务 7–9 的空合法 views 提升为完整聚合索引的唯一显式步骤；后续 lifecycle commit 若尚未集成增量 BuildViews，必须再次显式 rebuild，且旧 views 不得被标记为完整 current 索引。
-
-- [ ] **步骤 5：实现失效传播**
-
-Record revision 变化后旧 L1/L2 继续作为历史 payload 保留，但 current manifest 不得引用它们。Prepare 必须列出被替换 current projection；Apply 后 Verify 只能接受新 revision projections。
-
-- [ ] **步骤 6：运行测试并提交**
-
-```bash
-gofmt -w internal/themico/projection
-```
-
-```bash
-go test ./internal/themico/projection
-```
-
-```bash
-git add internal/themico/projection
-```
-
-```bash
-git commit -m "feat: rebuild Themico projections"
-```
-
----
-
-### 任务 11：接通完整 `themico` CLI command surface
+### 任务 9：接通核心 `themico` CLI command surface
 
 **文件：**
 - 修改：`internal/themico/cli/cli.go`
@@ -1174,77 +1874,186 @@ git commit -m "feat: rebuild Themico projections"
 - 修改：`cmd/themico/main.go`
 
 **接口：**
-- 产出：可构建的 `themico` CLI；所有 mutation 通过 service/governance/store，不直接写文件。
+- 消费：`store.Init`、`store.Open`；`candidate.New(...).Create/Revise/ConfirmType/Inspect`；`validate.Candidate`；`governance.New(...).PreparePublish/Publish`；`query.Search`、`query.Inspect`；`result.Envelope`、`result.Write`、`result.ExitCode`。
+- 产出：可构建的 `themico` 二进制，stdout 恒为单一 JSON envelope。
 
 - [ ] **步骤 1：写 command table 测试**
 
-固定命令：
+固定命令表（首个交付范围，不含延期能力）：
 
 ```text
+themico help
 themico init --root <root>
 themico candidate create --root <root> --input <candidate.json> --content <content.md>
 themico candidate revise --root <root> --input <revision.json> --content <content.md>
-themico candidate create-derived --root <root> --source-record <record-id> --input <candidate.json> --content <content.md>
 themico candidate confirm-type --root <root> --confirmation <confirmation.json>
 themico candidate inspect --root <root> --id <candidate-id>
 themico validate --root <root> --candidate <candidate-id> --revision <candidate-revision>
 themico prepare publish --root <root> --candidate <candidate-id> --assessment <assessment.json>
-themico prepare supersede --root <root> --candidate <candidate-id> --target <record-id> --assessment <assessment.json>
-themico prepare deprecate --root <root> --record <record-id> --reason <reason.md>
-themico prepare archive --root <root> --record <record-id> --reason <reason.md>
 themico publish --root <root> --prepare <prepare-id> --approval <approval.json>
-themico supersede --root <root> --prepare <prepare-id> --approval <approval.json>
-themico deprecate --root <root> --prepare <prepare-id> --approval <approval.json>
-themico archive --root <root> --prepare <prepare-id> --approval <approval.json>
 themico query --root <root> --request <query.json>
 themico inspect --root <root> --request <inspect.json>
-themico verify-projection --root <root>
-themico rebuild --root <root> --expected-generation <number>
 ```
 
-测试每个 command 的缺参返回 usage_error；不存在 root 返回 not_found；stdout 始终只有一个 envelope。
+```go
+func TestRunEmitsExactlyOneEnvelopePerInvocation(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		args []string
+		want result.Status
+	}{
+		{name: "unknown command", args: []string{"supersede"}, want: result.StatusUsageError},
+		{name: "missing root", args: []string{"init"}, want: result.StatusUsageError},
+		{name: "unknown flag", args: []string{"init", "--root", ".", "--force"}, want: result.StatusUsageError},
+		{name: "absent store", args: []string{"candidate", "inspect", "--root", t.TempDir(), "--id", "cand_" + strings.Repeat("0", 32)}, want: result.StatusNotFound},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			code := Run(context.Background(), test.args, &stdout, &stderr)
 
-- [ ] **步骤 2：实现 strict JSON file decoder**
+			var envelope result.Envelope
+			decoder := json.NewDecoder(bytes.NewReader(stdout.Bytes()))
+			if err := decoder.Decode(&envelope); err != nil {
+				t.Fatalf("stdout is not one envelope: %v (%q)", err, stdout.String())
+			}
+			if err := decoder.Decode(&struct{}{}); err != io.EOF {
+				t.Fatalf("stdout carries trailing output: %q", stdout.String())
+			}
+			if envelope.Status != test.want {
+				t.Fatalf("status=%s want %s", envelope.Status, test.want)
+			}
+			wantCode, err := result.ExitCode(test.want)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if code != wantCode {
+				t.Fatalf("exit=%d want %d", code, wantCode)
+			}
+			if envelope.Issues == nil {
+				t.Fatal("issues must be an empty array, never null")
+			}
+		})
+	}
+}
+```
 
-使用 `json.Decoder.DisallowUnknownFields()`，再确认第二次 Decode 返回 `io.EOF`。所有 file path 参数先经过 root containment；CLI 不能接受 stdin 持续流，也不能读取多对象 JSON。
+延期命令必须落在 `unknown_command`——不得注册占位 handler。
 
-- [ ] **步骤 3：注册所有 handler**
+- [ ] **步骤 2：运行测试确认失败**
 
-`commands.go` 只做 flag parse、strict decode、service 调用、domain error 到 result status 映射和 envelope 输出。不得在 CLI layer 重复 model/validation/governance 逻辑。`candidate create-derived` 必须调用任务 9 的 `candidate.CreateDerived`，不能把 `derived_from` 降级为普通 create request 中可省略的自由文本关系。
+Run: `go test ./internal/themico/cli -run TestRunEmitsExactlyOneEnvelopePerInvocation -v`
+Expected: FAIL，`init` 当前返回 `unknown_command`。
 
-- [ ] **步骤 4：验证可构建和 help 稳定**
+- [ ] **步骤 3：实现 strict JSON 文件解码**
+
+`commands.go`：
+
+```go
+// decodeJSONFile reads one strict machine JSON document. Unknown fields,
+// trailing values and oversized inputs are refused.
+func decodeJSONFile(path string, destination any) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if len(data) > maxMachineJSONBytes {
+		return fmt.Errorf("machine JSON exceeds %d bytes", maxMachineJSONBytes)
+	}
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("payload must be an object")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	decoder.UseNumber()
+	if err := decoder.Decode(destination); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("trailing JSON value")
+		}
+		return err
+	}
+	return nil
+}
+```
+
+- [ ] **步骤 4：实现 domain error 到 status 的映射**
+
+```go
+func statusFor(err error) result.Status {
+	switch {
+	case err == nil:
+		return result.StatusSucceeded
+	case errors.Is(err, query.ErrBudgetExceeded):
+		return result.StatusBudgetExceeded
+	case errors.Is(err, store.ErrConflict):
+		return result.StatusConflict
+	case errors.Is(err, store.ErrPrecondition):
+		return result.StatusPreconditionFailed
+	case errors.Is(err, store.ErrNotFound), errors.Is(err, candidate.ErrNotFound):
+		return result.StatusNotFound
+	case errors.Is(err, store.ErrValidation), errors.Is(err, candidate.ErrTypeImmutable):
+		return result.StatusValidationFailed
+	default:
+		return result.StatusInternalError
+	}
+}
+```
+
+CLI 层只做参数解析、strict decode、service 调用、错误映射与 envelope 输出，不重复 model、validation、governance 或 store 逻辑。
+
+- [ ] **步骤 5：注册命令并更新 help**
+
+`help` 的 `commands` 数组必须与实际注册表一致，且只列出首个交付命令。缺少必需 flag、未知 flag、未知子命令一律 `usage_error`。
+
+- [ ] **步骤 6：写 help 确定性测试**
+
+```go
+func TestHelpOutputIsByteIdenticalAcrossRuns(t *testing.T) {
+	var first, second bytes.Buffer
+	if code := Run(context.Background(), []string{"help"}, &first, io.Discard); code != result.ExitSuccess {
+		t.Fatalf("exit=%d", code)
+	}
+	if code := Run(context.Background(), []string{"help"}, &second, io.Discard); code != result.ExitSuccess {
+		t.Fatalf("exit=%d", code)
+	}
+	if !bytes.Equal(first.Bytes(), second.Bytes()) {
+		t.Fatalf("help is not deterministic:\n%s\n%s", first.String(), second.String())
+	}
+	for _, deferred := range []string{"supersede", "deprecate", "archive", "rebuild", "create-derived"} {
+		if bytes.Contains(first.Bytes(), []byte(deferred)) {
+			t.Fatalf("help advertises deferred command %q", deferred)
+		}
+	}
+}
+```
+
+- [ ] **步骤 7：运行测试、构建并提交**
 
 ```bash
 gofmt -w cmd/themico internal/themico/cli
 ```
 
 ```bash
-go test ./internal/themico/cli
+go test ./internal/themico/cli -count=1
 ```
 
 ```bash
 go build ./...
 ```
 
-执行两次 help，确认 stdout byte-identical：
-
-```bash
-go run ./cmd/themico help
-```
-
-- [ ] **步骤 5：提交**
-
 ```bash
 git add cmd/themico internal/themico/cli
 ```
 
 ```bash
-git commit -m "feat: expose Themico CLI operations"
+git commit -m "feat: expose core Themico CLI commands"
 ```
 
 ---
 
-### 任务 12：实现单一 Themico Skill 和按需 type factory references
+### 任务 10：实现单一 `themico` Skill 与必要 references
 
 **文件：**
 - 新建：`templates/.claude/skills/themico/SKILL.md`
@@ -1257,102 +2066,171 @@ git commit -m "feat: expose Themico CLI operations"
 - 新建：`templates/.themico/core/references/operations/query.md`
 - 新建：`templates/.themico/core/references/operations/inspect.md`
 - 新建：`templates/.themico/core/references/operations/create-candidate.md`
-- 新建：`templates/.themico/core/references/operations/create-derived-candidate.md`
 - 新建：`templates/.themico/core/references/operations/revise-candidate.md`
 - 新建：`templates/.themico/core/references/operations/confirm-type.md`
 - 新建：`templates/.themico/core/references/operations/validate.md`
 - 新建：`templates/.themico/core/references/operations/prepare.md`
 - 新建：`templates/.themico/core/references/operations/publish.md`
-- 新建：`templates/.themico/core/references/operations/supersede.md`
-- 新建：`templates/.themico/core/references/operations/deprecate.md`
-- 新建：`templates/.themico/core/references/operations/archive.md`
-- 新建：`templates/.themico/core/references/operations/verify-projection.md`
-- 新建：`templates/.themico/core/references/operations/rebuild.md`
-- 新建：`templates/.themico/core/references/types/design-decision/factory.md`
-- 新建：`templates/.themico/core/references/types/design-decision/l2.md`
-- 新建：`templates/.themico/core/references/types/design-decision/l3.md`
-- 新建：`templates/.themico/core/references/types/design-decision/semantic-check.md`
-- 新建：`templates/.themico/core/references/types/development-standard/factory.md`
-- 新建：`templates/.themico/core/references/types/development-standard/l2.md`
-- 新建：`templates/.themico/core/references/types/development-standard/l3.md`
-- 新建：`templates/.themico/core/references/types/development-standard/semantic-check.md`
-- 新建：`templates/.themico/core/references/types/development-experience/factory.md`
-- 新建：`templates/.themico/core/references/types/development-experience/l2.md`
-- 新建：`templates/.themico/core/references/types/development-experience/l3.md`
-- 新建：`templates/.themico/core/references/types/development-experience/semantic-check.md`
+- 新建：`templates/.themico/core/references/types/design-decision/{factory,l2,l3,semantic-check}.md`
+- 新建：`templates/.themico/core/references/types/development-standard/{factory,l2,l3,semantic-check}.md`
+- 新建：`templates/.themico/core/references/types/development-experience/{factory,l2,l3,semantic-check}.md`
 - 新建：`internal/themico/integration/skill_contract_test.go`
 
 **接口：**
-- 产出：唯一公共 `themico` Skill；一次操作只加载一个 operation reference，正式 record 只加载 registry 指定的一个 type factory。
+- 产出：唯一公共 `themico` Skill；一次 Invocation 只加载一个 operation reference 和 registry 选中的一个 type factory。
 
-- [ ] **步骤 1：先写 Skill tree contract 测试**
+- [ ] **步骤 1：写 Skill tree contract 测试**
 
-测试必须读取上述固定路径，确认：
+```go
+func TestSkillTreeMatchesFirstUsableDeliveryContract(t *testing.T) {
+	repository := repositoryRoot(t)
+	skill := filepath.Join(repository, "templates", ".claude", "skills", "themico", "SKILL.md")
+	references := filepath.Join(repository, "templates", ".themico", "core", "references")
 
-```text
-SKILL.md 位于 templates/.claude/skills/themico/，references 位于 templates/.themico/core/references/
-只有 SKILL.md 有宿主 YAML frontmatter
-SKILL name 恰为 themico
-common references 6 个
-operation references 14 个
-type factories 恰为 3 个
-每个 factory 都有 factory/l2/l3/semantic-check
-所有正文包含中文标题
+	if entries, err := os.ReadDir(filepath.Dir(skill)); err != nil || len(entries) != 1 {
+		t.Fatalf("skill directory must hold only SKILL.md: %v %v", entries, err)
+	}
+
+	operations := []string{
+		"create-candidate", "revise-candidate", "confirm-type", "validate",
+		"prepare", "publish", "query", "inspect",
+	}
+	got := markdownNames(t, filepath.Join(references, "operations"))
+	if !reflect.DeepEqual(got, sorted(operations)) {
+		t.Fatalf("operations=%v want %v", got, sorted(operations))
+	}
+
+	commons := []string{
+		"operation-contract", "result-contract", "governance",
+		"knowledge-record", "l1-discovery", "type-registry",
+	}
+	if got := markdownNames(t, filepath.Join(references, "common")); !reflect.DeepEqual(got, sorted(commons)) {
+		t.Fatalf("common=%v want %v", got, sorted(commons))
+	}
+
+	for _, factory := range []string{"design-decision", "development-standard", "development-experience"} {
+		directory := filepath.Join(references, "types", factory)
+		want := sorted([]string{"factory", "l2", "l3", "semantic-check"})
+		if got := markdownNames(t, directory); !reflect.DeepEqual(got, want) {
+			t.Fatalf("%s=%v want %v", factory, got, want)
+		}
+	}
+
+	assertOnlySkillHasFrontmatter(t, skill, references)
+	assertNoDeferredOperationReference(t, references)
+}
 ```
 
-- [ ] **步骤 2：写公共 Skill 入口**
+`assertNoDeferredOperationReference` 断言 `operations/` 下不存在 `supersede`、`deprecate`、`archive`、`rebuild`、`verify-projection`、`create-derived-candidate`。
 
-`SKILL.md` 的 description 优先说明：可查询 Themico、形成/审阅知识候选、通过 CLI 准备和执行经授权治理操作。正文固定两条加载路径。
+- [ ] **步骤 2：运行测试确认失败**
 
+Run: `go test ./internal/themico/integration -run TestSkillTree -v`
+Expected: FAIL，Skill 目录尚不存在。
+
+- [ ] **步骤 3：写公共 Skill 入口**
+
+`SKILL.md` 只保留宿主发现所需的最小 frontmatter：
+
+```markdown
+---
+name: themico
+description: 查询与渐进读取 Themico 正式项目知识，形成和审阅知识候选，并通过 themico CLI 准备与执行经授权的治理发布。
+---
+
+# themico
+
+## 职责
+
+本 Skill 是 Themico 的唯一公共入口，只负责路由与解释。语义合同位于 `.themico/core/references/`，机器权威由 `themico` Go CLI 承担。
+```
+
+正文固定两条加载路径：
+
+```text
 已有正式记录或已有 candidate：
-
-```text
 common/operation-contract
-→ selected operation reference
-→ CLI inspect/query 得到 persisted type，或 candidate inspect 得到 proposed/persisted type
-→ common/type-registry identity routing table
-→ exactly one selected type factory
-→ selected L2/L3/semantic-check reference
-→ Agent proposal or assessment
-→ CLI deterministic validation/prepare/apply
-```
+→ 唯一选中的 operation reference
+→ CLI inspect/query 返回的 persisted knowledge_type
+→ common/type-registry 的 identity routing table
+→ 唯一选中的 type factory
+→ 该 factory 的 L2/L3/semantic-check reference
 
-尚无 `proposed_type` 的 `create-candidate` 或 `create-derived-candidate`：
-
-```text
+尚无 proposed_type 的 create-candidate：
 common/operation-contract
-→ selected create operation reference
-→ common/type-registry lightweight classification registry
-→ Agent 提出唯一 proposed type 和分类依据
-→ common/type-registry identity routing table
-→ exactly one selected type factory
-→ selected L2/L3 reference
-→ Agent candidate content
-→ CLI deterministic create
+→ create-candidate reference
+→ common/type-registry 的 lightweight classification registry
+→ Agent 提出唯一 proposed_type 与分类依据
+→ common/type-registry 的 identity routing table
+→ 唯一选中的 type factory
+→ 该 factory 的 L2/L3 reference
 ```
 
-`common/type-registry` 的 lightweight classification registry 只包含三个 type identity、分类问题和排除提示，不包含完整 factory/L2/L3/semantic-check 内容。分类前不加载 factory；分类后只加载一个 factory。明确已有 record 的 type 只能来自 CLI；CLI unavailable 时只允许 draft-only、不持久化、不声称 current。
+明确写出：已有记录的类型只能来自 CLI；不得根据标题、摘要或正文重新猜测类型；CLI 或所需 reference 不可用时只能产出 draft 并报告 unavailable，不得手工修改 `.themico/workspace/`，也不得声称结果已 published、current 或 valid。
 
-- [ ] **步骤 3：写 common 和 operation references**
+- [ ] **步骤 4：写 common references**
 
-每个 operation reference 必须写：输入、Agent 职责、CLI command、Human gate、权威输出、合法 machine statuses、fail-closed 行为。不得复制三个 type 的完整 L2/L3 合同。`common/type-registry.md` 必须同时提供 classification registry 和 identity routing table，并测试 create 路径能在不预加载三个 factory 的前提下提出唯一 type 后只加载一个 factory。
+`type-registry.md` 必须同时提供两张表且都不复制 factory 详细内容：
 
-- [ ] **步骤 4：写三个 type factory**
+| `knowledge_type` | 分类问题 | 排除提示 |
+| --- | --- | --- |
+| `design_decision` | 材料是否主要回答"项目已决定什么以及为什么" | 若主要规定必须/禁止动作或复用观察经验，则不选 |
+| `development_standard` | 材料是否主要回答"触发后必须、禁止或验证什么" | 若只是一次设计取舍或条件化观察，则不选 |
+| `development_experience` | 材料是否主要回答"在何种背景下观察到什么、证据多强、建议如何行动" | 若内容是 current 设计决定或强制规则，则不选 |
 
-Factory 明确 Zone、L2/L3 reference 路径、分类依据和不适用条件。Semantic check 只产生 assessment candidate，不能授予 publication authority。
+| `knowledge_type` | factory | Zone |
+| --- | --- | --- |
+| `design_decision` | `types/design-decision/factory.md` | `project_knowledge` |
+| `development_standard` | `types/development-standard/factory.md` | `project_knowledge` |
+| `development_experience` | `types/development-experience/factory.md` | `project_experience` |
 
-- [ ] **步骤 5：运行 contract test 并提交**
+`result-contract.md` 列出 envelope 字段与闭集 status；`governance.md` 说明类型确认与 publication Approval 是两个独立 Human gate；`l1-discovery.md` 说明 L1 只用于发现与确定性筛选，升级读取需 exact record ID。
+
+- [ ] **步骤 5：写八个 operation references**
+
+每个 operation reference 固定包含：输入与前置条件、Agent 职责、对应 `themico` CLI command、Human gate、权威输出、合法 machine statuses、fail-closed 行为。不复制三种类型的完整 L2/L3 合同，不定义新的 Zone、类型、状态或关系。
+
+- [ ] **步骤 6：写三个 type factory**
+
+每个 factory 固定说明 type identity、唯一 Zone、适用与不适用分类依据，以及 L2/L3/semantic-check reference 路径。`l3.md` 中的固定 H2 章节必须与 `internal/themico/model/registry.go` 的 `L3Headings` 逐字一致。semantic-check 只产生 assessment candidate，不授予 publication authority。
+
+- [ ] **步骤 7：写 L3 章节一致性测试**
+
+```go
+func TestFactoryL3ReferencesMatchRegistryHeadings(t *testing.T) {
+	references := filepath.Join(repositoryRoot(t), "templates", ".themico", "core", "references", "types")
+	for _, factory := range model.Factories() {
+		directory := map[model.KnowledgeType]string{
+			model.TypeDesignDecision:        "design-decision",
+			model.TypeDevelopmentStandard:   "development-standard",
+			model.TypeDevelopmentExperience: "development-experience",
+		}[factory.Type]
+
+		content, err := os.ReadFile(filepath.Join(references, directory, "l3.md"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, heading := range factory.L3Headings {
+			if !bytes.Contains(content, []byte("## "+heading)) {
+				t.Fatalf("%s l3.md is missing heading %q", directory, heading)
+			}
+		}
+	}
+}
+```
+
+- [ ] **步骤 8：运行测试并提交**
 
 ```bash
-gofmt -w internal/themico/integration/skill_contract_test.go
+gofmt -w internal/themico/integration
 ```
 
 ```bash
-go test ./internal/themico/integration -run TestSkillContract -count=1
+go test ./internal/themico/integration -count=1
 ```
 
 ```bash
-git add templates/.claude/skills/themico templates/.themico/core internal/themico/integration/skill_contract_test.go
+git add templates/.claude/skills/themico templates/.themico/core internal/themico/integration
 ```
 
 ```bash
@@ -1361,7 +2239,7 @@ git commit -m "feat: add Themico knowledge Skill"
 
 ---
 
-### 任务 13：补齐端到端、并发、中断和路径安全测试
+### 任务 11：补齐端到端、并发、中断与安全测试
 
 **文件：**
 - 新建：`internal/themico/integration/lifecycle_test.go`
@@ -1370,31 +2248,110 @@ git commit -m "feat: add Themico knowledge Skill"
 - 新建：`internal/themico/integration/security_test.go`
 
 **接口：**
-- 产出：从 CLI request 到 generation commit/query 的可重复证据。
+- 消费：`cli.Run(ctx, args, stdout, stderr) int`。
+- 产出：从 CLI 请求到 generation commit 与读取的可重复证据。测试只通过 `cli.Run` 驱动，不直接调用内部 service，以证明命令面真实可用。
 
-- [ ] **步骤 1：实现完整 happy path 测试**
+- [ ] **步骤 1：实现三类型完整 happy path**
 
-使用 `cli.Run` 和 temp repository：init → create candidate → confirm type → validate → semantic assessment → prepare → Human Approval fixture → publish → query L1 → inspect L2 → inspect L3。断言每步 status、ID binding、generation 和 query trace。
+```go
+func TestPublishAndReadEachKnowledgeType(t *testing.T) {
+	for _, knowledgeType := range []model.KnowledgeType{
+		model.TypeDesignDecision,
+		model.TypeDevelopmentStandard,
+		model.TypeDevelopmentExperience,
+	} {
+		t.Run(string(knowledgeType), func(t *testing.T) {
+			repository := t.TempDir()
+			mustRunCLI(t, result.StatusSucceeded, "init", "--root", repository)
 
-- [ ] **步骤 2：实现三类型和跨类型派生测试**
+			candidateID, candidateRevision := createCandidate(t, repository, knowledgeType)
+			confirmedRevision := confirmType(t, repository, candidateID, candidateRevision, knowledgeType)
+			mustRunCLI(t, result.StatusSucceeded, "validate", "--root", repository,
+				"--candidate", candidateID, "--revision", confirmedRevision)
 
-每种 type 发布一条 record；从 development experience 派生 development standard；断言原 record 未改型、新 record 拥有 `derived_from`、对应 factory headings 和 Zone 均正确。
+			prepareID := preparePublish(t, repository, candidateID, confirmedRevision)
+			recordID := publish(t, repository, prepareID)
 
-- [ ] **步骤 3：实现 lifecycle 测试**
+			l1 := queryL1(t, repository, zoneFor(knowledgeType))
+			if !containsRecord(l1, recordID) {
+				t.Fatalf("query did not return %s", recordID)
+			}
+			for depth := 1; depth <= 3; depth++ {
+				inspectRecord(t, repository, recordID, depth)
+			}
+		})
+	}
+}
+```
 
-覆盖 supersede、deprecate、archive、history query、默认 current query 和 Approval stale。确认正式知识不物理删除。
+- [ ] **步骤 2：实现类型改型拒绝测试**
 
-- [ ] **步骤 4：实现并发和中断测试**
+确认类型后调用 `candidate revise` 并改变 `proposed_type`，断言返回 `validation_failed` 且 candidate pointer 的 `knowledge_type` 不变。
 
-两个 writer 从相同 generation prepare；并发 apply 只能一个 succeeded，另一个 conflict。分别在 payload 写入后、generation staging 写入后、rename 前注入故障，确认 current generation 和查询结果不变。
+- [ ] **步骤 3：实现并发 generation conflict 测试**
 
-- [ ] **步骤 5：实现路径和输入安全测试**
+```go
+func TestConcurrentPublishLetsExactlyOneWinWithoutOverwriting(t *testing.T) {
+	repository := t.TempDir()
+	mustRunCLI(t, result.StatusSucceeded, "init", "--root", repository)
+	firstPrepare := prepareReadyCandidate(t, repository)
+	secondPrepare := prepareReadyCandidate(t, repository)
 
-覆盖：绝对路径、`..`、symlink/junction escape、case collision、oversized JSON、unknown field、duplicate JSON key、invalid UTF-8、Markdown frontmatter、relation cycle、source digest drift、budget exact boundary。
+	statuses := make(chan result.Status, 2)
+	start := make(chan struct{})
+	var waiter sync.WaitGroup
+	for _, prepareID := range []string{firstPrepare, secondPrepare} {
+		waiter.Add(1)
+		go func(id string) {
+			defer waiter.Done()
+			<-start
+			statuses <- runCLIStatus(t, "publish", "--root", repository, "--prepare", id, "--approval", approvalFile(t, repository, id))
+		}(prepareID)
+	}
+	close(start)
+	waiter.Wait()
+	close(statuses)
 
-只对测试实际运行的平台声明通过；Windows junction 若当前权限无法创建，测试必须显式 `t.Skip` 并在最终 evidence 记录 unavailable，不能伪造 PASS。
+	var succeeded, conflicted int
+	for status := range statuses {
+		switch status {
+		case result.StatusSucceeded:
+			succeeded++
+		case result.StatusConflict:
+			conflicted++
+		default:
+			t.Fatalf("unexpected status %s", status)
+		}
+	}
+	if succeeded != 1 || conflicted != 1 {
+		t.Fatalf("succeeded=%d conflicted=%d want exactly one each", succeeded, conflicted)
+	}
+}
+```
 
-- [ ] **步骤 6：运行全量测试并提交**
+两个 prepare 必须基于同一 expected generation 创建，因此第二个 publish 只能返回 `conflict`。
+
+- [ ] **步骤 4：实现中断测试**
+
+分别在 payload 写入后、generation staging 写入后、rename 前注入故障，断言 current generation、query 结果和 record pointer 均不变，且 orphan payload 不被任何读取路径返回。
+
+- [ ] **步骤 5：实现路径与输入安全测试**
+
+覆盖：绝对路径 source、`..` 逃逸、symlink/junction 逃逸、超限 JSON、unknown field、duplicate key、invalid UTF-8、L3 frontmatter、source digest 漂移、byte budget 精确边界。
+
+当前平台无法创建 junction 或 symlink 时必须 `t.Skip` 并在证据中记录 unavailable，不得伪造 PASS：
+
+```go
+if err := os.Symlink(target, link); err != nil {
+	t.Skipf("symlink creation unavailable on this platform: %v", err)
+}
+```
+
+- [ ] **步骤 6：实现 `init` 布局与控制面测试**
+
+断言 `init` 产生 `.themico/core/` 与 `.themico/workspace/`；store payload 全部落在 `workspace/` 内；先安装 control plane 再 `init` 仍成功且 reference bytes 不变；重复 `init` 返回 `precondition_failed`。
+
+- [ ] **步骤 7：运行全量测试并提交**
 
 ```bash
 gofmt -w internal/themico/integration
@@ -1417,12 +2374,12 @@ git add internal/themico/integration
 ```
 
 ```bash
-git commit -m "test: verify Themico core workflows"
+git commit -m "test: verify Themico first usable delivery"
 ```
 
 ---
 
-### 任务 14：对齐产品说明并生成实施验收证据
+### 任务 12：对齐产品说明并生成验收证据
 
 **文件：**
 - 修改：`README.md`
@@ -1430,15 +2387,15 @@ git commit -m "test: verify Themico core workflows"
 - 新建：`docs/plan/themico-core/manual-replay.md`
 
 **接口：**
-- 产出：只陈述实际实现能力的产品说明、命令证据和人工 replay；不提前宣称 MCP/Themis integration。
+- 产出：只陈述实际实现能力的产品说明、fresh 命令证据、人工 replay 记录和逐条验收映射。
 
-- [ ] **步骤 1：更新 README 当前状态和入口**
+- [ ] **步骤 1：更新 README**
 
-新增 Themico 核心说明，链接 current Spec、`templates/.claude/skills/themico/SKILL.md` 和 CLI build/run 入口。明确：MCP adapter、Themis lifecycle 接线、外部 source fetch、embedding/vector search 当前 unavailable。
+新增 Themico 说明，链接 `docs/superpowers/specs/2026-07-29-themico-design.md`、`docs/superpowers/specs/2026-07-29-themico-design/first-usable-delivery.md`、`templates/.claude/skills/themico/SKILL.md` 和 CLI 构建入口。明确列出当前 unavailable：supersede、deprecate、archive、history query、跨类型派生、relation traversal、聚合 view 与 `rebuild`、URL source、MCP adapter、Themis lifecycle 接线、Embedding/向量数据库/SQLite、token budget。
+
+不得把计划或设计描述成已实现能力。
 
 - [ ] **步骤 2：运行并记录 fresh verification**
-
-运行：
 
 ```bash
 go test ./... -count=1
@@ -1456,32 +2413,31 @@ go build ./...
 git diff --check
 ```
 
-把完整命令、exit code、测试数量、skip 数量和平台写入 `implementation-evidence.md`。未运行或 skip 的保证标记 unavailable。
+把完整命令、exit code、测试数量、skip 数量、平台和执行时间写入 `implementation-evidence.md`。未运行或 skip 的保证标记 unavailable，不得推断为通过。
 
-- [ ] **步骤 3：人工 replay 十个场景**
+- [ ] **步骤 3：执行九个人工 replay**
 
-`manual-replay.md` 逐场景记录实际输入文件、CLI command、result status、generation before/after 和 observed files：
+使用构建出的 `themico` 二进制在临时仓库依次 replay，并记录实际输入、command、result status、generation before/after 和 observed files：
 
 ```text
-1. design_decision happy path
-2. development_standard happy path
-3. development_experience happy path
-4. type confirmation 后改型被拒绝
-5. 跨类型 derived_from 新记录
-6. stale source 阻止 prepare/publish
-7. wrong Approval 阻止 apply
-8. concurrent generation conflict
-9. projection corruption detection and rebuild
-10. progressive query budget and explicit cross-zone expansion
+1. design_decision 完整发布与 L1/L2/L3 读取
+2. development_standard 完整发布与 L1/L2/L3 读取
+3. development_experience 完整发布与 L1/L2/L3 读取
+4. 类型确认后 revise 改型被拒绝
+5. source drift 阻止 validate、prepare 或 publish
+6. 错误或 stale Approval 阻止 publish
+7. 并发 generation conflict 不覆盖获胜 generation
+8. 投影或 content 篡改导致 query/inspect 失败关闭
+9. byte budget 不足返回 budget_exceeded 且不截断 L3
 ```
 
-- [ ] **步骤 4：逐条映射 Spec 验收条件**
+- [ ] **步骤 4：逐条映射独立验收集合**
 
-在 `implementation-evidence.md` 为 `acceptance.md` 每条标准给出唯一代码、测试或 replay 引用。找不到 fresh evidence 的标准保持 GAP，不得用计划文本代替证据。
+在 `implementation-evidence.md` 为 `first-usable-delivery.md` 第 8 节的 21 条验收条件各给出唯一的代码、测试或 replay 引用。找不到 fresh evidence 的条目保持 GAP，不得用计划文本或设计文档代替证据。
 
-- [ ] **步骤 5：审查范围和工作树**
+同时声明：本证据只覆盖首个可用交付，不构成 `acceptance.md` 完整 38 条目标的完成判定。
 
-运行：
+- [ ] **步骤 5：审查提交范围**
 
 ```bash
 git status --short
@@ -1491,47 +2447,35 @@ git status --short
 git diff --stat
 ```
 
-确认没有 `.themico` 测试数据、编译产物、Python、YAML 产品合同、MCP adapter、Themis lifecycle 改动或依赖文件进入提交。
+确认没有 `.themico` 测试数据、编译产物、Python、产品 YAML、MCP adapter、Themis lifecycle 改动或第三方依赖进入提交。
 
-- [ ] **步骤 6：提交文档与最终证据**
+- [ ] **步骤 6：提交文档与证据**
 
 ```bash
 git add README.md docs/plan/themico-core
 ```
 
 ```bash
-git commit -m "docs: record Themico core evidence"
+git commit -m "docs: record Themico first usable delivery evidence"
 ```
 
-- [ ] **步骤 7：执行最终验收命令**
+---
 
-```bash
-go test ./... -count=1
-```
+## 完成判定
 
-```bash
-go vet ./...
-```
+首个可用交付的完成判定以 `docs/superpowers/specs/2026-07-29-themico-design/first-usable-delivery.md` 第 8 节的 21 条独立验收集合为准。只有全部条件具备 fresh evidence 且 acceptance mapping 无未裁决 GAP 时，才能报告"首个可用交付完成"。
 
-```bash
-go build ./...
-```
-
-```bash
-git diff --check HEAD~14..HEAD
-```
-
-只有全部实际通过且 acceptance mapping 无未裁决 GAP 时，才能把核心实现报告为完成。提交和测试通过不自动构成用户接受，也不授权 push、PR、MCP 集成或 Themis lifecycle 接线。
+该判定不表示 `acceptance.md` 完整 38 条 Themico 设计目标已经满足，也不构成用户接受，更不授权 push、PR、MCP 集成或 Themis lifecycle 接线。
 
 ---
 
 ## 计划自检清单
 
-- Spec coverage：任务 1 固化本轮全部设计决定；任务 2–11 实现 CLI 核心；任务 12 实现单一 Skill/references；任务 13–14 提供运行证据和验收映射。
-- Authority separation：Agent proposal、Human authorization、CLI machine authority 在 model、prepare、Approval、Skill 和测试中分别落实。
-- Atomic record：candidate/record revision、L1/L2/L3、relations、source 和 generation commit 均以单条 Record 为治理单位。
-- Progressive read：L1 query、exact-ID L2/L3 inspect、byte budget、cross-Zone 和 trace 都有独立实现与测试。
-- Projection boundary：L1/L2 与 aggregate views 均绑定 record revision；rebuild 不生成新语义。
-- Type consistency：三个 type identity、Zone compatibility、Factory 名称和 L2/L3 references 在 Spec、Go model、CLI、Skill 与测试中保持一致。
-- Scope control：不实现 Claude API、MCP、Themis lifecycle integration、Embedding、SQLite、向量数据库、Web UI、migration 或自动知识摄取。
-- Repository constraints：无 Python、无 Shell fallback、无产品 YAML、无功能版本或版本目录。
+- Spec coverage：任务 1–5（已完成）提供 Spec authority、CLI 进程合同、知识模型与 registry、canonical JSON 与 generation store、candidate 生命周期；任务 6 实现确定性 validate；任务 7 实现 assessment/prepare/Approval/publish；任务 8 实现 query 与 inspect；任务 9 接通核心 command surface；任务 10 实现单一 Skill 与八个 operation references；任务 11 提供 E2E、并发、中断与安全证据；任务 12 提供产品说明、人工 replay 与逐条验收映射。
+- Authority separation：Agent proposal、Human 类型确认与 publication Approval、CLI machine authority 在 model、validate、governance、Skill 与测试中分别落实；CLI 只比较 identity 字段，不声称验证真实身份。
+- Atomic record：candidate/record revision、L1/L2/L3、relations、source 与 generation commit 均以单条 Record 为治理单位；publish 在一次 generation commit 中同时更新 record pointer、projection ref 与 candidate published binding。
+- Progressive read：L1 query、exact-ID L2/L3 inspect 与 byte budget 各有独立实现与测试；预算不足返回 `budget_exceeded` 且不截断完整 item。
+- Projection boundary：L1/L2 绑定确切 record revision 与 L3 digest；绑定失效时读取失败关闭，不从 L3 生成摘要；`views.json` 固定为 canonical 空对象，不被任何任务声称为聚合索引。
+- Type consistency：`model.Factory.L3Headings`、Skill `l3.md` 章节、validate 的 `checkMarkdown` 与三个 typed L2 payload 在 Spec、Go model、CLI、Skill 与测试中逐字一致（任务 10 步骤 7 以测试锁定）。
+- Scope control：supersede/deprecate/archive、history query、跨类型派生、relation traversal、聚合 view 与 `rebuild`、Claude API、MCP、Themis lifecycle 接线、Embedding、SQLite、向量数据库、Web UI、token budget 均未实现，也不以空 command、占位 handler 或未接线 reference 出现。
+- Repository constraints：无 Python、无 Shell fallback、无产品 YAML、无第三方 Go dependency、无功能版本或版本目录。
