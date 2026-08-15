@@ -79,10 +79,42 @@ func (s *Service) Publish(ctx context.Context, request PublishRequest) (model.Re
 	}
 	contentBytes := append([]byte(nil), currentCandidate.ContentMarkdown...)
 
+	// l1.json and l2.json are written as byte-identical copies of the same
+	// full model.Projection object; see the matching comment in prepare.go
+	// for why store.validateProjectionReference forces this (it decodes both
+	// paths as a complete Projection and DeepEqual-checks both L1 and L2
+	// against each of them), and task-7-report.md concern 4 for why this is
+	// a known store-layer constraint that needs escalation, not a choice
+	// made here.
 	projection := buildProjection(record)
 	projectionBytes, err := canonical.Encode(projection)
 	if err != nil {
 		return model.RecordRevision{}, validationError("encode projection", err)
+	}
+
+	// Explicitly re-verify every byte this commit is about to write against
+	// the digest Prepare.Writes froze for it, instead of relying on
+	// buildRecordRevision/buildProjection determinism as an unchecked
+	// assumption. recordFreezeDigest clears AuthorizationDigest/Generation
+	// the same way prepare.go did when it froze this entry, so the two are
+	// directly comparable. Any mismatch here means the prepare artifact (or
+	// this reconstruction) no longer matches what was approved, and the
+	// publish must fail closed before anything is committed.
+	recordFreeze, err := recordFreezeDigest(record)
+	if err != nil {
+		return model.RecordRevision{}, err
+	}
+	if err := verifyFrozenWrite(prepare.Writes, recordPath(record.RecordID, record.Revision, "record.json"), recordFreeze); err != nil {
+		return model.RecordRevision{}, err
+	}
+	if err := verifyFrozenWrite(prepare.Writes, recordPath(record.RecordID, record.Revision, "content.md"), rawDigest(contentBytes)); err != nil {
+		return model.RecordRevision{}, err
+	}
+	if err := verifyFrozenWrite(prepare.Writes, projectionPath(record.RecordID, record.Revision, "l1.json"), rawDigest(projectionBytes)); err != nil {
+		return model.RecordRevision{}, err
+	}
+	if err := verifyFrozenWrite(prepare.Writes, projectionPath(record.RecordID, record.Revision, "l2.json"), rawDigest(projectionBytes)); err != nil {
+		return model.RecordRevision{}, err
 	}
 
 	// The candidate pointer's status can only become "published" if the
@@ -141,7 +173,9 @@ func (s *Service) Publish(ctx context.Context, request PublishRequest) (model.Re
 		return model.RecordRevision{}, err
 	}
 
-	return model.NormalizeRecordRevision(record), nil
+	// record was already normalized inside buildRecordRevision; it is
+	// returned as-is rather than normalized a second time.
+	return record, nil
 }
 
 // readPrepare reads and verifies one immutable prepare artifact by ID. A

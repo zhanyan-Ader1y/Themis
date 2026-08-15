@@ -108,20 +108,41 @@ func (s *Service) PreparePublish(ctx context.Context, request PrepareRequest) (m
 	// it freezes for the later publish must be current+1, not current.
 	expectedGeneration := manifest.Generation + 1
 
-	// AuthorizationDigest is unknown until a real Approval exists, so it is
-	// frozen here as an empty placeholder; content.md, l1.json, and l2.json
-	// do not depend on it and are fully determined at this point.
+	// AuthorizationDigest is unknown until a real Approval exists, and
+	// Generation is only nominally known here (it is what this prepare's own
+	// commit below is about to produce, not what Publish's later commit
+	// actually produces — see recordFreezeDigest). content.md, l1.json, and
+	// l2.json do not depend on either field and are fully determined here.
 	record := buildRecordRevision(candidateRevision, recordID, recordRevisionID, createdAt, expectedGeneration, "")
-	recordBytes, err := canonical.Encode(record)
-	if err != nil {
-		return model.Prepare{}, validationError("encode record revision", err)
-	}
 	contentBytes := append([]byte(nil), candidateRevision.ContentMarkdown...)
 
+	// l1.json and l2.json are written as byte-identical copies of the same
+	// full model.Projection object. This is not a design choice of this
+	// package: store.validateProjectionReference (internal/themico/store/
+	// generation.go) decodes *both* paths as a complete model.Projection and
+	// DeepEqual-checks record.L1 *and* record.L2 against *each* of them, so
+	// there is no way for a publish-chain implementation to give L1 and L2
+	// independent bytes under the current store contract. L1Digest and
+	// L2Digest are therefore always equal. This is a known store-layer
+	// constraint predating this task, not a decision made here — see
+	// task-7-report.md concern 4 for why it needs to be escalated.
 	projection := buildProjection(record)
 	projectionBytes, err := canonical.Encode(projection)
 	if err != nil {
 		return model.Prepare{}, validationError("encode projection", err)
+	}
+
+	// recordFreezeDigest is what Prepare.Writes freezes for record.json: it
+	// excludes AuthorizationDigest (unknown until Publish has a real
+	// Approval) and Generation (this call only knows the generation its own
+	// commit is about to produce, not necessarily the generation Publish's
+	// later commit will produce). Every other field is fully determined by
+	// the candidate revision and the identifiers frozen here, so Publish can
+	// recompute this same digest from the final record and must get an exact
+	// match, proving nothing else about the record drifted.
+	recordFreeze, err := recordFreezeDigest(record)
+	if err != nil {
+		return model.Prepare{}, err
 	}
 
 	candidateDigest, err := canonical.Digest(candidateRevision)
@@ -151,7 +172,7 @@ func (s *Service) PreparePublish(ctx context.Context, request PrepareRequest) (m
 		L2Digest:           record.L2Digest,
 		L3Digest:           record.L3Digest,
 		Writes: []model.PreparedWrite{
-			{Path: recordPath(recordID, recordRevisionID, "record.json"), Digest: rawDigest(recordBytes)},
+			{Path: recordPath(recordID, recordRevisionID, "record.json"), Digest: recordFreeze},
 			{Path: recordPath(recordID, recordRevisionID, "content.md"), Digest: rawDigest(contentBytes)},
 			{Path: projectionPath(recordID, recordRevisionID, "l1.json"), Digest: rawDigest(projectionBytes)},
 			{Path: projectionPath(recordID, recordRevisionID, "l2.json"), Digest: rawDigest(projectionBytes)},
@@ -208,6 +229,52 @@ func computePrepareDigest(prepare model.Prepare) (string, error) {
 		return "", validationError("digest prepare", err)
 	}
 	return digest, nil
+}
+
+// recordFreezeDigest is the digest Prepare.Writes freezes for record.json
+// and Publish later recomputes and compares byte-for-byte. AuthorizationDigest
+// and Generation are cleared before hashing: neither is knowable until
+// Publish supplies the real approval and confirms the generation its commit
+// will actually produce, so freezing them would make this digest never able
+// to match at Publish time even when nothing else drifted. Every remaining
+// field is fully determined by the candidate revision and the identifiers
+// frozen at prepare time, so a mismatch here proves genuine drift.
+func recordFreezeDigest(record model.RecordRevision) (string, error) {
+	record.AuthorizationDigest = ""
+	record.Generation = 0
+	data, err := canonical.Encode(record)
+	if err != nil {
+		return "", validationError("digest record revision", err)
+	}
+	return rawDigest(data), nil
+}
+
+// preparedWriteDigest looks up the digest Prepare.Writes froze for path.
+func preparedWriteDigest(writes []model.PreparedWrite, path string) (string, bool) {
+	for _, write := range writes {
+		if write.Path == path {
+			return write.Digest, true
+		}
+	}
+	return "", false
+}
+
+// verifyFrozenWrite proves the bytes Publish is about to commit at path
+// still match the digest Prepare.Writes froze for it. This is the explicit
+// counterpart to relying on buildRecordRevision/buildProjection being
+// deterministic: it turns "the reconstruction must be identical" from an
+// assumption into a checked fact, so a prepare artifact that was tampered
+// with (or a reconstruction bug) fails closed instead of silently
+// publishing drifted content.
+func verifyFrozenWrite(writes []model.PreparedWrite, path, digest string) error {
+	frozen, ok := preparedWriteDigest(writes, path)
+	if !ok {
+		return preconditionError("prepare does not declare a frozen write for this path", nil)
+	}
+	if frozen != digest {
+		return preconditionError("publish content no longer matches the digest frozen at prepare time", nil)
+	}
+	return nil
 }
 
 // buildRecordRevision deterministically derives a record revision from a

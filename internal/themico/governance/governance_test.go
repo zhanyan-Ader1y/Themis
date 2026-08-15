@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/candidate"
+	"github.com/zhanyan-Ader1y/Themis/internal/themico/canonical"
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/model"
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/store"
 )
@@ -119,6 +120,47 @@ func TestPublishInterruptedBeforeRenameLeavesCurrentStateUnchanged(t *testing.T)
 	}
 	if _, ok := recordPointer(after, prepare.RecordID); ok {
 		t.Fatal("interrupted publish exposed a record pointer")
+	}
+}
+
+// TestPublishRejectsFrozenWriteDrift proves Prepare.Writes is not dead data:
+// a prepare artifact that is internally self-consistent (its own Digest
+// still matches its own contents, so readPrepare's tamper check does not
+// catch it) but whose declared write-set digest no longer matches what
+// Publish would actually commit must still be rejected before anything is
+// written, for every one of the four frozen targets.
+func TestPublishRejectsFrozenWriteDrift(t *testing.T) {
+	wrongDigest := "sha256:" + strings.Repeat("9", 64)
+	for _, name := range []string{"record.json", "content.md", "l1.json", "l2.json"} {
+		t.Run(name, func(t *testing.T) {
+			fixture := newFixture(t)
+			prepare := fixture.preparePublish(t)
+			var path string
+			switch name {
+			case "record.json", "content.md":
+				path = recordPath(prepare.RecordID, prepare.RecordRevision, name)
+			default:
+				path = projectionPath(prepare.RecordID, prepare.RecordRevision, name)
+			}
+			tampered := fixture.tamperFrozenWrite(t, prepare, path, wrongDigest)
+			before := mustCurrent(t, fixture.store)
+
+			_, err := fixture.governance.Publish(context.Background(), PublishRequest{
+				PrepareID: tampered.PrepareID,
+				Approval:  fixture.approvalFor(t, tampered),
+			})
+			if !errors.Is(err, store.ErrPrecondition) {
+				t.Fatalf("error: %v want %v", err, store.ErrPrecondition)
+			}
+
+			after := mustCurrent(t, fixture.store)
+			if after.Generation != before.Generation {
+				t.Fatalf("failed publish advanced generation %d -> %d", before.Generation, after.Generation)
+			}
+			if _, ok := recordPointer(after, prepare.RecordID); ok {
+				t.Fatal("failed publish exposed a record pointer")
+			}
+		})
 	}
 }
 
@@ -252,6 +294,53 @@ func (f *fixtureState) approvalFor(t *testing.T, prepare model.Prepare) model.Ap
 		ApprovedAt:    f.store.Now().Format(time.RFC3339),
 		AuthorityRef:  "approval/1",
 	}
+}
+
+// tamperFrozenWrite directly rewrites the on-disk prepare.json for prepare,
+// overriding the frozen digest declared for path and recomputing Prepare's
+// own self-digest so the tampered artifact stays internally consistent
+// (readPrepare's own tamper check must not be what catches this — the
+// write-set verification inside Publish must). It returns the mutated
+// model.Prepare so callers can build a matching Approval for it.
+func (f *fixtureState) tamperFrozenWrite(t *testing.T, prepare model.Prepare, path, digest string) model.Prepare {
+	t.Helper()
+	root, err := os.OpenRoot(f.store.Root())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	relative := filepath.FromSlash(preparePath(prepare.PrepareID))
+	data, err := readLimited(root, relative, maxMachineJSON)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var current model.Prepare
+	if err := decodeExact(data, &current); err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for i := range current.Writes {
+		if current.Writes[i].Path == path {
+			current.Writes[i].Digest = digest
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("no frozen write for path %q", path)
+	}
+	newDigest, err := computePrepareDigest(current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	current.Digest = newDigest
+	encoded, err := canonical.Encode(current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(f.store.Root(), relative), encoded, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return current
 }
 
 func mustCurrent(t *testing.T, st *store.Store) model.Manifest {
