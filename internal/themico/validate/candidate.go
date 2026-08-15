@@ -75,6 +75,12 @@ func Candidate(ctx context.Context, st *store.Store, candidateID, candidateRevis
 	if !factoryFound {
 		issues = append(issues, issue("type.unregistered", "knowledge_type", "knowledge type is not registered"))
 	} else {
+		// Defense-in-depth: candidate.Service.Inspect's validatePersistedRevision
+		// already enforces factory.Zone == revision.Zone for a confirmed revision
+		// and returns an error before Candidate ever sees it, so this branch is
+		// unreachable through the current Inspect contract. It stays as an
+		// explicit governance check rather than a silent assumption, because
+		// validate must not depend on Inspect always keeping that guarantee.
 		if factory.Zone != revision.Zone {
 			issues = append(issues, issue("type.zone_incompatible", "zone", "knowledge type is incompatible with the candidate's zone"))
 		}
@@ -84,6 +90,12 @@ func Candidate(ctx context.Context, st *store.Store, candidateID, candidateRevis
 		issues = append(issues, checkMarkdown(revision.ContentMarkdown, factory.L3Headings)...)
 	}
 
+	// Defense-in-depth: candidate.Service.Inspect already recomputes and compares
+	// the L1/L2/L3 digests before returning a revision, so these three checks are
+	// unreachable through the current Inspect contract. They stay as explicit
+	// governance checks — not dead code — because validate is the publish gate
+	// and must not silently trust that candidate.Service.Inspect keeps validating
+	// digests the same way forever.
 	if l1Digest, err := canonical.Digest(revision.L1); err != nil || l1Digest != revision.L1Digest {
 		issues = append(issues, issue("digest.l1_mismatch", "l1_digest", "L1 digest does not match the recomputed canonical digest"))
 	}

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/candidate"
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/canonical"
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/model"
+	"github.com/zhanyan-Ader1y/Themis/internal/themico/result"
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/store"
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/validate"
 )
@@ -101,6 +103,85 @@ func TestCandidateRejectsMalformedL3(t *testing.T) {
 				t.Fatalf("report=%+v want issue %s", report, test.code)
 			}
 		})
+	}
+}
+
+// TestCandidateFlagsMissingH1 covers markdown.missing_h1, which the table in
+// TestCandidateRejectsMalformedL3 does not exercise (every fixture there keeps
+// exactly one H1 while breaking something else).
+func TestCandidateFlagsMissingH1(t *testing.T) {
+	fixture := newFixture(t)
+	created := fixture.confirmedCandidate(t, model.TypeDesignDecision, designDecisionContentWithoutH1(t))
+	report := mustValidate(t, fixture.store, created.CandidateID, created.Revision)
+	if report.OK || !hasIssue(report, "markdown.missing_h1") {
+		t.Fatalf("report=%+v want issue markdown.missing_h1", report)
+	}
+}
+
+// TestCandidateFlagsInvalidTypedPayload covers l2.payload_invalid. Neither
+// candidate.Service.Create nor Inspect decodes the typed L2 payload, so an
+// unknown field survives all the way to validate.Candidate, where
+// factory.DecodePayload is the first and only place it is rejected.
+func TestCandidateFlagsInvalidTypedPayload(t *testing.T) {
+	fixture := newFixture(t)
+	request := fixture.baseRequest(t, model.TypeDesignDecision, designDecisionContent(t))
+	request.L2.Payload = json.RawMessage(`{"x":1}`)
+	created := fixture.build(t, request)
+	report := mustValidate(t, fixture.store, created.CandidateID, created.Revision)
+	if report.OK || !hasIssue(report, "l2.payload_invalid") {
+		t.Fatalf("report=%+v want issue l2.payload_invalid", report)
+	}
+}
+
+// TestCandidateFlagsUnconfirmedAndUnregisteredType covers both
+// type.not_confirmed and type.unregistered together: skipping ConfirmType
+// leaves the candidate in CandidateStatusProposed with an empty
+// KnowledgeType, which Inspect returns as-is (proposed candidates are
+// required to carry an empty KnowledgeType, not an error state).
+func TestCandidateFlagsUnconfirmedAndUnregisteredType(t *testing.T) {
+	fixture := newFixture(t)
+	created := fixture.proposedCandidate(t, model.TypeDesignDecision, designDecisionContent(t))
+	report := mustValidate(t, fixture.store, created.CandidateID, created.Revision)
+	if report.OK {
+		t.Fatalf("report=%+v want not OK", report)
+	}
+	if !hasIssue(report, "type.not_confirmed") {
+		t.Fatalf("report=%+v want issue type.not_confirmed", report)
+	}
+	if !hasIssue(report, "type.unregistered") {
+		t.Fatalf("report=%+v want issue type.unregistered", report)
+	}
+	if len(report.Issues) != 2 {
+		t.Fatalf("report=%+v want exactly type.not_confirmed and type.unregistered", report)
+	}
+}
+
+// TestCandidateFlagsMalformedRelationTarget covers relation.target_invalid:
+// a syntactically wrong target record ID must be rejected before any lookup.
+func TestCandidateFlagsMalformedRelationTarget(t *testing.T) {
+	fixture := newFixture(t)
+	id, revision := fixture.candidateWithRelation(t, model.Relation{
+		Type:           model.RelationRelatedTo,
+		TargetRecordID: "kr_short",
+	})
+	report := mustValidate(t, fixture.store, id, revision)
+	if report.OK || !hasIssue(report, "relation.target_invalid") {
+		t.Fatalf("report=%+v want issue relation.target_invalid", report)
+	}
+}
+
+// TestCandidateFlagsUnreadableSource covers source.unreadable: a source bound
+// at creation time that later disappears from the repository must be
+// reported, not silently skipped.
+func TestCandidateFlagsUnreadableSource(t *testing.T) {
+	fixture := newFixture(t)
+	id, revision := fixture.candidateWithSource(t, "docs/vanish.txt", []byte("v1"))
+	if err := os.Remove(filepath.Join(fixture.root, "docs", "vanish.txt")); err != nil {
+		t.Fatal(err)
+	}
+	report := mustValidate(t, fixture.store, id, revision)
+	if report.OK || !hasIssue(report, "source.unreadable") {
+		t.Fatalf("report=%+v want issue source.unreadable", report)
 	}
 }
 
@@ -198,14 +279,47 @@ func TestCandidateProducesIdenticalReportsForIdenticalInput(t *testing.T) {
 	}
 }
 
+// TestCandidateReportsFullOrderedIssueListAndIsDeterministic exercises a
+// candidate with three simultaneous issues from three different checks
+// (markdown, relation, source), each with a distinct Path, so the sort in
+// candidate.go is the only thing that can produce the expected order. The
+// natural append order inside Candidate is markdown -> source -> relation;
+// sorting by Path flips that to markdown -> relation -> source, so this test
+// fails if the sort were removed or the comparator broken.
+func TestCandidateReportsFullOrderedIssueListAndIsDeterministic(t *testing.T) {
+	fixture := newFixture(t)
+	created := multiIssueCandidate(t, fixture)
+	want := wantMultiIssueReport()
+
+	first := mustValidate(t, fixture.store, created.CandidateID, created.Revision)
+	if first.OK {
+		t.Fatalf("report=%+v want not OK", first)
+	}
+	if !reflect.DeepEqual(first.Issues, want) {
+		t.Fatalf("issues=%+v want=%+v", first.Issues, want)
+	}
+
+	second := mustValidate(t, fixture.store, created.CandidateID, created.Revision)
+	firstBytes, err := canonical.Encode(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondBytes, err := canonical.Encode(second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(firstBytes, secondBytes) {
+		t.Fatalf("report is not deterministic:\n%s\n%s", firstBytes, secondBytes)
+	}
+}
+
 func TestReportIssuesAreWithinClosedCodeSet(t *testing.T) {
 	fixture := newFixture(t)
-	published := fixture.publishedRecord(t)
-	id, revision := fixture.candidateWithRelation(t, model.Relation{
-		Type:           model.RelationRelatedTo,
-		TargetRecordID: published.RecordID,
-	})
-	report := mustValidate(t, fixture.store, id, revision)
+	created := multiIssueCandidate(t, fixture)
+	report := mustValidate(t, fixture.store, created.CandidateID, created.Revision)
+	if len(report.Issues) < 2 {
+		t.Fatalf("want a multi-issue report to make this check non-trivial, got %+v", report)
+	}
 	for _, item := range report.Issues {
 		if _, ok := issueCodes[item.Code]; !ok {
 			t.Fatalf("issue code %q is outside the closed set", item.Code)
@@ -249,24 +363,31 @@ func newFixture(t *testing.T) *fixtureState {
 	return &fixtureState{root: root, store: st, service: candidate.New(st)}
 }
 
-func (f *fixtureState) build(t *testing.T, knowledgeType model.KnowledgeType, content []byte, relations []model.Relation, sourcePaths []string) model.CandidateRevision {
+// baseRequest builds a minimal, structurally valid CreateRequest for
+// knowledgeType. Callers mutate the returned value (Relations, SourcePaths,
+// L2.Payload, ...) before passing it to build or Create directly.
+func (f *fixtureState) baseRequest(t *testing.T, knowledgeType model.KnowledgeType, content []byte) candidate.CreateRequest {
 	t.Helper()
 	factory, ok := model.LookupFactory(knowledgeType)
 	if !ok {
 		t.Fatalf("unknown knowledge type %s", knowledgeType)
 	}
-	request := candidate.CreateRequest{
+	return candidate.CreateRequest{
 		Zone:                    factory.Zone,
 		Scope:                   model.Scope{Project: "Themis"},
 		ProposedType:            knowledgeType,
 		ClassificationRationale: "test classification",
-		SourcePaths:             sourcePaths,
-		Relations:               relations,
 		L1:                      model.L1{Title: "title", Summary: "summary"},
 		L2:                      model.L2{CoreConclusion: "conclusion", Payload: json.RawMessage(`{}`)},
 		ProposedBy:              "agent:test",
 		ContentMarkdown:         content,
 	}
+}
+
+// build creates and type-confirms a candidate from request, using
+// request.ProposedType as the confirmed knowledge type.
+func (f *fixtureState) build(t *testing.T, request candidate.CreateRequest) model.CandidateRevision {
+	t.Helper()
 	created, err := f.service.Create(context.Background(), request)
 	if err != nil {
 		t.Fatal(err)
@@ -275,7 +396,7 @@ func (f *fixtureState) build(t *testing.T, knowledgeType model.KnowledgeType, co
 		Schema:            "themico-type-confirmation",
 		CandidateID:       created.CandidateID,
 		CandidateRevision: created.Revision,
-		KnowledgeType:     knowledgeType,
+		KnowledgeType:     request.ProposedType,
 		ConfirmedBy:       "human:reviewer",
 		ConfirmedAt:       f.store.Now().Format(time.RFC3339),
 		AuthorityRef:      "review/1",
@@ -286,21 +407,36 @@ func (f *fixtureState) build(t *testing.T, knowledgeType model.KnowledgeType, co
 	return confirmed
 }
 
+// proposedCandidate creates a candidate but deliberately skips ConfirmType,
+// leaving it in CandidateStatusProposed with an empty KnowledgeType.
+func (f *fixtureState) proposedCandidate(t *testing.T, knowledgeType model.KnowledgeType, content []byte) model.CandidateRevision {
+	t.Helper()
+	created, err := f.service.Create(context.Background(), f.baseRequest(t, knowledgeType, content))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return created
+}
+
 func (f *fixtureState) confirmedCandidate(t *testing.T, knowledgeType model.KnowledgeType, content []byte) model.CandidateRevision {
 	t.Helper()
-	return f.build(t, knowledgeType, content, nil, nil)
+	return f.build(t, f.baseRequest(t, knowledgeType, content))
 }
 
 func (f *fixtureState) candidateWithRelation(t *testing.T, relation model.Relation) (string, string) {
 	t.Helper()
-	created := f.build(t, model.TypeDevelopmentExperience, experienceContent(t), []model.Relation{relation}, nil)
+	request := f.baseRequest(t, model.TypeDevelopmentExperience, experienceContent(t))
+	request.Relations = []model.Relation{relation}
+	created := f.build(t, request)
 	return created.CandidateID, created.Revision
 }
 
 func (f *fixtureState) candidateWithSource(t *testing.T, path string, data []byte) (string, string) {
 	t.Helper()
 	writeSource(t, f.root, path, data)
-	created := f.build(t, model.TypeDevelopmentExperience, experienceContent(t), nil, []string{path})
+	request := f.baseRequest(t, model.TypeDevelopmentExperience, experienceContent(t))
+	request.SourcePaths = []string{path}
+	created := f.build(t, request)
 	return created.CandidateID, created.Revision
 }
 
@@ -364,6 +500,33 @@ func (f *fixtureState) publishedRecord(t *testing.T) model.RecordPointer {
 		t.Fatal(err)
 	}
 	return pointer
+}
+
+// multiIssueCandidate builds a design_decision candidate that simultaneously
+// fails three independent checks (markdown, relation, source), each with a
+// distinct Issue.Path, so tests can assert a full ordered Issue list rather
+// than merely "contains code X".
+func multiIssueCandidate(t *testing.T, fixture *fixtureState) model.CandidateRevision {
+	t.Helper()
+	writeSource(t, fixture.root, "docs/multi.txt", []byte("v1"))
+	request := fixture.baseRequest(t, model.TypeDesignDecision, designDecisionContentWithout(t, "约束"))
+	request.SourcePaths = []string{"docs/multi.txt"}
+	request.Relations = []model.Relation{{Type: model.RelationSupersedes, TargetRecordID: "kr_00000000000000000000000000000000"}}
+	created := fixture.build(t, request)
+	writeSource(t, fixture.root, "docs/multi.txt", []byte("v2"))
+	return created
+}
+
+// wantMultiIssueReport is the exact, Path-sorted Issue list multiIssueCandidate
+// must produce: "content.md#约束" < "relations[0]" < "sources[0]" by byte
+// order, which differs from the natural append order inside Candidate
+// (markdown, then source, then relation).
+func wantMultiIssueReport() []result.Issue {
+	return []result.Issue{
+		{Code: "markdown.missing_heading", Path: "content.md#约束", Message: "required H2 is missing"},
+		{Code: "relation.type_forbidden", Path: "relations[0]", Message: "relation type cannot be declared by a candidate"},
+		{Code: "source.stale", Path: "sources[0]", Message: "source bytes changed after binding"},
+	}
 }
 
 func mustValidate(t *testing.T, st *store.Store, candidateID, candidateRevision string) validate.Report {
@@ -453,6 +616,19 @@ func designDecisionContentWithout(t *testing.T, omit string) []byte {
 		}
 	}
 	return buildContent("设计决策标题", filtered)
+}
+
+// designDecisionContentWithoutH1 keeps every required H2 in order but omits
+// the leading H1, isolating markdown.missing_h1 from every other check.
+func designDecisionContentWithoutH1(t *testing.T) []byte {
+	t.Helper()
+	var builder strings.Builder
+	for _, heading := range typeHeadings(t, model.TypeDesignDecision) {
+		builder.WriteString("## ")
+		builder.WriteString(heading)
+		builder.WriteString("\n正文内容。\n\n")
+	}
+	return []byte(strings.TrimRight(builder.String(), "\n") + "\n")
 }
 
 func designDecisionContentSwapped(t *testing.T, first, second string) []byte {
