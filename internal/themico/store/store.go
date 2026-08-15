@@ -20,6 +20,7 @@ var (
 	ErrValidation   = errors.New("themico store validation failed")
 	ErrPrecondition = errors.New("themico store precondition failed")
 	ErrConflict     = errors.New("themico store conflict")
+	ErrNotFound     = errors.New("themico store object not found")
 )
 
 const (
