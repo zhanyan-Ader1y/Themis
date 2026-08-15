@@ -27,7 +27,7 @@ themico prepare publish --root <root> --candidate <candidate-id> --assessment <a
 
 ## 合法 machine statuses
 
-`succeeded`、`usage_error`、`validation_failed`（候选未通过 `validate`、assessment 结构非法）、`not_found`、`precondition_failed`（`assessment.status` 为 `fail`、`checker_identity` 与 `proposed_by` 相同）、`conflict`、`internal_error`。
+`succeeded`、`usage_error`、`validation_failed`（候选未通过 `validate`、assessment 结构非法，如 `schema`/`status` 枚举非法、`checker_identity` 为空、`checked_at` 非法时间）、`not_found`、`precondition_failed`（`assessment.status` 为 `fail`、`checker_identity` 与 `proposed_by` 相同、assessment 未绑定到候选当前修订）、`conflict`、`internal_error`。
 
 ## fail-closed 行为
 

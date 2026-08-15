@@ -27,7 +27,7 @@ themico inspect --root <root> --request <inspect.json>
 
 ## 合法 machine statuses
 
-`succeeded`、`usage_error`、`validation_failed`（`record_ids` 缺失、`depth` 不在 1~3、`content_budget_bytes` 超出范围）、`not_found`（任一 `record_id` 不在当前 manifest 中）、`budget_exceeded`、`internal_error`。
+`succeeded`、`usage_error`、`validation_failed`（`record_ids` 缺失、`depth` 不在 1~3、`content_budget_bytes` 超出范围，或已选中记录的投影绑定校验失败）、`not_found`（`.themico/workspace/` 尚不存在，或 `record_ids` 中任一 ID 不在当前 manifest 中）、`budget_exceeded`、`internal_error`。
 
 ## fail-closed 行为
 

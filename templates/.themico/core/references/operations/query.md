@@ -27,7 +27,7 @@ themico query --root <root> --request <query.json>
 
 ## 合法 machine statuses
 
-`succeeded`、`usage_error`、`validation_failed`（`zones` 缺失、枚举值非法、`content_budget_bytes` 超出 1~16 MiB 范围）、`budget_exceeded`、`internal_error`。
+`succeeded`、`usage_error`、`validation_failed`（`zones` 缺失、枚举值非法、`content_budget_bytes` 超出 1~16 MiB 范围，或已选中记录的投影绑定校验失败）、`not_found`（`.themico/workspace/` 尚不存在）、`budget_exceeded`、`internal_error`。
 
 ## fail-closed 行为
 
