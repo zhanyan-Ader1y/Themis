@@ -22,6 +22,12 @@ import (
 	"github.com/zhanyan-Ader1y/Themis/internal/themico/store"
 )
 
+// contentCeilingBytes mirrors candidate.Service's own unexported maxContent
+// ceiling (see its derivation comment in service.go, next to the constant)
+// so these boundary tests track the real limit without importing an
+// unexported identifier.
+const contentCeilingBytes = 128 << 10
+
 func TestCreateBindsCandidatePayloadContentSourcesAndCurrentPointer(t *testing.T) {
 	fixture := newFixture(t)
 	writeSource(t, fixture.root, "docs/source.txt", []byte("source-v1"))
@@ -159,7 +165,7 @@ func TestCreateValidatesContent(t *testing.T) {
 	}{
 		{name: "nil", content: nil},
 		{name: "empty", content: []byte{}},
-		{name: "over limit", content: bytes.Repeat([]byte{'x'}, (4<<20)+1)},
+		{name: "over limit", content: bytes.Repeat([]byte{'x'}, contentCeilingBytes+1)},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -172,6 +178,44 @@ func TestCreateValidatesContent(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestCreateRejectsContentOverCeilingWithoutMutation proves content one byte
+// over the new ceiling is rejected at the Create entry point itself (not
+// merely unreadable later) and leaves no committed candidate behind. The
+// ceiling is sized so every candidate.Service.Inspect ever returns can
+// survive query.Inspect's depth-3 canonical re-encoding — see maxContent's
+// derivation comment in service.go.
+func TestCreateRejectsContentOverCeilingWithoutMutation(t *testing.T) {
+	fixture := newFixture(t)
+	writeSource(t, fixture.root, "docs/source.txt", []byte("source"))
+	before := mustCurrent(t, fixture.store)
+
+	request := validCreateRequest()
+	request.ContentMarkdown = bytes.Repeat([]byte{'x'}, contentCeilingBytes+1)
+	if _, err := fixture.service.Create(context.Background(), request); !errors.Is(err, store.ErrValidation) {
+		t.Fatalf("err=%v want %v", err, store.ErrValidation)
+	}
+	assertCurrentUnchanged(t, fixture.store, before)
+}
+
+// TestReviseRejectsContentOverCeilingWithoutMutation is
+// TestCreateRejectsContentOverCeilingWithoutMutation's Revise-side twin: an
+// oversized content.md must be rejected at the Revise entry point too, not
+// only when a later read tries to re-encode it, and must leave the
+// candidate's current pointer exactly as it was before the call.
+func TestReviseRejectsContentOverCeilingWithoutMutation(t *testing.T) {
+	fixture := newFixture(t)
+	writeSource(t, fixture.root, "docs/source.txt", []byte("source"))
+	created := mustCreate(t, fixture.service, validCreateRequest())
+	before := mustCurrent(t, fixture.store)
+
+	request := validReviseRequest(created)
+	request.ContentMarkdown = bytes.Repeat([]byte{'x'}, contentCeilingBytes+1)
+	if _, err := fixture.service.Revise(context.Background(), request); !errors.Is(err, store.ErrValidation) {
+		t.Fatalf("err=%v want %v", err, store.ErrValidation)
+	}
+	assertCurrentUnchanged(t, fixture.store, before)
 }
 
 func TestCreateRejectsUnsafeOrInvalidSources(t *testing.T) {

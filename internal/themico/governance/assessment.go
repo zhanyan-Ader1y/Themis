@@ -30,6 +30,16 @@ func checkAssessment(assessment model.SemanticAssessment, candidate model.Candid
 	if assessment.CheckerIdentity == candidate.ProposedBy {
 		return preconditionError("assessment checker must differ from the proposer", nil)
 	}
+	// candidate.RevisedBy names whoever produced the *current* revision —
+	// either the last real content Revise, or (per candidate.Service.
+	// ConfirmType, which this check does not and must not change) the
+	// identity that confirmed the type, overwriting any earlier reviser. An
+	// empty RevisedBy means the current revision is still exactly as the
+	// proposer first wrote it, so there is no separate reviser identity to
+	// exclude beyond the proposer check above.
+	if candidate.RevisedBy != "" && assessment.CheckerIdentity == candidate.RevisedBy {
+		return preconditionError("assessment checker must differ from the reviser", nil)
+	}
 	if _, err := time.Parse(time.RFC3339, assessment.CheckedAt); err != nil {
 		return validationError("assessment time is invalid", err)
 	}

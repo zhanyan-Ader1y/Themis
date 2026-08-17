@@ -29,8 +29,42 @@ const (
 	candidateSchema    = "themico/candidate-revision"
 	confirmationSchema = "themico-type-confirmation"
 	maxMachineJSON     = 1 << 20
-	maxContent         = 4 << 20
-	maxSource          = 16 << 20
+
+	// maxContent bounds content.md so every candidate this Service ever lets
+	// through Create/Revise can later be published and read back at
+	// `inspect --depth 3`. It must NOT be set independently of canonical's
+	// hard machine-JSON ceiling (canonical.maxMachineJSONBytes, mirrored
+	// above as maxMachineJSON = 1 << 20 = 1,048,576 bytes): query.Inspect's
+	// depth-3 path canonically encodes one query.Item — record_id,
+	// record_revision, zone, knowledge_type, status, scope, l1, l2, and l3
+	// (this candidate's full content.md as a JSON string) — in a single call
+	// to canonical.Encode, which hard-rejects the whole call the instant that
+	// one encoding exceeds 1 MiB. A content.md that fits Create/Revise's old
+	// 4 MiB ceiling could pass here and then permanently fail every depth-3
+	// read: this constant exists to make that impossible.
+	//
+	// Encoding l3 as a JSON string is not 1:1 with its raw byte count:
+	// encoding/json's default (HTML-escaping) Marshal turns each ASCII
+	// control byte outside \b\f\n\r\t, and each '<' '>' '&', into a 6-byte
+	// \u00XX escape — 6x is the worst-case per-byte blow-up, and content.md
+	// carries no byte-value restriction that rules it out.
+	//
+	// Reserving 200 KiB (204,800 bytes) for everything else that one Item
+	// encodes alongside l3 — JSON structure, record_id/revision/zone/type/
+	// status/scope, and the L1/L2 projections (which run to a few KB in
+	// every registered knowledge type but carry no independent hard cap of
+	// their own) — leaves 843,776 bytes for the escaped l3 string. At the 6x
+	// worst case that supports 140,629 raw content bytes; 128 KiB (131,072)
+	// is used instead of that tighter number to keep roughly 57 KiB of
+	// additional headroom beyond the already-generous 200 KiB reserve.
+	//
+	// This does not by itself bound a pathological L1/L2 that alone
+	// approaches the 1 MiB ceiling (each is only checked independently, at
+	// its own persist-time digest computation) — that is a separate,
+	// pre-existing gap in the wider budget model that this constant cannot
+	// close without also capping L1/L2, which is out of this fix's scope.
+	maxContent = 128 << 10
+	maxSource  = 16 << 20
 )
 
 type CreateRequest struct {

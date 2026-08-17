@@ -3,7 +3,7 @@
 ## 输入与前置条件
 
 - `--input <candidate.json>`：`zone`、`scope`、`proposed_type`、`classification_rationale`、`source_paths`（repository-relative 本地文件路径数组）、`relations`、`l1`、`l2`（含公共头部与类型化 `payload`）、`proposed_by`。`classification_rationale` 与 `proposed_by` 必须非空。
-- `--content <content.md>`：该候选的 L3 正文，必须非空且不超过 4 MiB；固定 Markdown 章节由 `proposed_type` 对应的 factory 决定。
+- `--content <content.md>`：该候选的 L3 正文，必须非空且不超过 128 KiB（该上限由 `inspect --depth 3` 必须能安全读回全部已发布内容反推得出，不是任意取值——发布后无法读回的记录没有意义）；固定 Markdown 章节由 `proposed_type` 对应的 factory 决定。
 - 前置条件：仓库已执行过 `themico init`，`.themico/workspace/` 已存在；`zone` 与 `proposed_type` 的绑定必须与 `common/type-registry` 的 identity routing table 一致。
 
 ## Agent 职责

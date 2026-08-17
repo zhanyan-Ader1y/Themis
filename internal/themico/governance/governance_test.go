@@ -164,6 +164,78 @@ func TestPublishRejectsFrozenWriteDrift(t *testing.T) {
 	}
 }
 
+// TestPreparePublishRejectsAssessmentBySameIdentityAsProposerOrReviser proves
+// checkAssessment's independence gate covers the identity that actually
+// wrote the candidate's *current* revision content, not only its original
+// proposer. ConfirmType overwrites RevisedBy with ConfirmedBy (see
+// candidate.Service.ConfirmType), so this drives one further Revise after
+// confirmation to install a distinct "agent:reviser" identity as the current
+// revision's RevisedBy before asserting all three legs: the reviser cannot
+// self-assess, the original proposer still cannot self-assess, and an
+// identity independent of both still can.
+func TestPreparePublishRejectsAssessmentBySameIdentityAsProposerOrReviser(t *testing.T) {
+	fixture := newFixture(t)
+	request := fixture.baseCandidateRequest(t)
+
+	created, err := fixture.candidates.Create(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	confirmed, err := fixture.candidates.ConfirmType(context.Background(), candidate.TypeConfirmation{
+		Schema:            "themico-type-confirmation",
+		CandidateID:       created.CandidateID,
+		CandidateRevision: created.Revision,
+		KnowledgeType:     request.ProposedType,
+		ConfirmedBy:       "human:reviewer",
+		ConfirmedAt:       fixture.store.Now().Format(time.RFC3339),
+		AuthorityRef:      "review/1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	revised, err := fixture.candidates.Revise(context.Background(), candidate.ReviseRequest{
+		CandidateID:      confirmed.CandidateID,
+		ExpectedRevision: confirmed.Revision,
+		ProposedType:     confirmed.ProposedType,
+		L1:               confirmed.L1,
+		L2:               confirmed.L2,
+		ContentMarkdown:  designDecisionContent(t),
+		RevisedBy:        "agent:reviser",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if revised.ProposedBy != "agent:proposer" || revised.RevisedBy != "agent:reviser" {
+		t.Fatalf("fixture identities=%+v, want proposed_by=agent:proposer revised_by=agent:reviser", revised)
+	}
+
+	assessBy := func(checker string) error {
+		_, err := fixture.governance.PreparePublish(context.Background(), PrepareRequest{
+			CandidateID: revised.CandidateID,
+			Assessment: model.SemanticAssessment{
+				Schema:            assessmentSchema,
+				CandidateID:       revised.CandidateID,
+				CandidateRevision: revised.Revision,
+				Status:            model.AssessmentPass,
+				CheckerIdentity:   checker,
+				CheckedAt:         fixture.store.Now().Format(time.RFC3339),
+				Notes:             "n",
+			},
+		})
+		return err
+	}
+
+	if err := assessBy("agent:reviser"); !errors.Is(err, store.ErrPrecondition) {
+		t.Fatalf("reviser self-assessment err=%v, want %v", err, store.ErrPrecondition)
+	}
+	if err := assessBy("agent:proposer"); !errors.Is(err, store.ErrPrecondition) {
+		t.Fatalf("proposer self-assessment err=%v, want %v", err, store.ErrPrecondition)
+	}
+	if err := assessBy("agent:checker"); err != nil {
+		t.Fatalf("independent checker err=%v, want success", err)
+	}
+}
+
 // ---- fixture apparatus ----
 
 var fixedTime = time.Date(2026, 8, 15, 1, 2, 3, 456789000, time.UTC)

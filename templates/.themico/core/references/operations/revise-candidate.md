@@ -3,7 +3,7 @@
 ## 输入与前置条件
 
 - `--input <revision.json>`：`candidate_id`、`expected_revision`（必须等于该候选当前的 `candidate_revision`，否则整体失败）、`proposed_type`、`l1`、`l2`、`source_paths`、`relations`、`revised_by`（必须非空）。
-- `--content <content.md>`：新的 L3 正文，非空且不超过 4 MiB。
+- `--content <content.md>`：新的 L3 正文，非空且不超过 128 KiB（该上限由 `inspect --depth 3` 必须能安全读回全部已发布内容反推得出，不是任意取值——发布后无法读回的记录没有意义）。
 - 前置条件：候选必须存在且状态为 `proposed` 或 `type_confirmed`；若候选已处于 `type_confirmed`，`proposed_type` 必须与已固化的 `knowledge_type` 完全一致——类型固化后不得原地改型。
 
 ## Agent 职责

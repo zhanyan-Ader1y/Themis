@@ -329,3 +329,77 @@ func TestQueryContentBudgetExactBoundary(t *testing.T) {
 		t.Fatalf("budget=%d (exactly 16 MiB) status=%s want succeeded", maxBudget, status)
 	}
 }
+
+// ---- content.md size ceiling ----
+
+// contentCeilingBytes mirrors candidate.Service's own unexported maxContent
+// ceiling (see its derivation comment in internal/themico/candidate/
+// service.go) so these tests track the real limit without importing an
+// unexported identifier.
+const contentCeilingBytes = 128 << 10
+
+// paddedTypedContent returns knowledgeType's minimal valid fixed-heading
+// content, padded with inert trailing filler bytes (never starting a line
+// with "#", so checkMarkdown's heading structure stays untouched) until it
+// is exactly targetLen bytes.
+func paddedTypedContent(t *testing.T, knowledgeType model.KnowledgeType, title string, targetLen int) []byte {
+	t.Helper()
+	base := typedContent(t, knowledgeType, title)
+	if len(base) > targetLen {
+		t.Fatalf("base content is %d bytes, already over target %d", len(base), targetLen)
+	}
+	padded := make([]byte, targetLen)
+	copy(padded, base)
+	for i := len(base); i < targetLen; i++ {
+		padded[i] = 'a'
+	}
+	return padded
+}
+
+// TestCandidateContentAtCeilingRoundTripsThroughPublishAndInspectDepth3
+// proves the fix for the "published but permanently unreadable" defect:
+// content.md at exactly the new ceiling must survive create -> confirm-type
+// -> prepare -> publish -> `inspect --depth 3`, coming back byte-identical.
+func TestCandidateContentAtCeilingRoundTripsThroughPublishAndInspectDepth3(t *testing.T) {
+	repository := t.TempDir()
+	mustRunCLI(t, result.StatusSucceeded, "init", "--root", repository)
+
+	content := paddedTypedContent(t, model.TypeDesignDecision, "标题", contentCeilingBytes)
+	if len(content) != contentCeilingBytes {
+		t.Fatalf("fixture content is %d bytes, want exactly %d", len(content), contentCeilingBytes)
+	}
+
+	dir := t.TempDir()
+	inputPath := writeJSONFile(t, dir, "candidate.json", createCandidateRequest(t, model.TypeDesignDecision))
+	contentPath := writeRawFile(t, dir, "content.md", content)
+	envelope := mustRunCLI(t, result.StatusSucceeded, "candidate", "create", "--root", repository,
+		"--input", inputPath, "--content", contentPath)
+	var created model.CandidateRevision
+	decodeOutput(t, envelope, &created)
+
+	confirmedRevision := confirmType(t, repository, created.CandidateID, created.Revision, model.TypeDesignDecision)
+	prepare := preparePublish(t, repository, created.CandidateID, confirmedRevision)
+	record := publish(t, repository, prepare)
+
+	item := inspectRecord(t, repository, record.RecordID, 3)
+	if item.L3 != string(content) {
+		t.Fatalf("depth-3 L3 is %d bytes, want %d bytes identical to the published content.md", len(item.L3), len(content))
+	}
+}
+
+// TestCandidateCreateRejectsContentOverCeiling is the CLI-level companion to
+// candidate.Service's own unit tests: one byte over the ceiling must come
+// back validation_failed through the real command surface, not merely from
+// the service layer in isolation.
+func TestCandidateCreateRejectsContentOverCeiling(t *testing.T) {
+	repository := t.TempDir()
+	mustRunCLI(t, result.StatusSucceeded, "init", "--root", repository)
+
+	content := paddedTypedContent(t, model.TypeDesignDecision, "标题", contentCeilingBytes+1)
+
+	dir := t.TempDir()
+	inputPath := writeJSONFile(t, dir, "candidate.json", createCandidateRequest(t, model.TypeDesignDecision))
+	contentPath := writeRawFile(t, dir, "content.md", content)
+	mustRunCLI(t, result.StatusValidationFailed, "candidate", "create", "--root", repository,
+		"--input", inputPath, "--content", contentPath)
+}

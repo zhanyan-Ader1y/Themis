@@ -395,6 +395,8 @@ $ themico inspect --root <REPO> --request {"record_ids":["kr_d68f4c14...","kr_02
 
 **结论**：CLI 实际可返回的单次结果上限，受 canonical envelope 的 1 MiB 硬编码限制约束，而非 `query`/`inspect` 请求里声明的 `content_budget_bytes`（最高可声明到 16 MiB）。README 必须如实说明这一点，不得把 16 MiB 预算宣传为完全可用的读取能力上限。
 
+**追记（终审修复波，2026-08-17）**：上面的复现步骤是当时真实命令输出，原样保留；但其中"约 594,228 字节，远低于单条记录 4 MiB 的 L3 上限"这句已随终审 Important 1 修复过时——`candidate.Service` 的 content.md 上限已从 4 MiB 收紧为 128 KiB（推导见 `internal/themico/candidate/service.go` 中 `maxContent` 常量注释），所以按当前代码已无法用单次 `candidate create` 产出 594,228 字节的 L3 正文。这条追记不改变本节结论：多条记录合并进同一个 CLI envelope 时，个体都在预算内也可能整体超过 1 MiB 硬上限，这条缺陷 2 是与 content.md 单条上限正交的独立问题，终审只裁定修复"发布后 depth-3 永久读不回"（单条 item 自身超过 1 MiB envelope）与"assessment 检查独立性遗漏 reviser"两项 Important，缺陷 2 仍按既定裁定推迟到后续独立计划。
+
 ---
 
 ## 补充复现材料 C：assessment 绑定与 checker identity 校验的失败分支（用于坐实验收条目 7）

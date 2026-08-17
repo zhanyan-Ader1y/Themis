@@ -28,12 +28,15 @@ const maxMachineJSONBytes = 1 << 20
 
 // maxCandidateContentReadBytes caps how many bytes commandCandidate{Create,
 // Revise} ever hold in memory for a --content file. It intentionally reads
-// one byte past candidate.Service's own 4 MiB content ceiling: a content
-// file at or under the limit is read in full, and an oversized file is
-// still classified downstream as validation_failed by the service (which
-// rejects on length) instead of the CLI silently loading an unbounded
-// amount of attacker-controlled data into memory first.
-const maxCandidateContentReadBytes = (4 << 20) + 1
+// one byte past candidate.Service's own 128 KiB content ceiling (see that
+// constant's derivation comment in service.go: it is sized so a published
+// L3 record can always survive query.Inspect's depth-3 canonical
+// re-encoding, not picked independently of it) — a content file at or under
+// the limit is read in full, and an oversized file is still classified
+// downstream as validation_failed by the service (which rejects on length)
+// instead of the CLI silently loading an unbounded amount of
+// attacker-controlled data into memory first.
+const maxCandidateContentReadBytes = (128 << 10) + 1
 
 // ---- command handlers ----
 
