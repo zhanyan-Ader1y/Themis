@@ -164,7 +164,7 @@ archive 表示知识退出日常 current 使用，但仍完整保留。操作创
 当前实现合同要求：
 
 - 单个 machine JSON 输入不超过 1 MiB；
-- 单个 L3 Markdown 不超过 4 MiB；
+- 单个 L3 Markdown 当前实现上限为 128 KiB（由 `query.Inspect` depth=3 读取时 canonical 的 1 MiB machine JSON envelope 硬上限反推得出，确保发布的内容一定能被读回；恢复到接近本节其余各项所暗示的更大数量级，需要先解决该 envelope 预算模型本身，属后续独立计划）；
 - 单个 source file 不超过 16 MiB；
 - 超限返回 `validation_failed`，不截断并继续治理；
 - 时间由 CLI 使用 UTC `RFC3339Nano` 生成；

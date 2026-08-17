@@ -79,7 +79,7 @@ themico inspect --root <root> --request <inspect.json>
 
 这些命令共同支持的端到端链路（`init → create/revise candidate → Human confirm-type → deterministic validate → independent semantic assessment → prepare publish → Human Approval → publish → query L1 → exact-ID inspect L2/L3`）已经过真实二进制在临时仓库中的人工 replay 核实，覆盖 `design_decision`、`development_standard`、`development_experience` 三个首批知识类型与 `project_knowledge`、`project_experience` 两个 Zone；类型确认后改型、source drift、错误/stale Approval、并发 generation conflict、投影/内容篡改、byte budget 不足等失败关闭路径同样经过真实 replay 核实。详见 [`docs/plan/themico-core/manual-replay.md`](docs/plan/themico-core/manual-replay.md)。
 
-`candidate create`/`candidate revise` 的 `--content <content.md>` 上限是 **128 KiB**，不是设计文档早先写的 4 MiB：终审发现 4 MiB 的候选内容会被 `inspect --depth 3` 的 1 MiB canonical envelope 硬上限永久拒读（发布后读不回），已在 `internal/themico/candidate/service.go` 的 `maxContent` 常量收紧并加测试锁定；这条上限是从"发布的内容必须能被读回"反推出的推导值，见该常量的注释与 [`.superpowers/sdd/2026-08-03-themico-core-implementation/final-fix-report.md`](.superpowers/sdd/2026-08-03-themico-core-implementation/final-fix-report.md)。恢复到接近 4 MiB 需要先解决已知缺陷 2（下方）指出的 envelope 预算模型本身，属后续独立计划。
+`candidate create`/`candidate revise` 的 `--content <content.md>` 上限是 **128 KiB**，不是设计文档早先写的 4 MiB：终审发现 4 MiB 的候选内容会被 `inspect --depth 3` 的 1 MiB canonical envelope 硬上限永久拒读（发布后读不回），已在 `internal/themico/candidate/service.go` 的 `maxContent` 常量收紧并加测试锁定；这条上限的完整推导过程见该常量自身的注释。恢复到接近 4 MiB 需要先解决已知缺陷 2（下方）指出的 envelope 预算模型本身，属后续独立计划。
 
 ### 当前 unavailable（尚未实现，属后续独立计划）
 
