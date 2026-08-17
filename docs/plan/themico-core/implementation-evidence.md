@@ -8,6 +8,8 @@
 
 提交 SHA：`c168d5a47d9164bea7d33afc37b3b814ef93c2e1`（任务 12 执行前的 HEAD；本任务只新增文档，不改动该 SHA 下的任何 Go 代码）。
 
+**2026-08-17 补记**：终审修复波（提交 `e54cfed`、`c558594`）之后，一次定向再评审发现两项残留缺陷，已作为第 3 节缺陷 3、缺陷 4 补入本文档，并在第 2 节条目 7 补充如实说明；两项均已裁定延期到后续独立计划，不改变第 2 节 21 条独立验收集合的判定，也不改变第 1 节记录的 fresh verification 结果。
+
 ---
 
 ## 1. Fresh Verification（步骤 2）
@@ -152,6 +154,8 @@ $ go test ./... -count=1 -v
 
 **判定**：满足，fresh evidence 来自代码 + 本任务新增的 replay（原有自动化测试对负向分支覆盖不足，已在 replay 中补齐并如实说明）。
 
+**如实补记（终审后定向再评审新增，2026-08-17）**：本条验收要求的字面文本只是"checker identity 字段与 proposer 不同"，这一点持续成立，判定不变。但该独立性检查在 `create → revise → confirm-type → assess` 顺序下会被 `candidate.Service.ConfirmType` 用 `ConfirmedBy` 覆写 `RevisedBy` 的既有行为削弱——原 reviser 的身份从 `RevisedBy` 字段被抹除后，仍可为自己撰写的当前内容出具通过的 semantic assessment。这不影响本条验收的判定，但会削弱顶层设计核心不变量 4 期望的"独立语义评估"；详见本文档第 3 节缺陷 4，以及 README「已知缺陷」第 3 条。publication 仍需要精确绑定 prepare 的独立 Human Approval，第二道 gate 未被削弱。
+
 ### 8. prepare 冻结 expected generation、全部 digest、record identity 和完整 write set
 
 - 实现：`internal/themico/governance/prepare.go`（`PreparePublish` 冻结 `ExpectedGeneration`、`CandidateDigest`、`AssessmentDigest`、`L1Digest`/`L2Digest`/`L3Digest`、`RecordID`/`RecordRevision`、四项 `Writes`）。
@@ -253,7 +257,7 @@ $ go test ./... -count=1 -v
 ### 20. 产品说明只陈述实际可用能力，并明确本文件第 6 节能力尚未交付
 
 - `README.md` 新增的"Themico"章节（本任务改动）逐一列出可用的 11 条命令，并显式列出 `first-usable-delivery.md` 第 6 节全部延期能力（供 grep 交叉核对：`supersede`、`deprecate`、`archive`、`history query`、跨类型派生与 `create-derived-candidate`、`relation traversal`、多跳查询、跨 Zone 查询扩展、`cycle analysis`、`Agent relevance ranking`、`enriched semantic explanation`、聚合 view、`rebuild`、增量 view 维护、cache、并行 query、`URL source`、`MCP adapter`、`Claude API` 或内置模型、`Embedding`、向量数据库、`SQLite`、`Web UI`、`Themis lifecycle` 正式接线、`token budget`）。
-- 同一章节如实披露本报告确认的两个已知缺陷（见下）。
+- 同一章节如实披露本报告确认的四个已知缺陷（见下，其中两个为终审后定向再评审新增）。
 
 **判定**：满足。
 
@@ -286,6 +290,21 @@ $ go test ./... -count=1 -v
 
 以上两条缺陷均已在本任务新增的 README Themico 章节中如实披露。
 
+### 缺陷 3（终审后定向再评审新增）：128 KiB content 上限只堵住了 L3 自身导致的读不回，L1/L2/Scope 仍无独立字节上限
+
+- **背景**：终审修复波把 `internal/themico/candidate/service.go` 的 `maxContent` 从 4 MiB 收紧到 128 KiB，目的是让"能发布的记录都能被 `inspect --depth 3` 读回"。这个修复本身是正确的最小修复，但它只约束了 `content.md`（L3）一个字段。
+- **现象**：`L1`、`L2`、`Scope` 都没有独立的字节上限；`candidate.Service` 唯一的组合约束是整份 `candidate.json`（不含走 `json:"-"` 的 `content.md`）在 canonical 编码后不超过 1 MiB（`maxMachineJSON = 1 << 20`）。因此可以构造一个 `L1.Tags`/`Summary` 或 `L2.Payload` 逼近 900 KB 的候选，配合任意合法的 128 KiB content——它能通过 create/revise/confirm-type/validate/prepare/publish 全链路成功发布，此后该记录的 `inspect --depth 3` 会因为整个 `query.Item`（`l1`+`l2`+`l3` 一起编码）超过 1 MiB canonical 硬上限，永久返回 `validation_failed`。
+- **根因**：与缺陷 2 同源——`internal/themico/canonical/canonical.go` 的 `Encode` 对任意一次 machine JSON 编码都有硬编码的 1 MiB 上限，而 `maxContent` 的推导（见 `service.go` 常量块注释）明确承认"这不保证一个单独逼近 1 MiB 的病态 L1/L2"，把这一收窄留给了后续设计。
+- **影响边界**：README 已把这一处措辞收窄为"128 KiB 上限只堵住 L3 自身导致的读不回，不构成整体保证"，不再声称"确保发布的内容一定能被 depth-3 读回"。彻底解决需要给 L1/L2/Scope 各自加上独立字节上限，属后续独立计划，与缺陷 2 的 envelope 预算模型重新设计一并处理。
+
+### 缺陷 4（终审后定向再评审新增）：semantic assessment 独立性检查只在部分操作顺序下真正独立
+
+- **现象**：`internal/themico/governance/assessment.go` 的 `checkAssessment` 要求 checker identity 不同于 proposer，也不同于当前 revision 的 reviser（读取 `candidate.RevisedBy`，这是终审修复波"Important 2"新增的检查）。但 `internal/themico/candidate/service.go` 的 `ConfirmType` 会用 `ConfirmedBy` 覆写 `RevisedBy`。在 `create → revise → confirm-type → assess` 这一合法顺序下（`confirm-type` 发生在 `revise` 之后，中间不再 `revise`），原 reviser 的身份已被 `ConfirmedBy` 从 `RevisedBy` 字段抹除，`checkAssessment` 只能看到覆写后的值，该 reviser 因而仍可为自己撰写的当前内容出具通过的 semantic assessment 而不被拦截。
+- **验收范围**：第 2 节条目 7 的字面文本（"checker identity 字段与 proposer 不同"）持续成立，不构成该条目的 GAP。被削弱的是顶层设计核心不变量 4（`docs/superpowers/specs/2026-07-29-themico-design.md` 第 3.4 节）期望的独立语义评估。
+- **影响边界**：**publication 仍需要一份精确绑定 prepare 的独立 Human Approval，这道 gate 没有被削弱**，因此这不构成"无人审查即可发布"。彻底修复需要引入一个能跨 `ConfirmType` 存续的"当前内容真实撰写者"身份，涉及 model 与生命周期变更，属后续独立计划。
+
+以上四条缺陷均已在 README「已知缺陷」章节如实披露；缺陷 3、4 是终审修复波提交（`c558594`）后定向再评审确认的残留缺陷，已裁定延期到后续独立计划，不阻塞本分支合并。
+
 ---
 
 ## 4. 提交范围审查（步骤 5）
@@ -308,5 +327,5 @@ $ git diff --stat
 
 - Fresh verification：`go build`/`go vet`/`go test -count=1`/`git diff --check` 全部执行且全部通过；292 个测试节点中 285 PASS、0 FAIL、7 SKIP（均为 Windows 平台权限限制，如实标记 unavailable，不计入通过）。
 - 21 条独立验收集合：21 条全部有唯一 fresh 一手证据，GAP 数量为 0。
-- 两个已知缺陷（L1/L2 投影字节重复、1 MiB envelope 硬上限与 16 MiB 预算冲突）已如实披露在 README 与本文档，未被掩盖或美化。
+- 四个已知缺陷（L1/L2 投影字节重复、1 MiB envelope 硬上限与 16 MiB 预算冲突、L1/L2/Scope 缺少独立字节上限、semantic assessment 独立性检查的顺序依赖）已如实披露在 README 与本文档，未被掩盖或美化；后两条是终审修复波提交（`c558594`）后定向再评审确认的残留缺陷，已裁定延期到后续独立计划，不阻塞本分支合并。
 - 本证据只覆盖首个可用交付这一实施切片，不构成 `acceptance.md` 完整 38 条目标的完成判定，也不表示生命周期、关系遍历、聚合 view、外部集成等延期能力已经交付。

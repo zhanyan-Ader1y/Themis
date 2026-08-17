@@ -79,7 +79,7 @@ themico inspect --root <root> --request <inspect.json>
 
 这些命令共同支持的端到端链路（`init → create/revise candidate → Human confirm-type → deterministic validate → independent semantic assessment → prepare publish → Human Approval → publish → query L1 → exact-ID inspect L2/L3`）已经过真实二进制在临时仓库中的人工 replay 核实，覆盖 `design_decision`、`development_standard`、`development_experience` 三个首批知识类型与 `project_knowledge`、`project_experience` 两个 Zone；类型确认后改型、source drift、错误/stale Approval、并发 generation conflict、投影/内容篡改、byte budget 不足等失败关闭路径同样经过真实 replay 核实。详见 [`docs/plan/themico-core/manual-replay.md`](docs/plan/themico-core/manual-replay.md)。
 
-`candidate create`/`candidate revise` 的 `--content <content.md>` 上限是 **128 KiB**，不是设计文档早先写的 4 MiB：终审发现 4 MiB 的候选内容会被 `inspect --depth 3` 的 1 MiB canonical envelope 硬上限永久拒读（发布后读不回），已在 `internal/themico/candidate/service.go` 的 `maxContent` 常量收紧并加测试锁定；这条上限的完整推导过程见该常量自身的注释。恢复到接近 4 MiB 需要先解决已知缺陷 2（下方）指出的 envelope 预算模型本身，属后续独立计划。
+`candidate create`/`candidate revise` 的 `--content <content.md>` 上限是 **128 KiB**，不是设计文档早先写的 4 MiB：终审发现 4 MiB 的候选内容会被 `inspect --depth 3` 的 1 MiB canonical envelope 硬上限永久拒读（发布后读不回），已在 `internal/themico/candidate/service.go` 的 `maxContent` 常量收紧并加测试锁定；这条上限的完整推导过程见该常量自身的注释。**这条修复只堵住了 L3（content.md）本身导致的读不回，不构成"任何已发布记录都能被 depth-3 读回"的整体保证**：`L1`、`L2`、`Scope` 都没有独立的字节上限，唯一约束是整份 `candidate.json`（不含走 `json:"-"` 的 `content.md`）不超过 1 MiB。因此仍可构造一个 `L1.Tags`/`Summary` 或 `L2.Payload` 逼近 900 KB 的候选，配合任意合法的 128 KiB content 成功发布，此后该记录的 `inspect --depth 3` 会永久返回 `validation_failed`。这一缺口与恢复到接近 4 MiB 的能力，都需要先解决已知缺陷 2（下方）指出的 envelope 预算模型本身，属后续独立计划。
 
 ### 当前 unavailable（尚未实现，属后续独立计划）
 
@@ -92,12 +92,13 @@ themico inspect --root <root> --request <inspect.json>
 
 ### 已知缺陷（如实披露，非规划中的延期项）
 
-以下两条是已确认的实现缺陷，不是设计延期，待后续独立计划修复：
+以下三条是已确认的实现缺陷，不是设计延期，待后续独立计划修复：
 
 1. **`l1.json` 与 `l2.json` 目前是同一份完整 `model.Projection` 的字节副本**（两文件字节相同）。根因是 `internal/themico/store/generation.go` 的 `validateProjectionReference` 要求两个文件都解码为完整 `model.Projection` 并各自校验 `record.L1` 与 `record.L2`。`query` 命令的 API 层发现/升级边界仍然成立（返回值只含 L1 字段），但"L1、L2 是两个独立存储单元"这一物理保证目前不成立：任何能读到 `l1.json` 的人也能读到完整 L2 内容。
 2. **CLI 实际可返回的结果上限受 1 MiB envelope 编码限制约束，并非 `query`/`inspect` 请求里可声明的 16 MiB `content_budget_bytes`。** `internal/themico/canonical/canonical.go` 的 `Encode` 对任意一次 machine JSON 编码都有硬编码的 1 MiB 上限；一个通过了 16 MiB byte budget 门禁、语义上完全成功的多记录结果集，在 CLI 把整个 result envelope 编码为一个 JSON 对象时可能超过这个硬上限，被兜底为 `internal_error` 而非清晰的 `budget_exceeded` 或诚实的成功结果。**不要把 16 MiB 预算宣传为完全可用的读取能力上限。**
+3. **`governance` 的 semantic assessment 独立性检查只在部分操作顺序下真正独立。** `checkAssessment` 要求 checker identity 不同于 proposer，也不同于当前 revision 的 reviser（读取 `candidate.RevisedBy`）；但 `candidate.Service.ConfirmType` 会用 `ConfirmedBy` 覆写 `RevisedBy`。在 `create → revise → confirm-type → assess` 这一合法顺序下（`confirm-type` 发生在 `revise` 之后，中间不再 `revise`），原 reviser 的身份已被 `ConfirmedBy` 从 `RevisedBy` 字段抹除，`checkAssessment` 只能看到覆写后的值，该 reviser 因而仍可为自己撰写的当前内容出具通过的 semantic assessment 而不被拦截。[首个可用交付范围](docs/superpowers/specs/2026-07-29-themico-design/first-usable-delivery.md) 第 8 节验收条目 7（"checker identity 字段与 proposer 不同"）字面上仍然成立；被削弱的是[顶层设计](docs/superpowers/specs/2026-07-29-themico-design.md) 第 3.4 节"Agent 只能产生…semantic assessment…"这一核心不变量所期望的独立语义评估。**publication 仍需要一份精确绑定 prepare 的独立 Human Approval，这道 gate 没有被削弱**，因此这不构成"无人审查即可发布"。彻底修复需要引入一个能跨 `ConfirmType` 存续的"当前内容真实撰写者"身份，涉及 model 与生命周期变更，属后续独立计划。
 
-两条缺陷的真实复现步骤见 [`docs/plan/themico-core/manual-replay.md`](docs/plan/themico-core/manual-replay.md)"补充复现材料 A/B"。
+第 1、2 条缺陷的真实复现步骤见 [`docs/plan/themico-core/manual-replay.md`](docs/plan/themico-core/manual-replay.md)"补充复现材料 A/B"；第 3 条经定向再评审代码走查确认（推导见上），未新增独立复现材料。
 
 ## 参考项目
 
