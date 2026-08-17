@@ -47,6 +47,56 @@ Themis 当前处于设计与安装包合同重建阶段，目标流程尚未形�
 - [Themico 顶层设计](docs/superpowers/specs/2026-07-29-themico-design.md)
 - [更新日志](CHANGES.md)
 
+## Themico
+
+Themico 是安装到仓库根目录 `.themico/` 下的独立知识治理 CLI 与配套 Skill，用于让 Human 与 Agent 在本地完成一次真实、受治理且可验证的知识发布与读取。Themico 与 Themis 治理框架松耦合，不共享运行时。
+
+- 顶层设计：[`docs/superpowers/specs/2026-07-29-themico-design.md`](docs/superpowers/specs/2026-07-29-themico-design.md)
+- 首个可用交付范围（本节描述的能力边界的权威来源）：[`docs/superpowers/specs/2026-07-29-themico-design/first-usable-delivery.md`](docs/superpowers/specs/2026-07-29-themico-design/first-usable-delivery.md)
+- 公共 Skill 发现入口：[`templates/.claude/skills/themico/SKILL.md`](templates/.claude/skills/themico/SKILL.md)
+- CLI 构建入口：`go build -o themico ./cmd/themico`（module `github.com/zhanyan-Ader1y/Themis`，Go 1.26，二进制名固定为 `themico`）
+- 实现证据与人工 replay 记录：[`docs/plan/themico-core/implementation-evidence.md`](docs/plan/themico-core/implementation-evidence.md)、[`docs/plan/themico-core/manual-replay.md`](docs/plan/themico-core/manual-replay.md)
+
+以下内容只陈述首个可用交付**已经**实现并被 fresh 证据核实的能力，不描述计划或设计中尚未落地的部分。
+
+### 已实现能力
+
+`themico` 当前提供 11 条可构建、可运行、且每次只输出一个 JSON result envelope 的命令：
+
+```
+themico help
+themico init --root <root>
+themico candidate create --root <root> --input <candidate.json> --content <content.md>
+themico candidate revise --root <root> --input <revision.json> --content <content.md>
+themico candidate confirm-type --root <root> --confirmation <confirmation.json>
+themico candidate inspect --root <root> --id <candidate-id>
+themico validate --root <root> --candidate <candidate-id> --revision <candidate-revision>
+themico prepare publish --root <root> --candidate <candidate-id> --assessment <assessment.json>
+themico publish --root <root> --prepare <prepare-id> --approval <approval.json>
+themico query --root <root> --request <query.json>
+themico inspect --root <root> --request <inspect.json>
+```
+
+这些命令共同支持的端到端链路（`init → create/revise candidate → Human confirm-type → deterministic validate → independent semantic assessment → prepare publish → Human Approval → publish → query L1 → exact-ID inspect L2/L3`）已经过真实二进制在临时仓库中的人工 replay 核实，覆盖 `design_decision`、`development_standard`、`development_experience` 三个首批知识类型与 `project_knowledge`、`project_experience` 两个 Zone；类型确认后改型、source drift、错误/stale Approval、并发 generation conflict、投影/内容篡改、byte budget 不足等失败关闭路径同样经过真实 replay 核实。详见 [`docs/plan/themico-core/manual-replay.md`](docs/plan/themico-core/manual-replay.md)。
+
+### 当前 unavailable（尚未实现，属后续独立计划）
+
+以下能力目前**不存在**任何命令、占位 handler 或未接线 reference——不得在本仓库其他文档或对话中声称已支持：
+
+- **生命周期与派生**：`supersede`、`deprecate`、`archive`、history query、跨类型派生与 `create-derived-candidate`。
+- **关系与查询增强**：relation traversal、多跳查询、跨 Zone 查询扩展、cycle analysis、Agent relevance ranking、enriched semantic explanation。
+- **投影与性能增强**：project/domain/architecture unit/feature 聚合 view、`rebuild` 命令、增量 view 维护、cache、并行 query。
+- **外部来源与集成**：URL source、MCP adapter、Claude API 或内置模型、Embedding、向量数据库、SQLite、Web UI、Themis lifecycle 正式接线、token budget（当前只实现 byte budget）。
+
+### 已知缺陷（如实披露，非规划中的延期项）
+
+以下两条是已确认的实现缺陷，不是设计延期，待后续独立计划修复：
+
+1. **`l1.json` 与 `l2.json` 目前是同一份完整 `model.Projection` 的字节副本**（两文件字节相同）。根因是 `internal/themico/store/generation.go` 的 `validateProjectionReference` 要求两个文件都解码为完整 `model.Projection` 并各自校验 `record.L1` 与 `record.L2`。`query` 命令的 API 层发现/升级边界仍然成立（返回值只含 L1 字段），但"L1、L2 是两个独立存储单元"这一物理保证目前不成立：任何能读到 `l1.json` 的人也能读到完整 L2 内容。
+2. **CLI 实际可返回的结果上限受 1 MiB envelope 编码限制约束，并非 `query`/`inspect` 请求里可声明的 16 MiB `content_budget_bytes`。** `internal/themico/canonical/canonical.go` 的 `Encode` 对任意一次 machine JSON 编码都有硬编码的 1 MiB 上限；一个通过了 16 MiB byte budget 门禁、语义上完全成功的多记录结果集，在 CLI 把整个 result envelope 编码为一个 JSON 对象时可能超过这个硬上限，被兜底为 `internal_error` 而非清晰的 `budget_exceeded` 或诚实的成功结果。**不要把 16 MiB 预算宣传为完全可用的读取能力上限。**
+
+两条缺陷的真实复现步骤见 [`docs/plan/themico-core/manual-replay.md`](docs/plan/themico-core/manual-replay.md)"补充复现材料 A/B"。
+
 ## 参考项目
 
 - [superpowers](https://github.com/obra/superpowers)
