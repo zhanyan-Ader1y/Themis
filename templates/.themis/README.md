@@ -37,12 +37,13 @@ one public themis Skill
 → complete record/content materialization, reread, and pointer update
 ```
 
-- [`../.claude/skills/themis/SKILL.md`](../.claude/skills/themis/SKILL.md) 是唯一公共 Themis 入口，负责运输消息与 durable continuation，不拥有语义判断或路由。
+- [`skills/themis/SKILL.md`](skills/themis/SKILL.md) 是唯一公共 Themis 入口，负责运输消息与 durable continuation，不拥有语义判断或路由。
 - [`core/kernel/orchestrator/rules.md`](core/kernel/orchestrator/README.md) 是唯一常驻 Rule，按 durable gate 加载通用 references，并协调双作用域。
 - [`core/policies/README.md`](core/policies/README.md) 与其 references 共同构成 route/control、固定 Profile/scope、guards、invalidation 和失败控制的唯一自然语言 Policy。
 - [`core/capabilities`](core/capabilities/README.md) 中十六个内部 Capability 分别拥有一个 proposed semantic judgment；它们不是公共 Skills。
 - [`core/agent-profiles`](core/agent-profiles/README.md) 中四个固定 Profile 只约束工具、权限与隔离；没有 governance writer。
 - 一次 Invocation 只执行一个 Capability，Capability/Agent 不得嵌套调度，也不存在持久 Agent、共享 authority、投票或共识。
+- [`spec/README.md`](spec/README.md) 索引 spec 流程的定义面（`flow.md`/`rules.md`/`template.md`/`README.md`），是独立于本控制架构的另一套流程合同：安装后运行时只读，与上述 `core/` 组件零引用。
 
 ## Authority scopes
 

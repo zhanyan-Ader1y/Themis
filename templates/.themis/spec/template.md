@@ -23,9 +23,10 @@
     verify/
       basic.md  detail.md
     acceptance.md
+    summary.md
 ```
 
-`Intent.md`、`intent-review.md`、`QA.md`、`state.md` 每个 spec 一份，放在实例根目录：R1 意图评审只发生一次，因此 `intent-review.md` 不随 step 分目录，与 `Intent.md`、`QA.md`、`state.md` 一起留在根；其余工件按 step 分目录，每个 step 拥有独立的一套 `specify.md`、`design.md`、`design-review.md`、`task/`、`impl/`、`verify/`、`acceptance.md`。
+`Intent.md`、`intent-review.md`、`QA.md`、`state.md` 每个 spec 一份，放在实例根目录：R1 意图评审只发生一次，因此 `intent-review.md` 不随 step 分目录，与 `Intent.md`、`QA.md`、`state.md` 一起留在根；其余工件按 step 分目录，每个 step 拥有独立的一套 `specify.md`、`design.md`、`design-review.md`、`task/`、`impl/`、`verify/`、`acceptance.md`、`summary.md`；`summary.md` 绑定的是该 step 的实际交付，因此与 `acceptance.md` 同层，不提到实例根目录。
 
 step 编号规则：大步骤取整数，大步骤内的小步骤取小数。用户描述的多个无关联需求拆为不同大步骤；同一大步骤内部自顶向下、由抽象到具体拆为小步骤。
 
@@ -46,6 +47,7 @@ step 编号规则：大步骤取整数，大步骤内的小步骤取小数。用
 | `impl/basic.md`、`impl/detail.md` | 执行身份 / 实际改动 / 与批准范围的偏差 / 命令记录 |
 | `verify/basic.md`、`verify/detail.md` | 执行身份 / 断言与实际结果 / 命令证据 / 结论 / 说明 |
 | `acceptance.md` | 交付视图 / 阻断核查 / 用户原话 / 结论 |
+| `summary.md` | 交付摘要 / 绑定的验收结论 / 中性工件说明 |
 
 上表每份工件的小节划分是 `rules.md` §9 的落点：§9 是贯穿全部产出工件节点的通用规则，不依附任何单一节点，因此不会被 `flow.md` 的某个节点专门引用——它正是通过本文件逐份工件的小节划分获得落点。
 
