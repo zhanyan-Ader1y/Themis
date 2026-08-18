@@ -28,7 +28,7 @@ Intake（不可变来源 + 来源绑定 claims）
 
 任一节点失败（工具错误、验证不过、依赖缺失）时 **fail-closed**，停在 last proven gate（最近已证闸门），等待人类或 Agent 决定。系统**不得**进行失败次数预算，也**不得**把失败转为经验学习（`SPEC-FAIL-001`，判定见 `rules.md` §10）。
 
-每个节点完成后，执行者必须更新实例 `state.md` 的当前节点、该节点闸门结论、当前性三项（小节定义见 `template.md`）；这是 soft 执行器（`SPEC-ENFORCE-001`）下判定"停在 last proven gate"的依据——`state.md` 未随节点完成同步更新，视为该节点尚未完成。
+每个节点完成后，执行者必须更新实例 `state.md` 的当前节点、该节点闸门结论、当前性三项（小节定义见 `template.md`）；`state.md` 是 soft 执行器（`SPEC-ENFORCE-001`）下判定"停在 last proven gate"的依据。
 
 ## Intake
 
@@ -100,7 +100,7 @@ specify 即抽象设计——同一节点的两个叫法，不存在独立于抽
 - **失效波及**：本节点产出变更使 verify/basic 结论 stale。
 - **失败去向**：停在 R3 已证闸门。
 
-实现必须在 R3 批准范围内——不得修改 current-request、plan 或验收要求，不得做无关重构（`SPEC-IMPL-001`）。basic 段为空时本节点不产生调用，直接进入 impl/detail。本节点适用 `rules.md` §1（来源与分层事实源，实现依据须以代码为事实源）、§6（结构决策归属，不得引入 design.md 未定的结构）。
+实现必须在 R3 批准范围内——不得修改 current-request、plan 或验收要求，不得做无关重构（`SPEC-IMPL-001`）。basic 段为空时本节点不产生调用，直接进入 impl/detail。本节点适用 `rules.md` §1（来源与分层事实源）、§6（结构决策归属）。
 
 ## verify/basic
 
@@ -118,7 +118,7 @@ specify 即抽象设计——同一节点的两个叫法，不存在独立于抽
 - **失效波及**：本节点产出变更使 verify/detail 结论 stale。
 - **失败去向**：停在 verify/basic 已证闸门；basic 段为空时停在 R3 已证闸门。
 
-basic 段通过结构性验证前，detail 段不得开始（`SPEC-IMPL-002`）。本节点适用 `rules.md` §1（来源与分层事实源，实现依据须以代码为事实源）。
+basic 段通过结构性验证前，detail 段不得开始（`SPEC-IMPL-002`）。本节点适用 `rules.md` §1（来源与分层事实源）。
 
 ## verify/detail
 
@@ -138,7 +138,7 @@ basic 段通过结构性验证前，detail 段不得开始（`SPEC-IMPL-002`）�
 - **失效波及**：结论 accepted 才解锁摘要；任一上游变更使本结论 stale。
 - **失败去向**：未接受则停在 verify/detail 已证闸门。
 
-存在已落地但无消费者的 basic 改动时不得进入本节点，必须由重规划显式处理（复用或删除）后才解除（`SPEC-ACCEPT-002`）。人工验收在 step 末尾**只有一次**，不因落地分两段而分两次。本节点适用 `rules.md` §7（复核 impl 与 verify 的执行身份是否独立）、§8（引用 verify/detail 的孤儿判定结论据以阻断，不重新做代码层判定）。verify 提供的是证据，不构成授权——人工验收是流程中唯一的授权点。
+存在已落地但无消费者的 basic 改动时不得进入本节点，必须由重规划显式处理（复用或删除）后才解除（`SPEC-ACCEPT-002`）。人工验收在 step 末尾**只有一次**，不因落地分两段而分两次。本节点适用 `rules.md` §7（验证身份独立）、§8（孤儿阻断，在本节点据结论阻断）。verify 提供的是证据，不构成授权——人工验收是流程中唯一的授权点。
 
 ## 摘要
 
