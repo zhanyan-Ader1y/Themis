@@ -54,3 +54,5 @@ step 编号规则：大步骤取整数，大步骤内的小步骤取小数。用
 `impl/basic.md`、`impl/detail.md`、`verify/basic.md`、`verify/detail.md` 的**执行身份**小节是身份独立判定的落点，两处一比即得（判定见 `rules.md` §7）；`verify/basic.md`、`verify/detail.md` 的**说明**小节是人类语义的落点，其余四节（执行身份 / 断言与实际结果 / 命令证据 / 结论）均为控制事实（配比要求见 `rules.md` §9）。
 
 `task/basic.md` 中每个 `### T-B<n>` 固定记四项：结构改动、判定依据、被哪些 detail 任务依赖、design.md 中的出处（判定见 `rules.md` §4、§6）。
+
+`task/detail.md` 中每个 `### T-D<n>` 固定记三项：行为目标、对应 `specify.md` 条目、依赖的基础任务——后两项分别是 trace 链与 `rules.md` §8 消费者关系在本文件的落点。
