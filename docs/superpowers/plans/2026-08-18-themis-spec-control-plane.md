@@ -58,6 +58,7 @@ docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md   任务 7 更新第 1
     impl/   basic.md  detail.md
     verify/ basic.md  detail.md
     acceptance.md
+    summary.md
 ```
 
 ---
@@ -318,7 +319,9 @@ git commit -m "feat: flow.md 节点序列与前四个节点"
 - 失效波及：结论通过才解锁人工验收；impl/detail 变更使本结论 stale。
 - 失败去向：结论不通过则停在 verify/basic 已证闸门。
 
-补一段：**无人工节点**——机器判。依据实际实现与证据判定 `passed`/`failed`，不得依据文档、Agent 自述或文件存在判定通过（`SPEC-VERIFY-002`）。验证者身份必须独立于实现者，判定见 `rules.md` §7。
+补一段：**无人工节点**——机器判。依据实际实现与证据判定 `passed`/`failed`，不得依据文档、Agent 自述或文件存在判定通过（`SPEC-VERIFY-002`）。验证者身份必须独立于实现者，判定见 `rules.md` §7。孤儿阻断的判定同样在本节点完成，结论写入本节点工件；判据、拒绝条件与判定者见 `rules.md` §8。
+
+**引用只指向，不复述。** 节点补充说明里写"判定在此完成 + 结论落点 + 指向 §N"即可，不得把 `rules.md` 的判据或判定方法抄进 flow.md——同一句话存两份，改一处忘另一处就是漂移。
 
 - [ ] **步骤 3：追加验收与摘要节点**
 
@@ -575,6 +578,7 @@ git commit -m "feat: rules.md 补齐后五个主题小节"
     verify/
       basic.md  detail.md
     acceptance.md
+    summary.md
 ```
 
 代码块后补两段：`Intent.md`、`intent-review.md`、`QA.md`、`state.md` 每个 spec 一份放在根——R1 只发生一次，故 `intent-review.md` 不在 step 下；其余按 step 分目录。step 编号规则：大步骤为整数，小步骤为小数；用户描述多个无关联需求时拆为不同大步骤，大步骤内自顶向下、由抽象到具体拆为小步骤。
@@ -596,6 +600,7 @@ git commit -m "feat: rules.md 补齐后五个主题小节"
 | `impl/basic.md`、`impl/detail.md` | 执行身份 / 实际改动 / 与批准范围的偏差 / 命令记录 |
 | `verify/basic.md`、`verify/detail.md` | 执行身份 / 断言与实际结果 / 命令证据 / 结论 / 说明 |
 | `acceptance.md` | 交付视图 / 阻断核查 / 用户原话 / 结论 |
+| `summary.md` | 交付摘要 / 绑定的验收结论 / 中性工件说明 |
 
 表格后补两段：`impl` 与 `verify` 的**执行身份**小节是身份独立判定的落点，两处一比即得（判定见 `rules.md` §7）；`verify` 的**说明**小节是人类语义的落点，其余四节均为控制事实（配比要求见 `rules.md` §9）。`task/basic.md` 的每个 `### T-B<n>` 记四项——结构改动、判定依据、被哪些 detail 任务依赖、design.md 中的出处（判定见 `rules.md` §4、§6）。
 
