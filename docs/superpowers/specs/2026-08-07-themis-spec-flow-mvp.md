@@ -1,6 +1,6 @@
 # Themis Spec 流程 MVP — Specify（已审批）
 
-> **状态:** **已审批** — 2026-08-08 由项目所有者(zhanyan)首次批准;2026-08-10 依 `docs/superpowers/specs/2026-08-10-spec-flow-basic-detail-split-design.md` §5 新增 SPEC-IMPL-002、SPEC-IMPL-003、SPEC-VERIFY-003、SPEC-ACCEPT-002 并增补 SPEC-INVALIDATION-001,2026-08-11 由项目所有者(zhanyan)重新批准;2026-08-12 由项目所有者(zhanyan)批准 SPEC-IMPL-002 措辞修订(分类须在 R3 之前完成,执行硬序在批准之后),AC1、AC2 未变。
+> **状态:** **已审批** — 2026-08-08 由项目所有者(zhanyan)首次批准;2026-08-10 依 `docs/superpowers/specs/2026-08-10-spec-flow-basic-detail-split-design.md` §5 新增 SPEC-IMPL-002、SPEC-IMPL-003、SPEC-VERIFY-003、SPEC-ACCEPT-002 并增补 SPEC-INVALIDATION-001,2026-08-11 由项目所有者(zhanyan)重新批准;2026-08-12 由项目所有者(zhanyan)批准 SPEC-IMPL-002 措辞修订(分类须在 R3 之前完成,执行硬序在批准之后),AC1、AC2 未变;2026-08-18 由项目所有者(zhanyan)批准 §5 P4 落地②的路径与形态更新(改为 `.themis/spec/template.md` 单文件记录实例结构,依据 SPEC-ARTIFACT-001 约束的是工件文件内的阐述方式而非物理配对),§2 行为契约条目未变。
 >
 > **性质:** 本文件是 **specify（规格)**,回答"系统必须表现为什么",遵循本项目对 specify 的设定:外部可观测行为、EARS（受约束验收句式)、逐条可验证、**不描述内部架构**。内部架构与落地任务在审批通过后单独产出。
 >
