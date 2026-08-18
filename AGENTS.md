@@ -35,6 +35,13 @@ Skill 的 description 是 Agent 的发现与路由入口，应优先描述：
 
 边界和“不做什么”应主要写在 Skill 正文中，不应占据 description 的核心位置。
 
+## 安装包与项目工作区的边界
+
+- `templates/` 下是**安装包源**，描述 Themis 安装到目标项目后应有的样子。仓库根目录的 `.claude/` 是**当前项目自身的工作区**，只放对本仓库开发生效的 Skill、command 与配置。
+- 两者之间不做迁移，也不互为副本。安装包内的 `SKILL.md` 一律放在 `templates/.themis/skills/<name>/`，随包分发；把它安装到目标项目的 `.claude/skills/` 是安装动作的职责。
+- 该安装动作目前由 Themis Go CLI 承担，能力尚未实现，标记为 unavailable。在其可用前由人工完成，不得用脚本替代，也不得声称安装已自动化。
+- 因此 `templates/.claude/` 不应存在：在包源里保留安装产物形态即是漂移源。
+
 ## 描述格式
 
 - 默认使用自然语言 Markdown 描述产品语义、流程、状态、合同、模板和示例。

@@ -16,7 +16,7 @@
 
 不得为三个知识类型创建三个公共 Skill，也不得让 operation reference 变成独立的宿主路由入口。`SKILL.md` 只保留 Claude Code 宿主发现所需的最小 frontmatter；流程和语义合同使用中文 Markdown。
 
-发现入口与控制面分离：`SKILL.md` 位于 `.claude/skills/themico/`，因为宿主只从该目录发现 Skill；common references、operation references 与三个 type factory 位于 `.themico/core/references/`，与受治理的 `.themico/workspace/` 分开。Skill 与 reference 都不得直接写入 workspace。
+发现入口与控制面分离：`SKILL.md` 安装后位于 `.claude/skills/themico/`，因为宿主只从该目录发现 Skill（包源在 `templates/.themis/skills/themico/`，由安装动作放置，见 `AGENTS.md` 的安装包与项目工作区边界）；common references、operation references 与三个 type factory 位于 `.themico/core/references/`，与受治理的 `.themico/workspace/` 分开。Skill 与 reference 都不得直接写入 workspace。
 
 ## 3. 固定加载顺序
 

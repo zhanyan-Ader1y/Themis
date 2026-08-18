@@ -53,7 +53,7 @@ Themico 是安装到仓库根目录 `.themico/` 下的独立知识治理 CLI 与
 
 - 顶层设计：[`docs/superpowers/specs/2026-07-29-themico-design.md`](docs/superpowers/specs/2026-07-29-themico-design.md)
 - 首个可用交付范围（本节描述的能力边界的权威来源）：[`docs/superpowers/specs/2026-07-29-themico-design/first-usable-delivery.md`](docs/superpowers/specs/2026-07-29-themico-design/first-usable-delivery.md)
-- 公共 Skill 发现入口：[`templates/.claude/skills/themico/SKILL.md`](templates/.claude/skills/themico/SKILL.md)
+- 公共 Skill 发现入口：[`templates/.themis/skills/themico/SKILL.md`](templates/.themis/skills/themico/SKILL.md)
 - CLI 构建入口：`go build -o themico ./cmd/themico`（module `github.com/zhanyan-Ader1y/Themis`，Go 1.26，二进制名固定为 `themico`）
 - 实现证据与人工 replay 记录：[`docs/plan/themico-core/implementation-evidence.md`](docs/plan/themico-core/implementation-evidence.md)、[`docs/plan/themico-core/manual-replay.md`](docs/plan/themico-core/manual-replay.md)
 
