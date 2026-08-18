@@ -306,7 +306,9 @@ git commit -m "feat: flow.md 节点序列与前四个节点"
 - 前置闸门：verify/basic 结论通过；basic 段为空时前置闸门为 R3 approved。
 - 产出：`step<N>/impl/detail.md` 的四节，以及实际代码改动。
 - 失效波及：本节点产出变更使 verify/detail 结论 stale。
-- 失败去向：停在 verify/basic 已证闸门。
+- 失败去向：停在 verify/basic 已证闸门；basic 段为空时停在 R3 已证闸门。
+
+**失败去向必须镜像前置闸门的每个分支。** 本节点的前置闸门带空段分支，失败去向就必须一并给出空段时的停靠点——basic 段为空时 verify/basic 从未产出结论，指向它等于停在一个从未被证明的闸门，与 fail-closed 冲突。写其余节点时同样检查这一点。
 
 补一段：basic 段通过结构性验证前，detail 段不得开始（`SPEC-IMPL-002`）。
 
