@@ -98,3 +98,17 @@ Implementation mutation 只允许 `themis-impl` 的 `implementation-writer` 在 
 - 不声称 transition、persistence、digest、currentness、invalidation、termination、recovery 或 completion 已由机器执行。
 
 Invocation 前 required Policy package/reference unavailable 或 ambiguous 时不消耗 failure budget。Invocation 已开始或 result 返回后的 invalid-result 由 Policy 进入 scope-local failure control。
+
+## spec 流程加载链
+
+```text
+SKILL.md
+  → .themis/spec/README.md（索引，确认当前强制水平）
+  → .themis/spec/flow.md（定位当前节点，判它现在能不能走到下一步）
+  → .themis/spec/rules.md 中该节点对应的小节（这一步怎么判过不过）
+  → .themis/spec/template.md（要产出或更新哪些文件、哪些小节）
+```
+
+四份文件职责互不渗透：`flow.md` 只答现在能不能走到下一步，`rules.md` 只答这一步怎么判过不过，`template.md` 只答产物长什么样、放在哪，`README.md` 只答去哪找上面三个；任何一份都不得越界承担另一份的职责。
+
+当前为 **soft 执行器**：机器强制 unavailable，validator、evaluator、recorder、digest 均未实现，闸门靠 Agent 遵守，状态记录在实例的 `state.md`。任何文本不得声称 `.themis/spec/` 流程的闸门已由机器执行。
