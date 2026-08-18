@@ -77,7 +77,7 @@ git checkout -b spec-flow-basic-detail-split
 - 消费：设计文档 §5 的契约文本。
 - 产出：`SPEC-IMPL-002`、`SPEC-IMPL-003`、`SPEC-VERIFY-003`、`SPEC-ACCEPT-002` 四个新标识符，供 Task 3–6 引用；`SPEC-INVALIDATION-001` 增补一句。
 
-- [ ] **步骤 1：观察改动前状态**
+- [x] **步骤 1：观察改动前状态**
 
 ```bash
 rg -n "SPEC-IMPL-002|SPEC-IMPL-003|SPEC-VERIFY-003|SPEC-ACCEPT-002" docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md
@@ -85,7 +85,7 @@ rg -n "SPEC-IMPL-002|SPEC-IMPL-003|SPEC-VERIFY-003|SPEC-ACCEPT-002" docs/superpo
 
 预期：无输出（退出码 1）。四个标识符当前都不存在。
 
-- [ ] **步骤 2：在 §2 F 段插入 SPEC-IMPL-002 与 SPEC-IMPL-003**
+- [x] **步骤 2：在 §2 F 段插入 SPEC-IMPL-002 与 SPEC-IMPL-003**
 
 定位到 `### F. 实现与独立验证` 下的这一行：
 
@@ -106,7 +106,7 @@ rg -n "SPEC-IMPL-002|SPEC-IMPL-003|SPEC-VERIFY-003|SPEC-ACCEPT-002" docs/superpo
 - AC3:basic 任务工件引入详细设计未定的结构(字段、类型、签名、迁移方向、配置项) → 拒绝。
 ```
 
-- [ ] **步骤 3：在 §2 F 段插入 SPEC-VERIFY-003**
+- [x] **步骤 3：在 §2 F 段插入 SPEC-VERIFY-003**
 
 定位到这一行：
 
@@ -123,7 +123,7 @@ rg -n "SPEC-IMPL-002|SPEC-IMPL-003|SPEC-VERIFY-003|SPEC-ACCEPT-002" docs/superpo
 - AC3:basic 段验证结论出现在实现者所有的落地工件中 → 拒绝。
 ```
 
-- [ ] **步骤 4：在 §2 G 段插入 SPEC-ACCEPT-002**
+- [x] **步骤 4：在 §2 G 段插入 SPEC-ACCEPT-002**
 
 定位到这一行：
 
@@ -139,7 +139,7 @@ rg -n "SPEC-IMPL-002|SPEC-IMPL-003|SPEC-VERIFY-003|SPEC-ACCEPT-002" docs/superpo
 - AC2:fail-closed 停在 basic 段已证闸门,不自动回滚代码。
 ```
 
-- [ ] **步骤 5：为 SPEC-INVALIDATION-001 增补一句**
+- [x] **步骤 5：为 SPEC-INVALIDATION-001 增补一句**
 
 把 §2 D 段的这一条：
 
@@ -156,7 +156,7 @@ rg -n "SPEC-IMPL-002|SPEC-IMPL-003|SPEC-VERIFY-003|SPEC-ACCEPT-002" docs/superpo
 - AC2:已落地 basic 代码不得因下游失效被自动回滚或自动删除。
 ```
 
-- [ ] **步骤 6：把文件状态改为待重新批准**
+- [x] **步骤 6：把文件状态改为待重新批准**
 
 把文件头第 1–9 行的标题与状态行：
 
@@ -176,7 +176,7 @@ rg -n "SPEC-IMPL-002|SPEC-IMPL-003|SPEC-VERIFY-003|SPEC-ACCEPT-002" docs/superpo
 
 其余头部行（性质、审批结论、落地状态）保持不变。
 
-- [ ] **步骤 7：观察改动后状态**
+- [x] **步骤 7：观察改动后状态**
 
 ```bash
 rg -c "SPEC-IMPL-002|SPEC-IMPL-003|SPEC-VERIFY-003|SPEC-ACCEPT-002" docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md
@@ -185,7 +185,7 @@ rg -n "待重新批准" docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.m
 
 预期：第一条命中计数为 6（`rg -c` 按行计数：四条新增条目的定义行各命中 1 行,共 4 行;文件头状态行一次性提到全部四个标识符,算 1 行;SPEC-INVALIDATION-001 的增补句提到 SPEC-ACCEPT-002,再算 1 行;合计 6 行)；第二条命中标题行与状态行共 2 处。
 
-- [ ] **步骤 8：提交**
+- [x] **步骤 8：提交**
 
 ```bash
 git add docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md docs/superpowers/specs/2026-08-10-spec-flow-basic-detail-split-design.md docs/superpowers/plans/2026-08-10-spec-flow-basic-detail-split.md
@@ -212,7 +212,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - 消费：Task 1 产出的四个新标识符与状态标记。
 - 产出：`已审批` 状态，是 Task 3 的前置条件。
 
-- [ ] **步骤 1：向用户呈现变更**
+- [x] **步骤 1：向用户呈现变更**
 
 呈现 Task 1 的实际 diff，并明确说明：本次只增不改，SPEC-IMPL-001、SPEC-VERIFY-001/002 原文未动。
 
@@ -221,11 +221,11 @@ git show --stat HEAD
 git diff HEAD~1 -- docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md
 ```
 
-- [ ] **步骤 2：等待用户明确批准**
+- [x] **步骤 2：等待用户明确批准**
 
 不得从沉默、模糊肯定或"看起来没问题"推断批准。用户明确说明批准前，本步骤保持未完成。
 
-- [ ] **步骤 3：批准后把状态改回已审批**
+- [x] **步骤 3：批准后把状态改回已审批**
 
 把文件头状态行替换为：
 
@@ -235,7 +235,7 @@ git diff HEAD~1 -- docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md
 > **状态:** **已审批** — 2026-08-08 首次批准;2026-08-10 因新增 SPEC-IMPL-002、SPEC-IMPL-003、SPEC-VERIFY-003、SPEC-ACCEPT-002 与 SPEC-INVALIDATION-001 增补,由项目所有者(zhanyan)重新批准。
 ```
 
-- [ ] **步骤 4：观察并提交**
+- [x] **步骤 4：观察并提交**
 
 ```bash
 rg -n "已审批" docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md
@@ -266,7 +266,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - 消费：Task 2 批准的 SPEC-IMPL-002/003、SPEC-VERIFY-003、SPEC-ACCEPT-002。
 - 产出：七个新模板文件的骨架结构，Task 4 逐字复制到 step2，Task 5 在 README 中引用其路径。
 
-- [ ] **步骤 1：观察改动前状态**
+- [x] **步骤 1：观察改动前状态**
 
 ```bash
 find templates/.themis/workspace/spec/template/step1 -type f | sort
@@ -274,13 +274,13 @@ find templates/.themis/workspace/spec/template/step1 -type f | sort
 
 预期输出恰好七行：`acceptance.md`、`design-review.md`、`design.md`、`impl.md`、`specify.md`、`task-review.md`、`task.md`。确认 `task.md`、`impl.md`、`task-review.md` 大小为 0（可用 `find ... -size 0` 复核），删除不会丢内容。
 
-- [ ] **步骤 2：删除被取代的三个空文件**
+- [x] **步骤 2：删除被取代的三个空文件**
 
 ```bash
 git rm templates/.themis/workspace/spec/template/step1/task.md templates/.themis/workspace/spec/template/step1/impl.md templates/.themis/workspace/spec/template/step1/task-review.md
 ```
 
-- [ ] **步骤 3：创建 `step1/task/basic.md`**
+- [x] **步骤 3：创建 `step1/task/basic.md`**
 
 ```markdown
 ## 基础任务
@@ -297,7 +297,7 @@ git rm templates/.themis/workspace/spec/template/step1/task.md templates/.themis
 - design.md 中的出处：
 ```
 
-- [ ] **步骤 4：创建 `step1/task/detail.md`**
+- [x] **步骤 4：创建 `step1/task/detail.md`**
 
 ```markdown
 ## 详细实现任务
@@ -311,7 +311,7 @@ git rm templates/.themis/workspace/spec/template/step1/task.md templates/.themis
 - 依赖的基础任务：
 ```
 
-- [ ] **步骤 5：创建 `step1/task/review.md`**
+- [x] **步骤 5：创建 `step1/task/review.md`**
 
 ```markdown
 ## 评审范围
@@ -330,7 +330,7 @@ git rm templates/.themis/workspace/spec/template/step1/task.md templates/.themis
 ## 结论
 ```
 
-- [ ] **步骤 6：创建 `step1/impl/basic.md`**
+- [x] **步骤 6：创建 `step1/impl/basic.md`**
 
 ```markdown
 ## 基础落地记录
@@ -344,7 +344,7 @@ git rm templates/.themis/workspace/spec/template/step1/task.md templates/.themis
 ## 命令记录
 ```
 
-- [ ] **步骤 7：创建 `step1/impl/detail.md`**
+- [x] **步骤 7：创建 `step1/impl/detail.md`**
 
 ```markdown
 ## 详细实现落地记录
@@ -359,7 +359,7 @@ git rm templates/.themis/workspace/spec/template/step1/task.md templates/.themis
 ## 命令记录
 ```
 
-- [ ] **步骤 8：创建 `step1/verify/basic.md`**
+- [x] **步骤 8：创建 `step1/verify/basic.md`**
 
 ```markdown
 ## 结构性验证
@@ -375,7 +375,7 @@ git rm templates/.themis/workspace/spec/template/step1/task.md templates/.themis
 ## 结论
 ```
 
-- [ ] **步骤 9：创建 `step1/verify/detail.md`**
+- [x] **步骤 9：创建 `step1/verify/detail.md`**
 
 ```markdown
 ## 行为验证
@@ -390,7 +390,7 @@ git rm templates/.themis/workspace/spec/template/step1/task.md templates/.themis
 ## 结论
 ```
 
-- [ ] **步骤 10：修改 `step1/acceptance.md`**
+- [x] **步骤 10：修改 `step1/acceptance.md`**
 
 现有内容：
 
@@ -418,7 +418,7 @@ git rm templates/.themis/workspace/spec/template/step1/task.md templates/.themis
 ## user acceptance
 ```
 
-- [ ] **步骤 11：观察改动后状态**
+- [x] **步骤 11：观察改动后状态**
 
 ```bash
 find templates/.themis/workspace/spec/template/step1 -type f | sort
@@ -426,7 +426,7 @@ find templates/.themis/workspace/spec/template/step1 -type f | sort
 
 预期输出恰好十一行：`acceptance.md`、`design-review.md`、`design.md`、`impl/basic.md`、`impl/detail.md`、`specify.md`、`task/basic.md`、`task/detail.md`、`task/review.md`、`verify/basic.md`、`verify/detail.md`。
 
-- [ ] **步骤 12：提交**
+- [x] **步骤 12：提交**
 
 ```bash
 git add templates/.themis/workspace/spec/template/step1
@@ -450,7 +450,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - 消费：Task 3 创建的七个文件的**逐字内容**。
 - 产出：step1 与 step2 结构完全一致。
 
-- [ ] **步骤 1：观察改动前状态**
+- [x] **步骤 1：观察改动前状态**
 
 ```bash
 find templates/.themis/workspace/spec/template/step2 -type f | sort
@@ -458,13 +458,13 @@ find templates/.themis/workspace/spec/template/step2 -type f | sort
 
 预期七行，与 Task 3 步骤 1 的 step1 初始状态相同。
 
-- [ ] **步骤 2：删除被取代的三个空文件**
+- [x] **步骤 2：删除被取代的三个空文件**
 
 ```bash
 git rm templates/.themis/workspace/spec/template/step2/task.md templates/.themis/workspace/spec/template/step2/impl.md templates/.themis/workspace/spec/template/step2/task-review.md
 ```
 
-- [ ] **步骤 3：复制 step1 的新结构到 step2**
+- [x] **步骤 3：复制 step1 的新结构到 step2**
 
 ```bash
 cp -r templates/.themis/workspace/spec/template/step1/task templates/.themis/workspace/spec/template/step1/impl templates/.themis/workspace/spec/template/step1/verify templates/.themis/workspace/spec/template/step2/
@@ -473,7 +473,7 @@ cp templates/.themis/workspace/spec/template/step1/acceptance.md templates/.them
 
 模板骨架内容与 step 序号无关，逐字复制即可，不需要改写任何一行。
 
-- [ ] **步骤 4：观察两个 step 是否完全一致**
+- [x] **步骤 4：观察两个 step 是否完全一致**
 
 ```bash
 diff -r templates/.themis/workspace/spec/template/step1 templates/.themis/workspace/spec/template/step2
@@ -481,7 +481,7 @@ diff -r templates/.themis/workspace/spec/template/step1 templates/.themis/worksp
 
 预期：无输出，退出码 0。两个 step 的模板骨架应逐字相同（`specify.md`、`design.md`、`design-review.md` 三个空文件也相同）。若有输出，说明复制不完整，修正后重跑。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add templates/.themis/workspace/spec/template/step2
@@ -505,7 +505,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - 消费：Task 2 批准的四条契约；Task 3/4 建立的文件路径。
 - 产出：模块级规则文本，是模块合同的常驻位置（模块核心设计随包以 README 保存）。
 
-- [ ] **步骤 1：观察改动前状态**
+- [x] **步骤 1：观察改动前状态**
 
 ```bash
 rg -n "basic|detail|落地分段" templates/.themis/workspace/spec/template/README.md
@@ -513,7 +513,7 @@ rg -n "basic|detail|落地分段" templates/.themis/workspace/spec/template/READ
 
 预期：无输出。README 当前完全没有分段概念。
 
-- [ ] **步骤 2：在 `## 关键定义` 之前插入新章节**
+- [x] **步骤 2：在 `## 关键定义` 之前插入新章节**
 
 定位到这一行：
 
@@ -584,7 +584,7 @@ acceptance 不重复技术验证。分段后 verify 从一次变两次、accepta
 
 ```
 
-- [ ] **步骤 3：观察改动后状态**
+- [x] **步骤 3：观察改动后状态**
 
 ```bash
 rg -c "basic" templates/.themis/workspace/spec/template/README.md
@@ -593,7 +593,7 @@ rg -n "## 落地分段：basic 与 detail" templates/.themis/workspace/spec/temp
 
 预期：第一条命中计数大于 10；第二条命中 1 处，且位置在 `## 关键定义` 之前。
 
-- [ ] **步骤 4：提交**
+- [x] **步骤 4：提交**
 
 ```bash
 git add templates/.themis/workspace/spec/template/README.md
@@ -617,7 +617,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - 消费：Task 1–5 的全部产出。
 - 产出：可交付的核验结论。
 
-- [ ] **步骤 1：核验模板树与设计 §4.1 一致**
+- [x] **步骤 1：核验模板树与设计 §4.1 一致**
 
 ```bash
 find templates/.themis/workspace/spec/template -type f | sort
@@ -625,7 +625,7 @@ find templates/.themis/workspace/spec/template -type f | sort
 
 逐项比对设计文档 §4.1 的布局块。预期 step1 与 step2 各十一个文件，加上顶层 `README.md`、`spec.yaml`、`step.md`、`Intent.md`、`QA.md`。
 
-- [ ] **步骤 2：核验四条新契约都在 specify 中且状态为已审批**
+- [x] **步骤 2：核验四条新契约都在 specify 中且状态为已审批**
 
 ```bash
 rg -n "SPEC-IMPL-002|SPEC-IMPL-003|SPEC-VERIFY-003|SPEC-ACCEPT-002|待重新批准" docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md
@@ -633,7 +633,7 @@ rg -n "SPEC-IMPL-002|SPEC-IMPL-003|SPEC-VERIFY-003|SPEC-ACCEPT-002|待重新批�
 
 预期：四个标识符各命中，`待重新批准` 无命中。
 
-- [ ] **步骤 3：核验全局约束未被违反**
+- [x] **步骤 3：核验全局约束未被违反**
 
 ```bash
 git diff --stat main...HEAD
@@ -643,7 +643,7 @@ git diff --stat main...HEAD -- "*.yaml"
 
 预期：第一条显示改动只落在 `docs/` 与 `templates/.themis/workspace/spec/template/`；第二条无输出（未新增脚本）；第三条无输出（`spec.yaml` 未被触碰）。
 
-- [ ] **步骤 4：向用户报告**
+- [x] **步骤 4：向用户报告**
 
 报告实际观察输出，不得用"应该没问题"替代证据。明确声明：本次交付的是 Prompt 层合同与模板，**机器强制 unavailable**，闸门依赖 Agent 遵守与人工评审。
 
