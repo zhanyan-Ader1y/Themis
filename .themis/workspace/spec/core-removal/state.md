@@ -10,7 +10,7 @@
 ## 各闸门
 
 - Intake：已证 — `Intent.md` 来源引用小节
-- 追问：进行中 — `QA.md` 第 1 轮（问题已提出，答复待所有者回复；收敛判据见 `rules.md` §2）
+- 追问：进行中 — `QA.md` 第 1、2 轮（全部问题均已获所有者答复；Agent 依据 `rules.md` §2 提出收敛主张，确认权归 R1 评审者，本节点在 R1 批准前不判"已证"）
 - R1 意图评审：未开始 — 无
 - 抽象设计：未开始 — 无
 - R2 抽象设计评审：未开始 — 无
@@ -25,8 +25,8 @@
 
 ## 当前性
 
-- `Intent.md`：current（来源引用小节已证；问题/期望结果/核心链路三节为待收敛草稿，随 `QA.md` 后续轮次可能被更新，届时本节点前的一切下游结论随之 stale——但下游尚未产生任何结论）
-- `QA.md`：current（第 1 轮已追加，答复未到，不覆盖不回填）
+- `Intent.md`：current（六节均已按 `QA.md` 第 1、2 轮答复更新；Agent 已提出收敛主张，R1 批准前仍为待评审状态，任何后续修订将使 R1 结论 stale——但 R1 尚未开始，暂无下游结论）
+- `QA.md`：current（第 1、2 轮均已追加答复，不覆盖不回填）
 - `intent-review.md`：未产出（R1 尚未进行，前置闸门见 `flow.md` R1 节）
 - `step1/specify.md`、`step1/design.md`、`step1/design-review.md`：未产出（抽象设计节点未开始，需 R1 approved 后才能开始）
 - `step1/task/*`、`step1/impl/*`、`step1/verify/*`、`step1/acceptance.md`、`step1/summary.md`：未产出
