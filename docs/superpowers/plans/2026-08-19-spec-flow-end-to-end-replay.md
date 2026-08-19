@@ -141,7 +141,7 @@ mkdir -p docs/plan/spec-replay
 
 - `core/` 是 simple/full 双路径模型 —— 来源：`代码#templates/.themis/core/policies/README.md`
 - 与已批准单一路径契约冲突 —— 来源：`spec#docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md:20`（注意 §1 规定 spec 只作补充、不作事实源，所以还需代码侧来源）
-- 设计已定 core 在 spec 落地后删除 —— 来源：`spec#docs/superpowers/specs/2026-08-12-themis-spec-control-plane-design.md:17`（行 15 是冲突陈述，行 17 是"处置（已定）"）
+- 设计已定 core 在 spec 落地后删除 —— 来源：`spec#docs/superpowers/specs/2026-08-12-themis-spec-control-plane-design.md:15`（行 13 是冲突陈述，行 15 是"处置（已定）"）
 - 98 个文件、六处活跃引用 —— 来源：`代码#templates/.themis/core`。**必须自己跑命令得出数字，不要照抄本计划**：
 
 ```bash
