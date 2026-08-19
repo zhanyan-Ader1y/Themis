@@ -4,7 +4,7 @@
 
 ## 问题
 
-`core/` 是 simple/full 双路径模型，与已批准的单一路径契约冲突（来源见"来源引用"）。设计已定 core 在 spec 落地后整体删除，但删除动作至今未执行，且 `templates/.themis/` 下仍有六处活跃引用指向它，删除前需先厘清这些引用如何处理。
+`core/` 是 simple/full 双路径模型，与已批准的单一路径契约冲突（来源见"来源引用"）。设计已定 core 在 spec 落地后整体删除（来源缺口待复核，见"来源引用"该条），但删除动作至今未执行，且 `templates/.themis/` 下仍有六处活跃引用指向它，删除前需先厘清这些引用如何处理。
 
 “为什么是现在”这一层仍待所有者确认，见 `QA.md` 第 1 轮问 1。
 
@@ -35,7 +35,7 @@
 
 ## 来源引用
 
-- 代码#`templates/.themis/core/policies/README.md`（`selected_path` 为控制规则四维之一、`Planning` route 含 `themis-simple-plan` capability，为 simple/full 双路径模型的直接代码痕迹）
+- 代码#`templates/.themis/core/policies/README.md:14,47`（`selected_path` 为控制规则四维之一、`Planning` route 含 `themis-simple-plan` capability，为 simple/full 双路径模型的直接代码痕迹）
 - 代码#`templates/.themis/core/kernel/orchestrator/rules.md:84`（"Simple/full 只在 Plan 前分叉，形成同一 Plan family 并在 Review 前汇合"，双路径模型的更直接代码佐证）
 - spec#`docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md:20`（已批准单一路径契约："Themis 不设简易/完整之分,流程是唯一单一路径,且不为任何未来的双路径做预留、开关或切换"）——本 claim 以上两条代码引用为主，本条为辅，判据见 `rules.md` §1
 - spec#`docs/superpowers/specs/2026-08-12-themis-spec-control-plane-design.md:15`（处置已定："spec 完全独立于 core,不引用它的任何合同;core 在 spec 落地后删除"）——本 claim 目前只找到本条来源，判据见 `rules.md` §1；记为一处来源缺口，见 `docs/plan/spec-replay/drift-log.md` Intake 条目

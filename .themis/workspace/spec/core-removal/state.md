@@ -1,6 +1,6 @@
 # state.md — core-removal
 
-> 各闸门行内格式（本次 replay 约定，控制面未定义，见 `docs/plan/spec-replay/drift-log.md` Intake 条目）：
+> 各闸门行内格式（本次 replay 约定，控制面未定义，见 `docs/plan/spec-replay/drift-log.md` 追问条目）：
 > `- <节点名>：<结论> — <证据路径>`；结论取值：已证 / 进行中 / 未开始 / approved / 驳回 / passed / failed / accepted / 退回。
 
 ## 当前节点
@@ -17,8 +17,8 @@
 - 详细设计+任务：未开始 — 无
 - R3 详细方案评审：未开始 — 无
 - impl/basic：未开始 — 无
-- impl/detail：未开始 — 无
 - verify/basic：未开始 — 无
+- impl/detail：未开始 — 无
 - verify/detail：未开始 — 无
 - 人工验收：未开始 — 无
 - 摘要：未开始 — 无
