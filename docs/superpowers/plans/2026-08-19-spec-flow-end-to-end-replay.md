@@ -551,8 +551,9 @@ git rm -r templates/.themis/core
 ```bash
 git grep -n 'core/' -- templates/.themis/ | grep -v '\.themico/core' || echo "  templates/.themis 无残留"
 git grep -n '\.themis/core' -- ':!docs' || echo "  全仓（除 docs）无 .themis/core 残留"
-go test ./... -count=1 2>&1 | tail -5
 go build ./... && echo "build ok"
+go test ./... -count=1 2>&1 | grep -c '^ok'        # 须为 10
+go test ./... -count=1 2>&1 | grep -v '^ok' | head # 须无 FAIL 行
 ```
 
 前两条命令的预期：
@@ -717,7 +718,7 @@ git commit -m "docs: replay 漂移清单与 hard 执行器强制清单"
 2. 十三个节点各在 `state.md` 留下闸门结论，`state.md` 终态记录全部闸门。
 3. 四处人类闸门（R1/R2/R3/验收）各有项目所有者的明确答复，`intent-review.md`、`design-review.md`、`task/review.md`、`acceptance.md` 的结论小节记录了原话。
 4. `impl/basic.md` 与 `verify/basic.md`、`impl/detail.md` 与 `verify/detail.md` 的执行身份各自不同；相同则已作为漂移记录。
-5. `templates/.themis/core/` 已删除；六处引用均按 `design.md` 的决定处理完毕，任务 6 步骤 6 的两条断言符合其预期（第二条为空）；`go build ./...` 与 `go test ./...` 通过。**基线：删除前三个包全绿**（`internal/themico/result`、`store`、`validate`），删除后须仍全绿——core 是 Markdown 合同，出现 Go 侧变化即说明有未预期的依赖。
+5. `templates/.themis/core/` 已删除；六处引用均按 `design.md` 的决定处理完毕，任务 6 步骤 6 的两条断言符合其预期（第二条为空）；`go build ./...` 与 `go test ./...` 通过。**基线：删除前 `internal/themico/` 下十个包全绿**（`candidate`、`canonical`、`cli`、`governance`、`integration`、`model`、`query`、`result`、`store`、`validate`），删除后须仍是这十个全绿——core 是 Markdown 合同，出现 Go 侧变化即说明有未预期的依赖。用 `go test ./... -count=1 2>&1 | grep -c '^ok'` 取包数，**不要用 `tail -n` 看结果**：写本计划时正是 `tail -3` 只显示末三行，把十个包误记成三个。
 6. `docs/` 下的历史 core 引用未被改写。
 7. `docs/plan/spec-replay/drift-log.md` 有十三条记录，每条五项齐全，"无漂移"也已记录。
 8. `docs/plan/spec-replay/hard-enforcement-list.md` 的每条强制项都能追溯到漂移清单中一条真实发生的漂移。
