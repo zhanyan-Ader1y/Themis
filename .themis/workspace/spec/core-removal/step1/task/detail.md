@@ -8,13 +8,13 @@
 
 ### T-D1
 
-- **行为目标**：按 `design.md`「结构决策」第 1 条落地 `templates/.themis/CLAUDE.themis.md` 的宽读删节，分布在首段与五个章节、共六处删除：行 3 首段中提及三条 `.themis/core/**` 路径的部分、`## 安装边界` 行 7 一条列表项、`## 产品流程`整节（行 30–46）、`## 控制架构`整节（行 61–79）、`## Sticky Full Path、Failure 与 Recovery`整节（行 99–105）、`## 关键路径`表格中的四行（行 118–121）。其余各节（`## Intake-first 入口`、`## 权威模型`、`## Scope 与 Artifact 隔离`、`## Review、Verify、Acceptance 与 Summary`、`## 安全降级`，以及 `## 关键路径` 的其余行）按该条判定保持不动；不补写替代内容。行号区间以 `design.md`「事实依据」命令 8 的核验结果为准。
+- **行为目标**：按 `design.md`「结构决策」第 1 条落地 `templates/.themis/CLAUDE.themis.md` 的宽读删节，分布在首段与六个章节、共七处删除：行 3 首段中提及三条 `.themis/core/**` 路径的部分、`## 安装边界` 行 7 一条列表项、`## 产品流程`整节（行 30–46）、`## 控制架构`整节（行 61–79）、`## Review、Verify、Acceptance 与 Summary` 行 96 的后半句"，但共享同一个 Plan Task Execution Identity 与 failure budget"（保留前半句）、`## Sticky Full Path、Failure 与 Recovery`整节（行 99–105）、`## 关键路径`表格中的四行（行 118–121）。其余各节（`## Intake-first 入口`、`## 权威模型`、`## Scope 与 Artifact 隔离`、`## 安全降级`，以及 `## 关键路径` 的其余行、`## Review、Verify、Acceptance 与 Summary` 的其余六条）按该条判定保持不动；不补写替代内容。行号区间以 `design.md`「事实依据」命令 8 的核验结果为准。
 - **对应 `specify.md` 条目**：`SPEC-COREREMOVAL-001`。该判据是对剩余命中的逐条要求，`CLAUDE.themis.md` 只是它覆盖的三个文件之一，本任务与 T-D2、T-D3 合计才使它可能通过。
 - **依赖的基础任务**：无（本 step 的 basic 段为空）。
 
 ### T-D2
 
-- **行为目标**：按 `design.md`「结构决策」第 2 条落地 `templates/.themis/README.md` 的宽读删节，分布在五个章节、共八处删除：`## 产品主链` 的代码块（行 9–23）与行 25 中"快速与完整路径只在统一 Plan 形成前不同"一分句（保留行 7 的开头一句）、`## 控制架构` 的代码块（行 29–38）、行 41–45 五条列表项、行 46 末尾"，与上述 `core/` 组件零引用"半句（保留行 40 与行 46 的列表项主体）、`## Review、Verify 与门禁` 行 96、`## Failure 与 recovery`整节（行 98–102）、`## 不变量与当前能力边界` 行 106。其余各节（首段、`## Authority scopes`、`## 权威模型`、`## Artifact 与 Workspace`，以及上述各节未点名的列表项）按该条判定保持不动；不补写替代内容。行号区间以 `design.md`「事实依据」命令 8 的核验结果为准。
+- **行为目标**：按 `design.md`「结构决策」第 2 条落地 `templates/.themis/README.md` 的宽读删节，分布在五个章节、共十处删除：`## 产品主链` 的代码块（行 9–23）与行 25 中"快速与完整路径只在统一 Plan 形成前不同"一分句（保留行 7 的开头一句）、`## 控制架构` 的代码块（行 29–38）、行 41–45 五条列表项、行 46 末尾"，与上述 `core/` 组件零引用"半句（保留行 40 与行 46 的列表项主体）、`## Review、Verify 与门禁` 行 93 的后半句"；两个 Invocation 共享一个 Plan Task Execution Identity 和失败预算"与行 96 整条、`## Failure 与 recovery`整节（行 98–102）、`## 不变量与当前能力边界` 行 106 整条与行 109 中"十六个内部 Capability、四个 Profile"两项枚举。其余各节（首段、`## Authority scopes`、`## 权威模型`、`## Artifact 与 Workspace`，以及上述各节未点名的列表项）按该条判定保持不动；不补写替代内容。行号区间与列表条数以 `design.md`「事实依据」命令 8、9 的核验结果为准。
 - **对应 `specify.md` 条目**：`SPEC-COREREMOVAL-001`（同一判据落在 `README.md` 这一个文件）。
 - **依赖的基础任务**：无。
 
