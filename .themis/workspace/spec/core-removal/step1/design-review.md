@@ -33,7 +33,7 @@ templates/.themis/                                   templates/.themis/
 - `specify.md` 新增三条外部可观测行为判据（`SPEC-COREREMOVAL-001/002/003`），分别对应"`templates/.themis/` 下不留非明确保留的 `core/` 路径引用"“`.gitignore` 不留失效忽略规则”“`core/` 目录本身不留文件”。判据范围与豁免规则见 `specify.md`，不在此重复其判据文字。
 - `design.md` 对 `Intent.md` 已批准范围内的六处引用点，逐条定死了处理做法（`CLAUDE.themis.md`/`README.md` 删节、`AGENTS.md` 整节删除、`.gitignore` 删行、`spec/README.md` 不改并记录分歧）；`catalog.md:33` 按 R1 结论明确保持不定、延后审阅，未被强行归类。
 - 新发现一处范围外活跃依赖（仓库根 `AGENTS.md:13`），design 节点判断处理它需要新的 Intake/QA，本 step 不处理，只记录。
-- `[basic]` 边界判断：本次删除类改动未识别出符合"契约存在但非行为"定义的条目，`specify.md` 不含 `[basic]` 标识，判断依据见 `specify.md`「来源覆盖」。
+- `[basic]` 边界判断：本次删除类改动未识别出符合契约存在但非行为这一形态的条目，`specify.md` 不含 `[basic]` 标识，判断依据见 `specify.md`「来源覆盖」。
 
 ## 未解决反馈
 

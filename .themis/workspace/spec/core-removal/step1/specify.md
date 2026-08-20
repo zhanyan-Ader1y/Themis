@@ -15,7 +15,7 @@
 
 当删除完成后，`.gitignore` 中不得存在指向已删除路径的 `/.themis/core/` 忽略规则。
 
-- 验收判据：`grep -n '/.themis/core/' .gitignore` 输出为空。此处允许用"输出为空"判定——`.gitignore` 全文仅 10 行、目标字符串是精确的单一已知行，不存在类似 `.themico/core` 那种合法命中会被误伤的噪音源（已核实全文见 `design.md`「事实依据」）。
+- 验收判据：`grep -n '/.themis/core/' .gitignore` 输出为空。此处允许用"输出为空"判定——`.gitignore` 全文仅 11 行、目标字符串是精确的单一已知行，不存在类似 `.themico/core` 那种合法命中会被误伤的噪音源（已核实全文见 `design.md`「事实依据」）。
 
 ### SPEC-COREREMOVAL-003
 
@@ -25,9 +25,9 @@
 
 ### SPEC-COREREMOVAL-004
 
-当 `templates/.themis/AGENTS.md`「与 `core/` 的关系」一节删除完成后，仓库根 `AGENTS.md` 不得存在依赖该节存在性的索引描述残留，除非该残留经 `design.md`「结构决策」显式记录为保留的决定。
+当 `templates/.themis/AGENTS.md`「与 `core/` 的关系」一节删除完成后，仓库根 `AGENTS.md` 不得存在依赖该节存在性的索引描述残留，除非该残留经 `design.md`「结构决策」显式记录为保留或延后的决定。
 
-- 验收判据：`grep -n '与.*core.*的关系' AGENTS.md`（仓库根文件）的每一条剩余命中，都能在 `step1/design.md`「结构决策」小节中找到对应的、明确保留的决定；找不到对应决定的命中即为断链，判 failed。
+- 验收判据：`grep -n '与.*core.*的关系' AGENTS.md`（仓库根文件）的每一条剩余命中，都能在 `step1/design.md`「结构决策」小节中找到对应的、明确保留（或明确延后）的决定；找不到对应决定的命中即为断链，判 failed。
 - 判据范围精确限定在仓库根单个 `AGENTS.md` 文件、匹配一个具体短语（`templates/.themis/AGENTS.md` 被删除章节的标题文字），不复用 SPEC-COREREMOVAL-001 面向 `templates/.themis/` 的宽范围 `core/` 搜索——这样不会重新引入 `docs/`、`.themico/core`、`docs/plan/themico-core/` 等已在 001/`design.md`「事实依据」中核实过的噪音源，也不与 001 已覆盖的范围重复计入。本条独立成条而非并入 001，是因为它的观测对象（仓库根文件）、命中对象（章节标题短语而非路径字符串 `core/`）与 001 都不同；已核实当前仓库根 `AGENTS.md` 内该短语只出现这一处（`grep -n '与.*core.*的关系' AGENTS.md` 只命中第 13 行），判据无歧义。
 
 ## 来源覆盖
