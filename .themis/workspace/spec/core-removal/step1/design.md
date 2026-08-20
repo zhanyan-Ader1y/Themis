@@ -211,11 +211,6 @@ Date:   Mon Jul 27 19:19:52 2026 +0800
 7
 ```
 三节各 7 条列表项：`README.md`「Review、Verify 与门禁」、`README.md`「不变量与当前能力边界」、`CLAUDE.themis.md`「Review、Verify、Acceptance 与 Summary」。据此订正上一版两处未经命令核对的计数：「Review、Verify 与门禁」原写"其余七条保留"（实为删 1 条后余 6 条）、「不变量与当前能力边界」原写"其余五条保留"（实为删 1 条后余 6 条）。第三条 `awk` 为本轮第二次复核时补入——「结构决策」第 26 行引用本命令核验 `CLAUDE.themis.md` 的 7 条，而本命令原先只覆盖 `README.md`，断言与证据对不上，按"断言旁必须有覆盖它的命令记录"就地补齐。
-```text
-7
-7
-```
-两节各 7 条列表项。据此订正上一版两处未经命令核对的计数：「Review、Verify 与门禁」原写"其余七条保留"（实为删 1 条后余 6 条）、「不变量与当前能力边界」原写"其余五条保留"（实为删 1 条后余 6 条）。
 
 `grep -n 'failure budget\|失败预算' templates/.themis/README.md templates/.themis/CLAUDE.themis.md`（核验保留节内 failure budget 残留的实际位置，支撑「取舍」残留清单与第 1、2 条本轮新增的两处半句删除）
 ```text
