@@ -85,7 +85,7 @@
 98
 ```
 
-**命令 2**：`git grep -n 'core/' -- templates/.themis/ | grep -v '\.themico/core' | grep -v '^templates/\.themis/core/'`（templates/.themis/ 范围内六处活跃引用点的完整命中）
+**命令 2**：`git grep -n 'core/' -- templates/.themis/ | grep -v '\.themico/core' | grep -v '^templates/\.themis/core/'`（`templates/.themis/` 下 **5 个文件**的完整命中；第 6、7 个引用点是仓库根的 `.gitignore:8` 与 `AGENTS.md:13`，不在本命令的路径限定内，证据分别见命令 4、命令 6）
 ```text
 templates/.themis/AGENTS.md:47:## 与 `core/` 的关系
 templates/.themis/AGENTS.md:49:`core/` 是 simple/full 双路径模型，与已批准契约 `docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md` 的单一路径要求冲突，待端到端 replay 验证后整体删除。
@@ -126,7 +126,7 @@ templates/.themis/workspace/context/catalog.md:33:未来每个 item index entry 
 /.themis/CLAUDE.themis.md
 ```
 
-**命令 5**：`git grep -n 'core/' -- . ':!templates/.themis/core' ':!.themis/core' ':!docs' | grep -v '\.themico\|internal/themico'`（超出 `templates/.themis/` 与 `docs/` 之外的全仓库重新清点，核对是否有第六处之外的遗漏活跃依赖；本轮已重跑，输出与命中范围与上一轮一致，未变化）
+**命令 5**：`git grep -n 'core/' -- . ':!templates/.themis/core' ':!.themis/core' ':!docs' | grep -v '\.themico\|internal/themico'`（超出 `templates/.themis/` 与 `docs/` 之外的全仓库重新清点，核对 `templates/.themis/` 下那 5 个文件之外是否另有遗漏的活跃依赖；本轮已重跑，输出与命中范围与上一轮一致，未变化。**本轮第二次复核订正**：上一版题注写"核对是否有第六处之外的遗漏活跃依赖"，沿用的是 R2 前"六处"的旧计数口径，与本命令实际的比对基准——`templates/.themis/` 下 5 个文件——不符）
 
 真实剩余命中除已识别的 `.gitignore:8`、`templates/.themis/{AGENTS,CLAUDE.themis,README}.md`、`templates/.themis/spec/README.md`、`catalog.md:33`、以及本实例工件自身（`.themis/workspace/spec/core-removal/**`，属本次生成的记录，不是待处理引用）外，新发现两类命中：
 
@@ -204,7 +204,13 @@ Date:   Mon Jul 27 19:19:52 2026 +0800
 51
 ```
 
-**命令 9**（本轮新增）：`awk 'NR>=88 && NR<=96 && /^- /' templates/.themis/README.md | wc -l` 与 `awk 'NR>=104 && NR<=112 && /^- /' templates/.themis/README.md | wc -l`（核验「结构决策」第 2 条两处列表条数）
+**命令 9**（本轮新增）：三条 `awk … | wc -l`，核验「结构决策」第 1 条一处、第 2 条两处的列表条数——`awk 'NR>=88 && NR<=96 && /^- /' templates/.themis/README.md | wc -l`、`awk 'NR>=104 && NR<=112 && /^- /' templates/.themis/README.md | wc -l`、`awk 'NR>=89 && NR<=97 && /^- /' templates/.themis/CLAUDE.themis.md | wc -l`
+```text
+7
+7
+7
+```
+三节各 7 条列表项：`README.md`「Review、Verify 与门禁」、`README.md`「不变量与当前能力边界」、`CLAUDE.themis.md`「Review、Verify、Acceptance 与 Summary」。据此订正上一版两处未经命令核对的计数：「Review、Verify 与门禁」原写"其余七条保留"（实为删 1 条后余 6 条）、「不变量与当前能力边界」原写"其余五条保留"（实为删 1 条后余 6 条）。第三条 `awk` 为本轮第二次复核时补入——「结构决策」第 26 行引用本命令核验 `CLAUDE.themis.md` 的 7 条，而本命令原先只覆盖 `README.md`，断言与证据对不上，按"断言旁必须有覆盖它的命令记录"就地补齐。
 ```text
 7
 7
