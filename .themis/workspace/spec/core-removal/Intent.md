@@ -10,7 +10,7 @@
 
 ## 期望结果
 
-`templates/.themis/core/`（当前 98 个文件）从代码库中整体消失（所有者已确认整体删除，见 `QA.md` 第 2 轮）。"来源引用"列出的六处活跃引用中，`templates/.themis/CLAUDE.themis.md`、`templates/.themis/README.md` 涉及 core 的相关内容按所有者确认删节，留待 Themis 更完善后再编写，两处处理方式一致（来源见 `QA.md` 第 1 轮问 2）；`templates/.themis/spec/README.md` 的处理方式确认沿用"约束"节所述的现有裁定（来源见 `QA.md` 第 1 轮问 3）；`templates/.themis/AGENTS.md`"与 core/ 的关系"一节确认删除（来源见"来源引用"R1 结论新增条目）；`.gitignore` 中 `/.themis/core/` 忽略规则确认列入本次处理范围（来源同上；此前该处置只是清点六处引用时推导出的追加项，所有者原始要求未提及，缺口现已闭合）。`catalog.md:33` 的相对路径引用处理方式**仍未确定**——所有者已在同一次批复中明确要求延后：待本次其余处理完成后另行提出处理方案，由所有者单独审阅（来源同上）；本项作为开放决策点带入后续节点，不在本文件内定下做法。
+`templates/.themis/core/`（当前 98 个文件）从代码库中整体消失（所有者已确认整体删除，见 `QA.md` 第 2 轮）。"来源引用"列出的六处活跃引用中，`templates/.themis/CLAUDE.themis.md`、`templates/.themis/README.md` 涉及 core 的相关内容按所有者确认删节，留待 Themis 更完善后再编写，两处处理方式一致（来源见 `QA.md` 第 1 轮问 2）；`templates/.themis/spec/README.md` 的处理方式确认沿用"约束"节所述的现有裁定（来源见 `QA.md` 第 1 轮问 3）；`templates/.themis/AGENTS.md`"与 core/ 的关系"一节确认删除（来源见"来源引用"R1 结论新增条目）；`.gitignore` 中 `/.themis/core/` 忽略规则确认列入本次处理范围（来源见"来源引用"新增条目，背景说明见该条）。`catalog.md:33` 的相对路径引用处理方式**仍未确定**——所有者已在同一次批复中明确要求延后：待本次其余处理完成后另行提出处理方案，由所有者单独审阅（来源同上）；本项作为开放决策点带入后续节点，不在本文件内定下做法。
 
 ## 核心链路
 
