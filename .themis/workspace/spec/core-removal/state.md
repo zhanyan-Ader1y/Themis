@@ -5,13 +5,13 @@
 
 ## 当前节点
 
-追问
+R1 意图评审
 
 ## 各闸门
 
 - Intake：已证 — `Intent.md` 来源引用小节
-- 追问：进行中 — `QA.md` 第 1、2 轮（全部问题均已获所有者答复；Agent 依据 `rules.md` §2 提出收敛主张，确认权归 R1 评审者，本节点在 R1 批准前不判"已证"）
-- R1 意图评审：未开始 — 无
+- 追问：已证 — `QA.md` 第 1、2 轮（全部问题均已获所有者答复；Agent 依据 `rules.md` §2 提出收敛主张，确认权归 R1 评审者，R1 已 approved，本节点由此判"已证"）
+- R1 意图评审：approved — `intent-review.md` 结论小节
 - 抽象设计：未开始 — 无
 - R2 抽象设计评审：未开始 — 无
 - 详细设计+任务：未开始 — 无
@@ -25,8 +25,8 @@
 
 ## 当前性
 
-- `Intent.md`：current（六节均已按 `QA.md` 第 1、2 轮答复更新；Agent 已提出收敛主张，R1 批准前仍为待评审状态，任何后续修订将使 R1 结论 stale——但 R1 尚未开始，暂无下游结论）
+- `Intent.md`：current（已按 R1 结论所附所有者表态更新期望结果节与来源引用小节：`.gitignore` 规则、`AGENTS.md`"与 core/ 的关系"一节均已确认；`catalog.md` 相对路径引用处理方式仍未确定，明确延后，待单独审阅。此次更新与 `flow.md` R1 节失效波及条款的适用边界存在解读空当，按结论闭环处理，未触发重新评审，详见 `docs/plan/spec-replay/drift-log.md` R1 条目）
 - `QA.md`：current（第 1、2 轮均已追加答复，不覆盖不回填）
-- `intent-review.md`：未产出（R1 尚未进行，前置闸门见 `flow.md` R1 节）
-- `step1/specify.md`、`step1/design.md`、`step1/design-review.md`：未产出（抽象设计节点未开始，需 R1 approved 后才能开始）
+- `intent-review.md`：current（R1 approved，结论小节已记所有者原话；未解决反馈第 3 条仍未解决，作为开放决策点带入后续节点）
+- `step1/specify.md`、`step1/design.md`、`step1/design-review.md`：未产出（R1 已 approved，前置闸门已满足，抽象设计节点尚未开始）
 - `step1/task/*`、`step1/impl/*`、`step1/verify/*`、`step1/acceptance.md`、`step1/summary.md`：未产出

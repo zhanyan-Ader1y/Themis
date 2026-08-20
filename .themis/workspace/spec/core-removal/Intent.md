@@ -10,7 +10,7 @@
 
 ## 期望结果
 
-`templates/.themis/core/`（当前 98 个文件）从代码库中整体消失（所有者已确认整体删除，见 `QA.md` 第 2 轮）。"来源引用"列出的六处活跃引用中，`templates/.themis/CLAUDE.themis.md`、`templates/.themis/README.md` 涉及 core 的相关内容按所有者确认删节，留待 Themis 更完善后再编写，两处处理方式一致（来源见 `QA.md` 第 1 轮问 2）；`templates/.themis/spec/README.md` 的处理方式确认沿用"约束"节所述的现有裁定（来源见 `QA.md` 第 1 轮问 3）；`AGENTS.md`"与 core/ 的关系"一节与 `catalog.md` 的相对路径引用尚未单独确认处理方式，留待抽象设计节点具体化；`.gitignore` 中对应的忽略规则同步处理，不留失效条目。
+`templates/.themis/core/`（当前 98 个文件）从代码库中整体消失（所有者已确认整体删除，见 `QA.md` 第 2 轮）。"来源引用"列出的六处活跃引用中，`templates/.themis/CLAUDE.themis.md`、`templates/.themis/README.md` 涉及 core 的相关内容按所有者确认删节，留待 Themis 更完善后再编写，两处处理方式一致（来源见 `QA.md` 第 1 轮问 2）；`templates/.themis/spec/README.md` 的处理方式确认沿用"约束"节所述的现有裁定（来源见 `QA.md` 第 1 轮问 3）；`templates/.themis/AGENTS.md`"与 core/ 的关系"一节确认删除（来源见"来源引用"R1 结论新增条目）；`.gitignore` 中 `/.themis/core/` 忽略规则确认列入本次处理范围（来源同上；此前该处置只是清点六处引用时推导出的追加项，所有者原始要求未提及，缺口现已闭合）。`catalog.md:33` 的相对路径引用处理方式**仍未确定**——所有者已在同一次批复中明确要求延后：待本次其余处理完成后另行提出处理方案，由所有者单独审阅（来源同上）；本项作为开放决策点带入后续节点，不在本文件内定下做法。
 
 ## 核心链路
 
@@ -45,3 +45,6 @@
 - 代码#`templates/.themis/core`（`find templates/.themis/core -type f | wc -l` 得 98；`git grep -n 'core/' -- templates/.themis/` 排除 `.themico/core` 与 `core/` 自身后得六处活跃引用；命令与完整输出见 `task-1-report.md`）
 - 代码#`.gitignore:8`（`/.themis/core/` 忽略规则）
 - 代码#`docs`（`git grep -c 'templates/\.themis/core|\.themis/core' -- 'docs/**'` 得 36 个文件、396 行历史引用，不在"六处活跃引用"之列；命令与输出见 `task-1-report.md`）
+- 用户确认#`「1. .gitignore列入本次范围。」`（R1 结论所附表态，见 `intent-review.md` 结论；闭合"`.gitignore` 忽略规则是否处理"这一此前只是清点推导的追加项，判据见 `rules.md` §1）
+- 用户确认#`「2. 删除。」`（R1 结论所附表态，见 `intent-review.md` 结论；对应"未解决反馈"第 2 条——`templates/.themis/AGENTS.md`"与 core/ 的关系"一节的处理方式）
+- 用户确认#`「3. 完成以上任务后再描述第3点的处理方案由我审阅」`（R1 结论所附表态，见 `intent-review.md` 结论；明确延后 `catalog.md:33` 相对路径引用的处理方案，本条只记录"延后、待单独审阅"这一状态本身，不构成处置结论）
