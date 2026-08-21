@@ -570,7 +570,7 @@ git rm -r templates/.themis/core
 
 ```bash
 git grep -n 'core/' -- templates/.themis/ | grep -v '\.themico/core' || echo "  templates/.themis 无残留"
-git grep -n '\.themis/core' -- ':!docs' || echo "  全仓（除 docs）无 .themis/core 残留"
+git grep -n '\.themis/core' -- ':!docs' ':!.themis/workspace' || echo "  无 .themis/core 残留"
 go build ./... && echo "build ok"
 go test ./... -count=1 2>&1 | grep -c '^ok'        # 须为 10
 go test ./... -count=1 2>&1 | grep -v '^ok' | head # 须无 FAIL 行
@@ -580,6 +580,8 @@ go test ./... -count=1 2>&1 | grep -v '^ok' | head # 须无 FAIL 行
 
 - 第一条的每条剩余命中都必须对应 `design.md` 中一条明确保留的决定（判据同 `SPEC-COREREMOVAL-001`）。无法对应即为断链。
 - 第二条应为空。若 `.gitignore` 仍命中，说明步骤 2 漏了那一行。
+
+**`.themis/workspace` 的排除是本计划的一处订正（2026-08-21，任务 6 执行者发现）**：原断言写作 `git grep '\.themis/core' -- ':!docs'` 输出为空，而这**永远不可能成立**——实例工件（`Intent.md`、`specify.md`、`design.md`、`task/*`、`impl/*`、`verify/*`）必须记录被删除的路径本身，否则它们无法说明删了什么。要求记录删除的流程，同时要求全仓不出现被删路径，两者自相矛盾。这是计划正文的预期错误，不是判据缺陷——`specify.md` 的四条判据都正确地把范围锚定在 `templates/.themis/` 与具体文件上，未受影响。
 
 **`docs/` 被排除是有意的**：`docs/plan/35-core-prompt-flow/` 等历史文档中的 core 引用是归档记录，记录的是当时的事实，**不得改写**。改写历史记录来让 grep 变干净，是把证据改成结论。
 
