@@ -5,7 +5,6 @@
 # 入库即两份控制面，改一处忘另一处就是漂移。安装动作由 Go CLI 承担
 # （能力尚未实现，当前人工），副本不入库。
 /.themis/spec/
-/.themis/core/
 /.themis/skills/
 /.themis/README.md
 /.themis/CLAUDE.themis.md

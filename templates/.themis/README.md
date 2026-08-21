@@ -6,44 +6,12 @@
 
 安装包共同强化：详细细化前的需求追问、低负担 Plan Review、可沉淀的 Agent Plan，以及受治理、持续进化的项目知识库。
 
-```text
-external user message
-→ immutable Source Event under Request Intake
-→ user-confirmed source-bound Current Request claims
-→ Questioning
-→ optional Grounding
-→ Complexity Assessment
-   ├─ simple → Simple Plan → lightweight Plan Check
-   └─ full   → temporary Specification → Planning → full Plan Check
-→ Review Projection → Review Check → Review Dialogue → Review Approval
-→ Verify [Impl → independent Verification]
-→ Human Acceptance
-→ Summary
-→ optional governed knowledge candidates
-```
-
-每条外部消息，包括 Questioning 回答、Review 反馈/批准、Acceptance 和 restart/unblock，都先经过 Intake interception。快速与完整路径只在统一 Plan 形成前不同；Review 始终位于项目实现前；Summary 只在 current Verification `passed` 且 Human Acceptance `accepted` 后生成。
+每条外部消息，包括 Questioning 回答、Review 反馈/批准、Acceptance 和 restart/unblock，都先经过 Intake interception。Review 始终位于项目实现前；Summary 只在 current Verification `passed` 且 Human Acceptance `accepted` 后生成。
 
 ## 控制架构
 
-```text
-one public themis Skill
-→ one always-loaded Global Control Rule with on-demand references
-→ one Markdown Policy package
-→ one internal Capability + fixed Agent Profile
-→ one temporary Invocation in one authority scope
-→ proposed Capability result
-→ exactly one applicable natural-language control rule
-→ complete record/content materialization, reread, and pointer update
-```
-
 - [`skills/themis/SKILL.md`](skills/themis/SKILL.md) 是唯一公共 Themis 入口，负责运输消息与 durable continuation，不拥有语义判断或路由。
-- [`core/kernel/orchestrator/rules.md`](core/kernel/orchestrator/README.md) 是唯一常驻 Rule，按 durable gate 加载通用 references，并协调双作用域。
-- [`core/policies/README.md`](core/policies/README.md) 与其 references 共同构成 route/control、固定 Profile/scope、guards、invalidation 和失败控制的唯一自然语言 Policy。
-- [`core/capabilities`](core/capabilities/README.md) 中十六个内部 Capability 分别拥有一个 proposed semantic judgment；它们不是公共 Skills。
-- [`core/agent-profiles`](core/agent-profiles/README.md) 中四个固定 Profile 只约束工具、权限与隔离；没有 governance writer。
-- 一次 Invocation 只执行一个 Capability，Capability/Agent 不得嵌套调度，也不存在持久 Agent、共享 authority、投票或共识。
-- [`spec/README.md`](spec/README.md) 索引 spec 流程的定义面（`flow.md`/`rules.md`/`template.md`/`README.md`），是独立于本控制架构的另一套流程合同：安装后运行时只读，与上述 `core/` 组件零引用。
+- [`spec/README.md`](spec/README.md) 索引 spec 流程的定义面（`flow.md`/`rules.md`/`template.md`/`README.md`），是独立于本控制架构的另一套流程合同：安装后运行时只读。
 
 ## Authority scopes
 
@@ -90,23 +58,15 @@ Questioning 每个完成 exchange 形成独立 immutable round；未回答的问
 - 只有 current Plan Check `pass` 才能生成 Review Projection。
 - Review Dialogue 只产生 continuation、Feedback proposal 或 Approval proposal，不直接 patch Plan/Projection 或写治理状态。
 - Approval 批准 checked Plan，并绑定用户实际看到的 projection、空 unresolved feedback 与 pre-Impl baseline。
-- Verify 固定为 `themis-impl → independent themis-verification`；两个 Invocation 共享一个 Plan Task Execution Identity 和失败预算。
+- Verify 固定为 `themis-impl → independent themis-verification`。
 - Current Verification 必须 `passed` 才能 Acceptance；current Acceptance 必须 `accepted` 才能 Summary。
 - Summary 和 lifecycle completion 完整观察后冻结对应 Intake target；所有关联 lifecycle target 完成后，Intake 保持 `assigned` 并进入 `dormant-read-only`，只读保留来源/决定/观察记录，失活 continuation，未来消息创建新 Intake。
-- `full_path_required` 在 lifecycle 内只允许 `false → true`，不会因 restart、retry 或 reassessment 清除。
-
-## Failure 与 recovery
-
-Intake Execution Identity 和 lifecycle Plan Task Execution Identity 分别最多三次 counted failures；第三次终止对应 identity 并禁止第四次 Invocation。Intake failure 不消耗 lifecycle budget。Impl、Verification 和 Acceptance `implementation-defect` repair 共享一个 Plan task budget。
-
-Failure Learning 支持两个 scope，但始终 non-blocking、non-recursive、candidate-only。中断后只从 active scope state、pointers、markers、artifact components、Invocation/attempt records 和 applicable Git facts恢复到 `last proven gate`；不从聊天、Summary、临时 Specification 或 Agent reasoning 猜测完成。Dormant Intake 只供历史 authority 核验，不参与恢复、重激活或 Invocation。
 
 ## 不变量与当前能力边界
 
-- Core 管理控制合同；Workspace 保存项目拥有的记录与引用，但不实现控制逻辑。
 - 模块不使用功能版本，不提供 compatibility、upgrade 或 migration。
 - Behavior Map、Shell fallback、多 Agent execution 与 Attribution gate 不属于 Plan 35。
-- Plan 35 只提供一个公共 Skill、一个 Global Rule、一个双作用域 policy、十六个内部 Capability、四个 Profile、immutable templates、static verification 和 manual replay semantics。
+- Plan 35 只提供一个公共 Skill、一个 Global Rule、一个双作用域 policy、immutable templates、static verification 和 manual replay semantics。
 - Plan 36 owns strict Schema、canonical serialization、validator、issue taxonomy、semantic oracle 与 fixtures。
 - Plan 37 owns evaluator、Invocation host、recorder、digest/write services 与 command execution。
 - 未观察到相应 runtime 时，不得声称 Source Event recording、transition、persistence、digest、currentness、attempt、invalidation、termination、recovery、atomicity 或 completion 已由机器执行。

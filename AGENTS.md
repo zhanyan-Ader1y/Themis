@@ -10,7 +10,7 @@ Themis 是一个 SDD Harness 框架，将本地 AI 编码系统安装到工程�
 
 | 模块 | 规范 |
 | --- | --- |
-| `.themis` | [`templates/.themis/AGENTS.md`](templates/.themis/AGENTS.md) —— spec 控制面写作、与 `core/` 的关系 |
+| `.themis` | [`templates/.themis/AGENTS.md`](templates/.themis/AGENTS.md) —— spec 控制面写作 |
 | `.themico` | [`templates/.themico/AGENTS.md`](templates/.themico/AGENTS.md) —— 控制面/工作区分离、三方分权、类型路由 |
 
 模块规范不重复本文件的内容，本文件也不下沉到模块——两处写同一条就是漂移。
