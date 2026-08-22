@@ -5,7 +5,9 @@
 
 ## 当前节点
 
-verify/detail（未开始）。impl/detail 已走完——它的进入依据是控制器裁定 Ruling 18（**前置取 R3 approved**），不是控制面条款直接给出的结论，见下。
+**本 step 已走完全部十三个节点，流程闭环。** 摘要为链尾（`flow.md`「摘要」节），无后继节点；`step1` 无下一个待进入的节点。impl/detail 的进入依据是控制器裁定 Ruling 18（**前置取 R3 approved**），不是控制面条款直接给出的结论，见下——**该依据的性质不因本 step 完成而改变，那两处控制面缺口仍未修复。**
+
+**下一步不在本 step 内**：所有者在验收中裁定 `templates/.themis/workspace/README.md:5` 的残留**作为新 step 处理**，该 step 自设计节点起完整走流程，届时另建 `step2/`（编号规则见 `template.md`）。本 step 的工件不因此标 stale。
 
 impl/basic 与 verify/basic 两节点均已走完，均为空段形态：impl/basic 零落地调用；verify/basic 的结论既非 passed 也非 failed（三项判据无断言对象，且执行身份与实现者相同）。空段下能否进入 impl/detail，`flow.md`「impl/detail」节内部有两处互斥读法——前置闸门为空段单列了 R3 approved 这一取值（可进入），同节末尾援引 `SPEC-IMPL-002` 的那句却是无条件的（进不去，空段永远拿不到它要求的那个通过）。**控制面本身没有指出该以哪句为准；本 step 曾据此停下等待裁定，现由控制器裁定以前置闸门为准（Ruling 18），据此解锁。** 裁定不消解那处矛盾：节末那句按字面读仍无空段豁免，控制面待修。裁定内容、代价与仍待修的缺口见 `docs/plan/spec-replay/drift-log.md`「verify/basic」条目 (3)，比对见 `step1/verify/basic.md`「说明」。
 
@@ -27,9 +29,9 @@ impl/detail 与 verify/detail 由两次不同的 agent 会话承担，`rules.md`
 - impl/basic：已证 — `step1/impl/basic.md`（节点已走完，四节齐备；`flow.md`「impl/basic」节列出的第二项产出在空段下为空集——零落地调用，`templates/`、`.gitignore`、仓库根 `AGENTS.md` 均未被触碰，命令与真实输出见该文件「命令记录」。**取值说明**：本次 replay 约定的结论取值里仍没有"空段不产生调用"这一档（缺口由任务 4 记入 `docs/plan/spec-replay/drift-log.md` R3 条目）；本轮不新增取值，改记"已证"，其含义仅为"本节点已走完、其产出已在"，**不含**"有改动已落地"。缺口本身未修复）
 - verify/basic：已证 — `step1/verify/basic.md`（节点已走完，五节齐备；**「结论」既非 passed 也非 failed**——第一项判据无断言对象、第二三项可跑但与本段无因果关系、且执行身份与 `step1/impl/basic.md` 相同致 `rules.md` §7 身份独立不成立，三条理由见该文件「结论」。**取值说明**：验证型节点在本次 replay 的约定里只有 passed/failed 两档，两档均不成立，此处的"已证"只表示本文件已产出，**不表示验证通过**；本文件不构成任何下游节点的通过凭据——空段下 impl/detail 的前置本就不是它（见「当前节点」与控制器裁定 Ruling 18、Ruling 20）。这是同一取值集合缺口的第二次显形："已证"在本行与该节点自述的"不表示验证通过"共用同一字面值，属取值重载，如实记为敞开缺口、本轮不修，见 `docs/plan/spec-replay/drift-log.md`「verify/basic」条目）
 - impl/detail：已证 — `step1/impl/detail.md`（节点已走完，四节齐备；T-D1–T-D6 六个任务全部落地——5 个文件编辑合计 `+7 −105` 行，加 `templates/.themis/core/` 98 个文件整体删除，命令与真实输出见该文件「命令记录」。前置依据是控制器裁定 Ruling 18，见「当前节点」。**取值说明**：本行的"已证"含义与 impl/basic 行相同，只表示本节点已走完、其产出已在，**不含**任何关于判据是否满足的结论——那属 verify/detail。本节点自陈的偏差为"落地范围无偏差"，另标出四点：空行分隔符处理是 `design.md` 未定、由本节点当场定的一条规则，以及三处顺带修复的记录缺陷，逐条见该文件「与批准范围的偏差」）
-- verify/detail：未开始 — 无
-- 人工验收：未开始 — 无
-- 摘要：未开始 — 无
+- verify/detail：passed — `step1/verify/detail.md`「结论」（`specify.md` 四条判据逐条断言、四条全部满足；实际删除区间与 `design.md` 所载区间相减，非空行差额 0、空行差额 7 且七行长度均为 0，未越出批准范围；Go 侧构建与测试通过、通过包数 10。孤儿判定一并在本节点完成：**不存在孤儿**——basic 段 `### T-B` 条目数 0，无可判对象，该结论供 `acceptance.md` 阻断核查引用。`rules.md` §7 身份独立**本节点首次成立**：与 `step1/impl/detail.md` 比对，派发任务、会话、起始 HEAD 三项均不同。本行取值 `passed` 是验证型节点的正常取值，与 verify/basic 行那个重载的"已证"不同，此处名副其实）
+- 人工验收：accepted — `step1/acceptance.md`「结论」（所有者原话三条逐字见该文件「用户原话」：`a` / `accepted` / `验收后作为新 step 处理`。**录入说明**：首条只回「阻断核查」第 5 项的选项字母、不含验收结论，验收结论与残留项走法由随后两次追问取得，选定内容即后两条。三项阻断核查均不阻断。**两项带出未关闭**：`templates/.themis/workspace/README.md:5` 的范围外残留经所有者裁定作为**新 step** 处理，不并入本 step、不触发回退、本 step 已批准工件不标 stale；`catalog.md:33` 的开放决策点未因本次验收关闭——判据由"找到'延后'这一明确决定"满足，决定内容仍是延后）
+- 摘要：已证 — `step1/summary.md`（三节齐备，绑定 accepted 的实际交付；`flow.md`「摘要」节所称链尾。**取值说明**：本行"已证"含义与 impl 两行相同——本节点已走完、其产出已在，本 step 的流程闭环由本行合拢）
 
 ## 当前性
 
@@ -44,4 +46,8 @@ impl/detail 与 verify/detail 由两次不同的 agent 会话承担，`rules.md`
 - `step1/impl/basic.md`：current（上一轮产出；本段为空、零落地调用，该节点执行时 `templates/` 下无任何文件被改动——这一记述是对当时的记录，不因 impl/detail 已落地而失效。**本轮（任务 6）就地更正一处失准描述**：「与批准范围的偏差」第 2 条（c）原写作只补记了 `task/review.md`「分类核查」第 8 条第二项那次修剪，而披露范围其后已两次扩大，现按 `state.md` 本节 `task/review.md` 一行的准确版本改写。只改这一处描述，该文件其余各节未动）
 - `step1/verify/basic.md`：current（上一轮产出；「结论」未取 passed/failed，理由见该文件「结论」。该文件「说明」记的两处控制面无一致答案：一处是空段下本节点是否本该发生，至今仍无一致答案；另一处是 fail-closed 是否适用于"不可判"，已由控制器裁定 Ruling 20 给出取向——不触发 fail-closed，见「当前节点」——但条款本身的空白未修，控制面仍无一致答案。**本行本轮只补齐后一处的裁定口径，与其余各行看齐**，该文件正文未改动）
 - `step1/impl/detail.md`：current（本轮产出；四节齐备，「执行身份」如实记本次会话，未预写 verify/detail 一方的身份；「实际改动」逐条对回 T-D1–T-D6，每个数字都由本节点当场跑命令得出并粘贴在「命令记录」；「与批准范围的偏差」记"落地范围无偏差"外加四点如实标出。该文件不含任何验证结论）
-- `step1/verify/detail.md`、`step1/acceptance.md`、`step1/summary.md`：未产出
+- `step1/verify/detail.md`：current（五节齐备，结论 `passed`；四条判据的每个数字均由本节点当场跑命令得出、输出原样粘在「命令证据」并在收尾重跑比对；`impl/detail.md` 的自述在其中只作被核验对象，不作证据。「说明」如实写出三样核验不动的东西——控制面"一字未改"的证据排除不了"改后精确改回"、对方身份栏的真伪、实现者的推理过程——以及一处不落在任何判据范围内的范围外残留）
+- `step1/acceptance.md`：current（四节齐备，结论 accepted；「用户原话」逐字录入所有者三条答复并附录入说明——首条 `a` 只回残留项选项字母、不含验收结论，故就验收结论与残留走法两项分别追问后取得后两条。「阻断核查」三项均不阻断，另如实转达三处知情项与一处需表态项，后者已由所有者裁定）
+- `step1/summary.md`：current（三节齐备，链尾工件；绑定 accepted 所放行的实际交付，不含带出的两项。「中性工件说明」按 `SPEC-THEMICO-002` 写明本摘要与 Themico 无关、是否接入由可选 adapter 决定且不构成运行前提。依 `rules.md` §9，链尾工件在产出时由摘要作者自检，下一次被引用时由引用方复核）
+
+**本 step 全部工件均为 current，无 stale。** 验收未触发任何回退，所有者裁定的残留另起新 step，不使本 step 任何工件失效。两处仍然敞开的东西不属于当前性问题，如实留在此处：`catalog.md:33` 的开放决策点（内容仍是"延后"）与控制面两处互斥读法（Ruling 18、Ruling 20 绕开但未修复），逐条见 `docs/plan/spec-replay/drift-log.md`。
