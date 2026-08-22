@@ -2,9 +2,11 @@
 
 `docs/plan/**` 只保存尚待实施或验收的活动计划。本目录不建立第二套产品规范。
 
-**当前主线是根目录 `.themis/spec/` 重新设计**，不是编号 Plan 队列。其已批准行为契约位于 `docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md`；落地①–④已于 2026-08-18 产出 `.themis/spec/` 控制面四份文件（`README.md`/`flow.md`/`rules.md`/`template.md`），落地⑤（端到端 replay）未开始。
+**当前主线是根目录 `.themis/spec/` 重新设计**，不是编号 Plan 队列。其已批准行为契约位于 `docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md`；**落地①–⑤已于 2026-08-22 全部完成**——①–④产出 `.themis/spec/` 控制面四份文件（`README.md`/`flow.md`/`rules.md`/`template.md`），⑤ 完成首次端到端 replay，产出 [`spec-replay/drift-log.md`](spec-replay/drift-log.md) 与 [`spec-replay/hard-enforcement-list.md`](spec-replay/hard-enforcement-list.md)。
 
-**编号 Plan 35/36/37 属于 `templates/.themis/` 旧 core**，与主线不共用一套合同。Plan 35 的 2026-07-31 replacement 产品语义位于 `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md`；Markdown authority cutover、新静态证据、十六场景人工 replay 与 criteria 1–31 重映射已完成，criterion 32 仍等待用户明确重新接受。`templates/.themis/core/` 的退场正是落地⑤ replay 所承载的需求，故这三个 Plan 在 replay 结论产生前不推进。模块详细合同与模板状态位于 `templates/.themis/**/README.md`。
+**下一步尚未确定**，候选来自 replay 的实际产出：11 条 hard 执行器强制项（是否着手、按哪种排序）、控制面两处至今未修复的缺口（Ruling 18、Ruling 20 绕开的空段互斥读法）、以及所有者裁定「作为新 step 处理」的 `templates/.themis/workspace/README.md:5` 残留。任一项启动前须单独展开计划并批准。
+
+**编号 Plan 35/36/37 属于 `templates/.themis/` 旧 core**，与主线不共用一套合同。Plan 35 的 2026-07-31 replacement 产品语义位于 `docs/superpowers/specs/2026-07-31-plan-35-core-contract-replacement-design.md`；Markdown authority cutover、新静态证据、十六场景人工 replay 与 criteria 1–31 重映射已完成，criterion 32 仍等待用户明确重新接受。**`templates/.themis/core/` 已于 2026-08-22 由落地⑤ 的 impl/detail 节点删除（98 个文件），这三个 Plan 的实现载体已不存在**，重启前须整体重基线。模块详细合同与模板状态位于 `templates/.themis/**/README.md`。
 
 ## 授权规则
 
@@ -18,8 +20,8 @@
 
 | 顺序 | 计划 | 依赖 | 定位 | 状态 |
 |---|---|---|---|---|
-| 当前 | [spec 流程端到端 replay（落地⑤）](../superpowers/plans/2026-08-19-spec-flow-end-to-end-replay.md) | `.themis/spec/` 控制面四份文件已落地 | 以「删除 `templates/.themis/core/`」为载体走完 flow.md 十三个节点，产出漂移清单作为未来 hard 执行器强制清单 | 计划已展开，**等待单独批准**；未开始执行 |
-| 35 | [Core Contract Replacement](35-core-prompt-flow/impl.md) | 无 | Intake-first 双作用域控制、十六个 Capability、不可变工件与 Prompt-level replay | Cutover、静态证据、replay 与 criteria 1–31 已完成；criterion 32 等待用户重新接受 |
+| — | [spec 流程端到端 replay（落地⑤）](../superpowers/plans/2026-08-19-spec-flow-end-to-end-replay.md) | `.themis/spec/` 控制面四份文件已落地 | 以「删除 `templates/.themis/core/`」为载体走完 flow.md 十三个节点，产出漂移清单作为未来 hard 执行器强制清单 | **已完成**（2026-08-22，验收 accepted）。产物见 [spec-replay/](spec-replay/) |
+| 35 | [Core Contract Replacement](35-core-prompt-flow/impl.md) | 无 | Intake-first 双作用域控制、十六个 Capability、不可变工件与 Prompt-level replay | criterion 32 等待用户重新接受；**其载体 `templates/.themis/core/` 已于 2026-08-22 删除**，重启须整体重基线 |
 | 36 | [Deterministic Assurance](36-deterministic-assurance/impl.md) | Markdown-first replacement Plan 35 已重新接受 | strict contracts、validator、canonicalization 与 fixtures；无副作用 | 暂停，待 Plan 35 criterion 32 通过后完整重基线和单独批准 |
 | 37 | [Native Runtime](37-native-runtime/impl.md) | 重基线后的 Plan 36 已实施并接受 | policy evaluator、temporary invocation、recorder 与 minimal write safety | 暂停，待 Plan 36 |
 | 80 | [Multi-Agent Execution](80-multi-agent-execution/impl.md) | 可选；启动时重基线 | optional worker topology | 待单独确认，非阻塞 |
