@@ -82,7 +82,7 @@ docs/plan/spec-replay/drift-log.md          漂移清单（本 replay 的真正�
 ```markdown
 ### <节点名>
 
-- **控制面怎么说**：读了 `flow.md` 的哪一节、`rules.md` 的哪几节，它们要求什么。
+- **控制面怎么说**：读了 `flow.md` 的哪一节、`rules.md` 的哪几节（精确到小节号），加上**你自己压缩的一句话**说它们要求什么。**不要逐字摘抄判据、不要加引号搬原句**——那会让漂移清单看起来像第二份规范，正是"只指向不复述"要防的那种双份。压缩到一眼能看出这是记录而不是规则。
 - **实际怎么做的**：真实动作，含偏离。没有偏离就写"无偏离"。
 - **漂移**：有/无。有则写清形态——是判不动、说不清、还是想当然跳过了。
 - **控制面拦住了吗**：拦住 / 没拦住 / 不适用。没拦住的说明缺口在哪一份文件。
@@ -90,6 +90,10 @@ docs/plan/spec-replay/drift-log.md          漂移清单（本 replay 的真正�
 ```
 
 **"无漂移"也要记录。** 十三个节点里哪些顺畅、哪些卡顿，对比本身就是信息；只记问题会让清单看起来像流程失败，而实际可能只有两三处需要机器强制。
+
+**漂移清单是有日期的记录，不是规范。** 它写的是"replay 当时控制面要求什么、我实际做了什么"，因此必须容许它复述——否则记录不可用：读者无法在不重读（可能已变的）控制面的情况下看懂当时比对了什么。但**复述必须是记录者自己的压缩**，不是判据原文搬运。清单开头须写明这一身份，避免它被当成第二份规范来引用。
+
+这条本身是计划的一处自伤：本计划最初把该字段定义为"它们要求什么"，与全局约束"只指向不复述"直接冲突，而这个矛盾在两个节点写完后才被评审抓出。**执行者必须把这次矛盾本身记成一条漂移**——控制面之外的工件格式定义也能引入复述压力，且它逃过了执行者与计划作者两道眼睛。
 
 ---
 
@@ -141,7 +145,7 @@ mkdir -p docs/plan/spec-replay
 
 - `core/` 是 simple/full 双路径模型 —— 来源：`代码#templates/.themis/core/policies/README.md`
 - 与已批准单一路径契约冲突 —— 来源：`spec#docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md:20`（注意 §1 规定 spec 只作补充、不作事实源，所以还需代码侧来源）
-- 设计已定 core 在 spec 落地后删除 —— 来源：`spec#docs/superpowers/specs/2026-08-12-themis-spec-control-plane-design.md:17`（行 15 是冲突陈述，行 17 是"处置（已定）"）
+- 设计已定 core 在 spec 落地后删除 —— 来源：`spec#docs/superpowers/specs/2026-08-12-themis-spec-control-plane-design.md:15`（行 13 是冲突陈述，行 15 是"处置（已定）"）
 - 98 个文件、六处活跃引用 —— 来源：`代码#templates/.themis/core`。**必须自己跑命令得出数字，不要照抄本计划**：
 
 ```bash
@@ -255,6 +259,10 @@ git commit -m "replay: R1 意图评审，记录所有者结论"
 
 ### 任务 3：抽象设计与 R2 评审（含人类闸门）
 
+> **执行中发现的计划缺陷（2026-08-20 修正）**：`flow.md` 规定抽象设计节点**只产出 `specify.md`**；`design.md` 属于 R2 **之后**的「详细设计 + 任务」节点，其前置正是 R2 approved。本任务原本把 `design.md` 排在 R2 之前，违反了节点边界——控制面是对的，本计划漂移了，且计划作者与两轮评审都未察觉，直到执行者在节点上逐字读 `flow.md` 才发现。
+>
+> 所有者已裁定「接受」：已起草的 `design.md` 作为草稿持有，R2 批准后正式归属任务 4；**`design.md` 的一切内容修改移交任务 4**。下方步骤 3、以及步骤 4 中对 `design.md` 的核验，保留为已执行的历史记录，不再是任务 3 的要求。
+
 **文件：**
 - 新建：`.themis/workspace/spec/core-removal/step1/specify.md`
 - 新建：`.themis/workspace/spec/core-removal/step1/design.md`
@@ -345,6 +353,18 @@ git commit -m "replay: 抽象设计与 R2 评审，记录所有者结论"
 ---
 
 ### 任务 4：详细设计任务分段与 R3 评审（含人类闸门）
+
+> **本任务范围已扩大（2026-08-20）**：按 `flow.md`，「详细设计 + 任务」节点的产出是 `design.md` **加**两份任务清单。`design.md` 已在任务 3 提前起草（见任务 3 的修正说明），现随 R2 批准正式归属本任务，且**必须在本任务内按下列三项修订**：
+>
+> 1. **宽读**：所有者 R2 批复第 2 条确认 `CLAUDE.themis.md`、`README.md` 的删节采宽读——删掉依赖 `core` 的整节，而非只删含字面 `core/` 路径的行。草稿现为窄读，结构决策第 1、2 条需改写。
+> 2. **纳入第七处**：所有者 R2 批复第 3 条确认仓库根 `AGENTS.md:13` 纳入范围。草稿的结构决策第 7 条现记为"不处理"，需改为处理方案。`specify.md` 已新增 `SPEC-COREREMOVAL-004` 覆盖它。
+> 3. **修两处事实错误**：
+>    - 草稿「事实依据」把 `git grep` 命中行数记为 14 行，实际重数为 16 行（任务 3 执行者自己发现并如实记入漂移清单，未静默修正）。
+>    - 同一小节对 `CHANGES.md:41,81,82` 的误报定性称「`docs/core/` 是另一套已归档的旧文档目录」，但 **`docs/core/` 当前并不存在**（`git ls-files | grep '^docs/core/'` 为空，已被提交 `2c5835e docs: move docs` 移走）——用一个不存在的目录论证了分类。结论（不处理）没错，依据是假的；同段对 `CHANGES.md:78` 用对了理由（历史变更日志不陈述当前结构），`docs/core/**` 本该套用同一理由。任务 3 评审发现，执行者自查未捕获。
+>
+>    **修之前先重跑命令核对数字。** 本次 replay 已累计四处数值型事实出错（`docs/` 引用文件数、14/16 行、`.gitignore` 10/11 行、以及上述不存在的目录），共同形态是"自查只重读自己写的数字，不重跑命令比对"。
+>
+> `catalog.md:33` 仍是**开放决策点**：所有者要求前述各项落地后再单独提处理方案由他审阅。本任务不得为它定做法，也不得让它消失。
 
 **文件：**
 - 新建：`.themis/workspace/spec/core-removal/step1/task/basic.md`
@@ -550,15 +570,18 @@ git rm -r templates/.themis/core
 
 ```bash
 git grep -n 'core/' -- templates/.themis/ | grep -v '\.themico/core' || echo "  templates/.themis 无残留"
-git grep -n '\.themis/core' -- ':!docs' || echo "  全仓（除 docs）无 .themis/core 残留"
-go test ./... -count=1 2>&1 | tail -5
+git grep -n '\.themis/core' -- ':!docs' ':!.themis/workspace' || echo "  无 .themis/core 残留"
 go build ./... && echo "build ok"
+go test ./... -count=1 2>&1 | grep -c '^ok'        # 须为 10
+go test ./... -count=1 2>&1 | grep -v '^ok' | head # 须无 FAIL 行
 ```
 
 前两条命令的预期：
 
 - 第一条的每条剩余命中都必须对应 `design.md` 中一条明确保留的决定（判据同 `SPEC-COREREMOVAL-001`）。无法对应即为断链。
 - 第二条应为空。若 `.gitignore` 仍命中，说明步骤 2 漏了那一行。
+
+**`.themis/workspace` 的排除是本计划的一处订正（2026-08-21，任务 6 执行者发现）**：原断言写作 `git grep '\.themis/core' -- ':!docs'` 输出为空，而这**永远不可能成立**——实例工件（`Intent.md`、`specify.md`、`design.md`、`task/*`、`impl/*`、`verify/*`）必须记录被删除的路径本身，否则它们无法说明删了什么。要求记录删除的流程，同时要求全仓不出现被删路径，两者自相矛盾。这是计划正文的预期错误，不是判据缺陷——`specify.md` 的四条判据都正确地把范围锚定在 `templates/.themis/` 与具体文件上，未受影响。
 
 **`docs/` 被排除是有意的**：`docs/plan/35-core-prompt-flow/` 等历史文档中的 core 引用是归档记录，记录的是当时的事实，**不得改写**。改写历史记录来让 grep 变干净，是把证据改成结论。
 
@@ -717,7 +740,7 @@ git commit -m "docs: replay 漂移清单与 hard 执行器强制清单"
 2. 十三个节点各在 `state.md` 留下闸门结论，`state.md` 终态记录全部闸门。
 3. 四处人类闸门（R1/R2/R3/验收）各有项目所有者的明确答复，`intent-review.md`、`design-review.md`、`task/review.md`、`acceptance.md` 的结论小节记录了原话。
 4. `impl/basic.md` 与 `verify/basic.md`、`impl/detail.md` 与 `verify/detail.md` 的执行身份各自不同；相同则已作为漂移记录。
-5. `templates/.themis/core/` 已删除；六处引用均按 `design.md` 的决定处理完毕，任务 6 步骤 6 的两条断言符合其预期（第二条为空）；`go build ./...` 与 `go test ./...` 通过。**基线：删除前三个包全绿**（`internal/themico/result`、`store`、`validate`），删除后须仍全绿——core 是 Markdown 合同，出现 Go 侧变化即说明有未预期的依赖。
+5. `templates/.themis/core/` 已删除；六处引用均按 `design.md` 的决定处理完毕，任务 6 步骤 6 的两条断言符合其预期（第二条为空）；`go build ./...` 与 `go test ./...` 通过。**基线：删除前 `internal/themico/` 下十个包全绿**（`candidate`、`canonical`、`cli`、`governance`、`integration`、`model`、`query`、`result`、`store`、`validate`），删除后须仍是这十个全绿——core 是 Markdown 合同，出现 Go 侧变化即说明有未预期的依赖。用 `go test ./... -count=1 2>&1 | grep -c '^ok'` 取包数，**不要用 `tail -n` 看结果**：写本计划时正是 `tail -3` 只显示末三行，把十个包误记成三个。
 6. `docs/` 下的历史 core 引用未被改写。
 7. `docs/plan/spec-replay/drift-log.md` 有十三条记录，每条五项齐全，"无漂移"也已记录。
 8. `docs/plan/spec-replay/hard-enforcement-list.md` 的每条强制项都能追溯到漂移清单中一条真实发生的漂移。
