@@ -13,6 +13,7 @@
   QA.md
   state.md
   step<N>/
+    scope.md
     specify.md
     design.md
     design-review.md
@@ -26,18 +27,23 @@
     summary.md
 ```
 
-`Intent.md`、`intent-review.md`、`QA.md`、`state.md` 每个 spec 一份，放在实例根目录：R1 意图评审只发生一次，因此 `intent-review.md` 不随 step 分目录，与 `Intent.md`、`QA.md`、`state.md` 一起留在根；其余工件按 step 分目录，每个 step 拥有独立的一套 `specify.md`、`design.md`、`design-review.md`、`task/`、`impl/`、`verify/`、`acceptance.md`、`summary.md`；`summary.md` 绑定的是该 step 的实际交付，因此与 `acceptance.md` 同层，不提到实例根目录。
+**意图分两层。** 上层是**用户的完整需求**，写在实例根的 `Intent.md`，由 R1 一次确认——需求本身与它的 step 分解一并确认。下层是**该需求的一个分解单元**，写在 `step<N>/scope.md`，只说明本 step 承担上层哪一块、边界在哪；它的合法性由上层 R1 已批准的 step 分解背书，**不单独评审**，评审仍是 R1/R2/R3 三道。
 
-step 编号规则：大步骤取整数，大步骤内的小步骤取小数。用户描述的多个无关联需求拆为不同大步骤；同一大步骤内部自顶向下、由抽象到具体拆为小步骤。
+一个 spec 实例承载**一个完整用户需求**；其下多个 step 是该需求的分解，彼此可以互不重叠，但合起来构成该需求，全部完成才算需求达成。**step 不是无关需求的容器**——真正无关的需求另起 spec 实例。
+
+`Intent.md`、`intent-review.md`、`QA.md`、`state.md` 每个 spec 一份，放在实例根目录：R1 确认的是上层需求与分解方式，只发生一次，因此 `intent-review.md` 不随 step 分目录，与 `Intent.md`、`QA.md`、`state.md` 一起留在根。其余工件按 step 分目录，每个 step 拥有独立的一套 `scope.md`、`specify.md`、`design.md`、`design-review.md`、`task/`、`impl/`、`verify/`、`acceptance.md`、`summary.md`；`summary.md` 绑定的是该 step 的实际交付，因此与 `acceptance.md` 同层，不提到实例根目录。
+
+step 编号规则：大步骤取整数，大步骤内的小步骤取小数。同一需求自顶向下、由抽象到具体拆为多个大步骤；大步骤内部再拆小步骤。
 
 ## 文件小节
 
 | 文件 | 小节 |
 | --- | --- |
-| `Intent.md` | 问题 / 期望结果 / 核心链路 / 范围与非做 / 约束 / 来源引用 |
+| `Intent.md` | 问题 / 期望结果 / 核心链路 / 范围与非做 / 约束 / **step 分解** / 来源引用 |
 | `QA.md` | 第 N 轮 → 问 / 答 / 来源（追加写入） |
 | `intent-review.md` | 投影 / 未解决反馈 / 结论 |
-| `state.md` | 当前节点 / 各闸门 / 当前性 |
+| `state.md` | 当前节点 / 各闸门 / 当前性（统管全部 step：spec 级节点各一行，step 级节点按 step 分组） |
+| `scope.md` | 承担的上层分解项 / 本 step 边界 / 与其他 step 的关系 |
 | `specify.md` | 行为条目（`### SPEC-<主题>-<序号>` + 验收判据）/ 来源覆盖 |
 | `design.md` | 架构与边界 / 结构决策 / 取舍 / 事实依据 |
 | `design-review.md` | 投影 / 未解决反馈 / 结论 |
