@@ -35,6 +35,17 @@
 - 本工件引用控制面处的方式，判据见 `templates/.themis/AGENTS.md` "引用只指向，不复述"一节。
 - `templates/.themis/spec/README.md` 既是本次删除要改动的对象，又是 replay 正依据的只读控制面 `.themis/spec/README.md` 的包源；处理方式沿用既有裁定——replay 期间不重装，分歧记入 `step1/design.md` 与漂移清单，具体决定权在抽象设计节点。所有者已确认沿用此裁定，见 `QA.md` 第 1 轮问 3。
 
+## step 分解
+
+> 本小节为 2026-08-24 新增，依 `flow.md`「R1 意图评审」节的失效级联例外：仅新增分解项、不改变任何已有 step 的目标语义，因此**不使已 accepted 的 step1 失效**。step1 当初被批准时所依据的前提（目标、期望结果、核心链路、范围与非做）本次一字未改。新增的 step2 分解项须经 R1 评审者确认。
+
+本需求是**清除 `templates/.themis/` 下的旧 core 体系残留**，拆为两个大步骤，全部完成才算需求达成：
+
+- **step1 — 删除 `core/` 目录本体与其活跃引用。** 承担"期望结果"所载的主体：`templates/.themis/core/` 98 个文件整体消失，七处活跃引用与 `.gitignore` 一条规则处理完毕。**状态：已完成，2026-08-22 验收 accepted**（见 `step1/acceptance.md`）。
+- **step2 — 清除范围外残留的 Core 主语描述。** 承担 step1 判据范围之外、但同属本需求的一处残留：`templates/.themis/workspace/README.md:5` 一句以 Core 为主语、陈述 Core 与 Workspace 读写关系的话。它在 step1 的 verify/detail 中被发现并如实标出（不含带斜杠的 `core/` 字串，不进 `SPEC-COREREMOVAL-001` 命中集；也不在 `design.md`「架构与边界」清点的 5 个文件内），由所有者在 step1 人工验收中裁定"验收后作为新 step 处理"。**状态：未开始。**
+
+**不在本需求范围内、不作为 step 存在**：`templates/.themis/workspace/context/catalog.md:33` 的相对路径引用。它是所有者自 R1 起点名延后的开放决策点，"延后"是一个明确决定而非待办；何时处理、是否处理由所有者另行决定，不由本需求的完成判定牵制。
+
 ## 来源引用
 
 - 代码#`templates/.themis/core/policies/README.md:14,47`（`selected_path` 为控制规则四维之一、`Planning` route 含 `themis-simple-plan` capability，为 simple/full 双路径模型的直接代码痕迹）
