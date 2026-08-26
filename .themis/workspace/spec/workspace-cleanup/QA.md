@@ -80,3 +80,51 @@
 **答**：待所有者答复。
 
 **来源**：代码#`templates/.themis/README.md:44-51`、代码#`templates/.themis/CLAUDE.themis.md:7,71-77`、代码#`templates/.themis/spec/template.md:5,10`（实例面路径仍是 `.themis/workspace/spec/`）。
+
+---
+
+## 第 1 轮答复（2026-08-26）
+
+所有者一次性答复四问，原话逐字：
+
+> 1. 删除。2. 没有价值。3. 不需要，删除。4. 删除整个templates/.themis下的内容
+
+**问 1 答**：删除。处置形态取整体删除，不移入退役位置。
+
+**问 2 答**：没有价值。8 份有内容文件无一需要保留——含 `project.md` 的项目配置形态与 `artifact-and-state-model.md` 的 currentness 思路。**注**：Agent 在提问时指出"将来 hard 执行器要跑命令时，从哪读项目的构建/测试命令是个真问题"，所有者答复"没有价值"即已知悉该顾虑仍判定不保留；该问题若将来成立，由届时的需求另行解决，不靠保留本包兜底。
+
+**问 3 答**：不需要，删除。Themis 不再需要自己的 Context 概念，`context/` 子树随包删除。
+
+**问 4 答**：删除整个 `templates/.themis` 下的内容。
+
+---
+
+## 第 2 轮
+
+### 问 5（范围）答复 4 超出问题 4 的范围，实际要删到哪一层？
+
+问题 4 原本只问两份入口文档的索引怎么改，答复 4 说的是删除整个 `templates/.themis` 下的内容——后者范围大得多，且会删掉活的东西：`spec/` 是当前控制面的包源（安装副本 `.themis/spec/` 按 `.gitignore` 不入库，包源是唯一入库的那份），`skills/themis/SKILL.md` 是唯一公共入口且已指向当前 `.themis/spec/`。
+
+Agent 按 `flow.md` 停下确认，未擅自按任一读法执行。
+
+**答**（所有者从给定选项中选定）：
+
+> 真的清空 templates/.themis/ 全部
+
+即含 `spec/` 包源与 `skills/` 两份入口。
+
+**来源**：用户确认#真的清空 templates/.themis/ 全部。
+
+---
+
+### 问 6（核心链路）清空后控制面四份文件与两份 SKILL.md 存哪里？
+
+它们必须在 git 中有一份，否则 clone 下来没有控制面。当前 `.gitignore` 忽略 `/.themis/spec/`、`/.themis/skills/`、`/.themis/README.md`、`/.themis/CLAUDE.themis.md`，理由写在该文件注释里：安装副本入库即两份控制面，改一处忘另一处就是漂移。**删掉包源后，控制面将只剩一份被忽略的工作区副本——`git clean` 即失，clone 者拿不到。**
+
+**答**（所有者从给定选项中选定）：
+
+> .themis/ 改为入库(推荐)
+
+即：删除 `.gitignore` 中对应的忽略规则，把现有 `.themis/spec/` 与 `.themis/skills/` 直接入库。从此只有一份控制面，"两份会漂移"的原理由随之消失，也不再需要安装动作。
+
+**来源**：用户确认#.themis/ 改为入库；代码#`.gitignore`（现有四条忽略规则及其注释理由）。
