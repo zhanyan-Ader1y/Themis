@@ -44,15 +44,16 @@ step 编号规则：大步骤取整数，大步骤内的小步骤取小数。同
 | `intent-review.md` | 投影 / 未解决反馈 / 用户原话 / 结论 |
 | `state.md` | 当前节点 / 各闸门 / 当前性（统管全部 step：spec 级节点各一行，step 级节点按 step 分组） |
 | `scope.md` | 承担的上层分解项 / 本 step 边界 / 与其他 step 的关系 |
-| `specify.md` | 行为条目（`### SPEC-<主题>-<序号>` + 验收判据）/ 来源覆盖 |
+| `specify.md` | 行为条目（`### SPEC-<主题>-<序号>` + 验收判据 + 来自 `Intent.md` 哪一节）/ 来源覆盖 |
 | `design.md` | 架构与边界 / 结构决策 / 取舍 / 事实依据 |
 | `design-review.md` | 投影 / 未解决反馈 / 用户原话 / 结论 |
 | `task/basic.md` | 基础任务 → `### T-B<n>` |
 | `task/detail.md` | 详细实现任务 → `### T-D<n>` |
 | `task/review.md` | 评审范围 / 分类核查 / 未解决反馈 / 用户原话 / 结论 |
 | `impl/basic.md`、`impl/detail.md` | 执行身份 / 实际改动 / 与批准范围的偏差 / 命令记录 |
-| `verify/basic.md`、`verify/detail.md` | 执行身份 / 断言与实际结果 / 命令证据 / 结论 / 说明 |
-| `acceptance.md` | 交付视图 / 阻断核查 / 用户原话 / 结论 |
+| `verify/basic.md` | 执行身份 / 断言与实际结果 / 命令证据 / 结论 / 说明 |
+| `verify/detail.md` | 执行身份 / 断言与实际结果（每条断言注明对应任务）/ 命令证据 / 结论 / 说明 |
+| `acceptance.md` | 交付视图 / 阻断核查（引用验证断言的结论）/ 用户原话 / 结论 |
 | `summary.md` | 交付摘要 / 绑定的验收结论 / 中性工件说明 |
 
 上表每份工件的小节划分是 `rules.md` §9 的落点：§9 是贯穿全部产出工件节点的通用规则，不依附任何单一节点，因此不会被 `flow.md` 的某个节点专门引用——它正是通过本文件逐份工件的小节划分获得落点。
@@ -62,3 +63,5 @@ step 编号规则：大步骤取整数，大步骤内的小步骤取小数。同
 `task/basic.md` 中每个 `### T-B<n>` 固定记四项：结构改动、判定依据、被哪些 detail 任务依赖、design.md 中的出处（判定见 `rules.md` §4、§6）。
 
 `task/detail.md` 中每个 `### T-D<n>` 固定记三项：行为目标、对应 `specify.md` 条目、依赖的基础任务——后两项分别是 trace 链与 `rules.md` §8 消费者关系在本文件的落点。
+
+`specify.md` 每个 `### SPEC-` 条目要指向 `Intent.md` 对应源节、`verify/detail.md` 每条断言注明其验证的任务编号、`acceptance.md` 的阻断核查小节按上表括注引用验证断言的结论——这三项与上一段的环 2 落点合起来，构成 `SPEC-TRACE-001` 所要求的追溯链在本文件的四处落点。链的检出判据与判定者见 `rules.md` §12。
