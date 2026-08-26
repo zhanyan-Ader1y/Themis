@@ -51,7 +51,8 @@ step 编号规则：大步骤取整数，大步骤内的小步骤取小数。同
 | `task/detail.md` | 详细实现任务 → `### T-D<n>` |
 | `task/review.md` | 评审范围 / 分类核查 / 未解决反馈 / 用户原话 / 结论 |
 | `impl/basic.md`、`impl/detail.md` | 执行身份 / 实际改动 / 与批准范围的偏差 / 命令记录 |
-| `verify/basic.md`、`verify/detail.md` | 执行身份 / 断言与实际结果（每条断言注明对应任务）/ 命令证据 / 结论 / 说明 |
+| `verify/basic.md` | 执行身份 / 断言与实际结果 / 命令证据 / 结论 / 说明 |
+| `verify/detail.md` | 执行身份 / 断言与实际结果（每条断言注明对应任务）/ 命令证据 / 结论 / 说明 |
 | `acceptance.md` | 交付视图 / 阻断核查（引用验证断言的结论）/ 用户原话 / 结论 |
 | `summary.md` | 交付摘要 / 绑定的验收结论 / 中性工件说明 |
 
@@ -63,4 +64,4 @@ step 编号规则：大步骤取整数，大步骤内的小步骤取小数。同
 
 `task/detail.md` 中每个 `### T-D<n>` 固定记三项：行为目标、对应 `specify.md` 条目、依赖的基础任务——后两项分别是 trace 链与 `rules.md` §8 消费者关系在本文件的落点。
 
-`specify.md` 每个 `### SPEC-` 条目要指向 `Intent.md` 对应源节、`verify/detail.md` 每条断言注明其验证的任务编号、`acceptance.md`「阻断核查」引用验证工作的结论——这三项与上一段的环 2 落点合起来，构成 `SPEC-TRACE-001` 所要求的追溯链在本文件的四处落点。链的检出判据与判定者见 `rules.md` §12。
+`specify.md` 每个 `### SPEC-` 条目要指向 `Intent.md` 对应源节、`verify/detail.md` 每条断言注明其验证的任务编号、`acceptance.md` 的阻断核查小节按上表括注引用验证断言的结论——这三项与上一段的环 2 落点合起来，构成 `SPEC-TRACE-001` 所要求的追溯链在本文件的四处落点。链的检出判据与判定者见 `rules.md` §12。
