@@ -4,7 +4,7 @@
 
 ## 当前节点
 
-**人工验收（等待所有者答复）。** impl/basic（零调用）、verify/basic（不适用）、impl/detail、verify/detail（passed）均已走完。
+**无——本 spec 实例已闭合，需求达成。** step1 走完全部节点，人工验收 accepted，摘要为链尾。`Intent.md`「step 分解」只载 step1 一项。
 
 **本实例的特殊处境须记明**：本需求要修的是"人工闸门的授权可被 Agent 推断补足"，而**本 spec 自身的每一次评审与验收，都是该问题的又一次实测机会**。若本 spec 走流程期间再次发生同型情形，须如实记入本文件与相应工件，不得因"正在修它"而回避记录。
 
@@ -29,8 +29,8 @@
 - verify/basic：不适用 — `step1/verify/basic.md`「结论」（本 step 是该取值第二个使用者；**三项中两项无断言对象**——纯条款类 step 连"可构建"都无对象可判，较前两个实例退化更彻底，如实记录不构成对 §7 的修改主张）
 - impl/detail：已走完 — `step1/impl/detail.md`（四条任务全部落地，落地范围无偏差；**但如实标出两处判据缺陷订正**——awk 范围在标题后首个空行即终止、判据关键词与条款措辞未对齐。连同抽象设计节点自查改正的两处，本 step 共四处，共同根因是判据写下时未实跑）
 - verify/detail：passed — `step1/verify/detail.md`「结论」（五条判据逐条断言、五条全部满足；孤儿不存在；落地恰四个文件全在批准清单内；R3 裁定的 testing-notes 义务已履行。结论不覆盖三处：两处判据订正属人工验收裁量、002 语义须第一个引用者验证、身份独立不成立。**另明写一样核验不动的**：§11 是否真能让推断补足留下痕迹未经检验——本结论只证条款已落地，不证它管用）
-- 人工验收：进行中 — `step1/acceptance.md`（交付视图与阻断核查待产出）
-- 摘要：未开始 — 无
+- 人工验收：accepted — `step1/acceptance.md`「结论」（所有者原话两条逐字："批准。" / "一 批准"，附依 §11 的对应关系记录。**首答未提及并列裁定项，依 §11 拒绝条件该项当时保持未裁定、未被推断补足**；经另行提问后取得第二条，指向明确无需解释性读法。裁定接受两处判据命令订正，效力仅限"改写法不改语义"）
+- 摘要：已走完 — `step1/summary.md`（三节齐备，绑定 accepted 的实际交付；另列带出未关闭的四项与一项未获追认的读法）
 
 ## 当前性
 
@@ -44,3 +44,11 @@
 - `step1/design-review.md`：current（投影按 spec-review-presentation 写成，无待裁定项；**本文件自身已带「用户原话」小节**——那正是 SPEC-AUTHTRACE-003 将要求的形态，在其落地前先行采用，如实记录）
 - `step1/task/basic.md`、`step1/task/detail.md`：current（`basic.md` 为空段，四个候选逐个列出 §4 两条判据的判定，两条均不满足；`detail.md` 为 T-D1–T-D4，四条互不依赖、无次序风险）
 - `step1/task/review.md`：current（分类核查四条。**第 2 条标出一处任务层新增义务**——T-D3 要求同步更新 `testing-notes.md`，`design.md` 未写；本节点判其不引入新结构但仍交评审者确认，未自行放行。「用户原话」「结论」待所有者填入）
+- `step1/impl/basic.md`：current（零调用，空段形态）
+- `step1/verify/basic.md`：current（结论「不适用」；三项中两项无断言对象——纯条款类 step 连"可构建"都无对象可判）
+- `step1/impl/detail.md`：current（四条任务全部落地，落地范围无偏差；两处判据缺陷订正如实标出）
+- `step1/verify/detail.md`：current（结论 `passed`，五条判据逐条断言；明写一样核验不动的——§11 是否真能让推断补足留下痕迹未经检验）
+- `step1/acceptance.md`：current（accepted；「用户原话」含依 §11 的对应关系记录，**本 step 的验收自身即 §11 的第一份实证记录**）
+- `step1/summary.md`：current（链尾工件；带出四项未关闭事项与一项未获追认的读法）
+
+**本 spec 全部工件均为 current，无 stale。** 验收未触发任何回退。
