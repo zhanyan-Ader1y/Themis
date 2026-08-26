@@ -39,10 +39,16 @@
 
 > 本小节为 2026-08-24 新增，依 `flow.md`「R1 意图评审」节的失效级联例外：仅新增分解项、不改变任何已有 step 的目标语义，因此**不使已 accepted 的 step1 失效**。step1 当初被批准时所依据的前提（目标、期望结果、核心链路、范围与非做）本次一字未改。新增的 step2 分解项须经 R1 评审者确认。
 
-本需求是**清除 `templates/.themis/` 下的旧 core 体系残留**，拆为两个大步骤，全部完成才算需求达成：
+本需求是**删除 `templates/.themis/core/` 目录本体与其活跃引用**，**只有 step1 一个大步骤**；step1 已 accepted，本需求已达成。
+
+> 分解的演进如实记录，不回填改写：2026-08-24 本小节新增时拆为两个 step；2026-08-26 所有者撤销 step2（理由见该项），需求范围随之收窄为"删除 `core/` 本体与其活跃引用"，不再是"清除 `templates/.themis/` 下的旧 core 体系残留"。**收窄不影响 step1**——step1 的目标、期望结果、核心链路、范围与非做始终是 `core/` 本体与活跃引用，一字未改。
 
 - **step1 — 删除 `core/` 目录本体与其活跃引用。** 承担"期望结果"所载的主体：`templates/.themis/core/` 98 个文件整体消失，七处活跃引用与 `.gitignore` 一条规则处理完毕。**状态：已完成，2026-08-22 验收 accepted**（见 `step1/acceptance.md`）。
-- **step2 — 清除范围外残留的 Core 主语描述。** 承担 step1 判据范围之外、但同属本需求的一处残留：`templates/.themis/workspace/README.md:5` 一句以 Core 为主语、陈述 Core 与 Workspace 读写关系的话。它在 step1 的 verify/detail 中被发现并如实标出（不含带斜杠的 `core/` 字串，不进 `SPEC-COREREMOVAL-001` 命中集；也不在 `design.md`「架构与边界」清点的 5 个文件内），由所有者在 step1 人工验收中裁定"验收后作为新 step 处理"。**状态：未开始。**
+- ~~**step2 — 清除范围外残留的 Core 主语描述。**~~ **已于 2026-08-26 由所有者撤销，不再是本需求的分解项。** 原拟承担 `templates/.themis/workspace/README.md:5` 一句以 Core 为主语、陈述 Core 与 Workspace 读写关系的话。
+
+  **撤销理由**：该项建立在"`templates/.themis/` 应当与当前 `.themis/spec/` 结构对齐"这一前提上，而所有者答复"不需要对齐 templates/.themis 中的结构与规范"——前提不成立，那句话因此不是待清理的残留。`templates/.themis/workspace/` 是 Plan 35 遗留的独立包：`spec/` 控制面对它零引用（`grep -rn 'templates/.themis/workspace' templates/.themis/spec/` 无输出），`templates/.themis/AGENTS.md` 也不把它列为受治理的合同。它自成一套、不与 spec 流程互通，那句话在它自己的语境里是自洽的历史记述。
+
+  step1 的 verify/detail 把它标为"范围外"这一判断成立；把"范围外"读作"待处理"是 step 定界节点的越界，已在此撤回。所有者在 step1 人工验收中"验收后作为新 step 处理"的裁定，由本次答复取代。
 
 **不在本需求范围内、不作为 step 存在**：`templates/.themis/workspace/context/catalog.md:33` 的相对路径引用。它是所有者自 R1 起点名延后的开放决策点，"延后"是一个明确决定而非待办；何时处理、是否处理由所有者另行决定，不由本需求的完成判定牵制。
 
