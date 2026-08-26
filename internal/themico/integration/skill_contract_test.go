@@ -21,7 +21,7 @@ import (
 
 func TestSkillTreeMatchesFirstUsableDeliveryContract(t *testing.T) {
 	repository := repositoryRoot(t)
-	skill := filepath.Join(repository, "templates", ".themis", "skills", "themico", "SKILL.md")
+	skill := filepath.Join(repository, ".themis", "skills", "themico", "SKILL.md")
 	references := filepath.Join(repository, "templates", ".themico", "core", "references")
 
 	if entries, err := os.ReadDir(filepath.Dir(skill)); err != nil || len(entries) != 1 {

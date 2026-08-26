@@ -10,7 +10,7 @@ Themis 是一个 SDD Harness 框架，将本地 AI 编码系统安装到工程�
 
 | 模块 | 规范 |
 | --- | --- |
-| `.themis` | [`templates/.themis/AGENTS.md`](templates/.themis/AGENTS.md) —— spec 控制面写作 |
+| `.themis` | [`.themis/AGENTS.md`](.themis/AGENTS.md) —— spec 控制面写作 |
 | `.themico` | [`templates/.themico/AGENTS.md`](templates/.themico/AGENTS.md) —— 控制面/工作区分离、三方分权、类型路由 |
 
 模块规范不重复本文件的内容，本文件也不下沉到模块——两处写同一条就是漂移。
@@ -48,10 +48,10 @@ Skill 的 description 是 Agent 的发现与路由入口，应优先描述：
 
 ## 安装包与项目工作区的边界
 
-- `templates/` 下是**安装包源**，描述 Themis 安装到目标项目后应有的样子。仓库根目录的 `.claude/` 是**当前项目自身的工作区**，只放对本仓库开发生效的 Skill、command 与配置。
-- 两者之间不做迁移，也不互为副本。安装包内的 `SKILL.md` 一律放在 `templates/.themis/skills/<name>/`，随包分发；把它安装到目标项目的 `.claude/skills/` 是安装动作的职责。
-- 该安装动作目前由 Themis Go CLI 承担，能力尚未实现，标记为 unavailable。在其可用前由人工完成，不得用脚本替代，也不得声称安装已自动化。
-- 因此 `templates/.claude/` 不应存在：在包源里保留安装产物形态即是漂移源。
+- **`.themis` 不再有安装包源。** 控制面与其公共入口直接位于仓库根 `.themis/` 并入库，只此一份——不存在"包源 + 安装副本"两份，因而不需要安装动作，也没有两份同步的漂移面。
+- `templates/.themico/` 仍是**安装包源**，描述 Themico 安装到目标项目后应有的样子。它与仓库根 `.claude/`（当前项目自身的工作区，只放对本仓库开发生效的 Skill、command 与配置）之间不做迁移，也不互为副本。
+- Themico 的 `SKILL.md` 随包放在 `.themis/skills/themico/`；把它安装到目标项目的 `.claude/skills/` 是安装动作的职责。该动作由 Themico Go CLI 承担，在其可用前由人工完成，不得用脚本替代，也不得声称安装已自动化。
+- `templates/.claude/` 不应存在：在包源里保留安装产物形态即是漂移源。
 
 ## 描述格式
 
