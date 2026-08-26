@@ -1,6 +1,6 @@
 ---
 name: spec-review-presentation
-description: Use when 向人类评审者呈现任何需要他判断的内容——包括在对话中回复评审项、请求批准或裁定、汇报待决事项，以及把评审项写入 intent-review.md / design-review.md / task/review.md / acceptance.md 的投影与交付视图小节。两种场合用同一套呈现，对话里说的和写进工件的应当一致。也用于评审者反馈"太啰嗦""找不到重点""看不懂在说什么"，或输出里出现未展开的 spec-id、任务编号、节点名。
+description: Use when 向人类评审者呈现评审项——对话中请求批准或裁定、汇报待决事项，或写入 review 与 acceptance 工件的投影小节；也用于评审者反馈太啰嗦、找不到重点、看不懂。
 ---
 
 # spec-review-presentation
