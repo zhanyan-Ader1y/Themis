@@ -4,7 +4,7 @@
 
 ## 当前节点
 
-**impl/basic（未开始）。** R3 已 approved，实现授权已取得。落地前基线 HEAD 为 `098fcd9`（`SPEC-WSCLEAN-003` 判据所称 `<落地前基线>` 取此值）。basic 段为空，impl/basic 为零调用形态。
+**人工验收（等待所有者答复）。** impl/basic（零调用）、verify/basic（不适用）、impl/detail、verify/detail（passed）均已走完。落地已提交 `0a552ad`。
 
 **需求范围在追问中扩大**：初始为 `workspace/` 一个包（39 份），经所有者答复 4 与问 5 扩至整个 `templates/.themis/`（48 份），并由问 6 确定控制面改为 `.themis/` 直接入库。R1 一并确认扩大后的需求与 step 分解（一个大步骤）。
 
@@ -27,11 +27,11 @@
 - R2 抽象设计评审：approved — `step1/design-review.md`「结论」（所有者原话两条逐字："A 接受。B 不补" / "approved"。**录入说明**：首条只裁定两个附带决策点、不含评审结论，Agent 未推断补足，就结论单独追问后取得第二条——与 core-removal 人工验收那次单字母 `a` 同型。裁定 A 接受改动非做项文件（仅限该行路径）；裁定 B 不补 SPEC-WSCLEAN-006，三份迁移文件因此无判据覆盖）
 - 详细设计+任务：已走完 — `step1/design.md` 与 `step1/task/basic.md`、`step1/task/detail.md`（三份齐备；basic 段为空并写明逐个候选的判定依据，detail 段六条任务带依赖声明）
 - R3 详细方案评审：approved — `step1/task/review.md`「结论」（所有者原话两条逐字："批准" / "允许推迟到动手时定"。**录入说明**：首条只给结论、未答复那条未解决反馈，而 `flow.md` 要求未解决反馈为空才能放行，故单独追问后取得第二条——本 spec 第二次同型处置。裁定：接受把 `AGENTS.md:48-52` 的做法推迟到实现期，是对 `rules.md` §6 的一次显式豁免，仅限本处，impl 须如实记录所选做法与理由）
-- impl/basic：未开始 — 无
-- verify/basic：未开始 — 无
-- impl/detail：未开始 — 无
-- verify/detail：未开始 — 无
-- 人工验收：未开始 — 无
+- impl/basic：已走完 — `step1/impl/basic.md`（零落地调用，空段形态；命令 B1 证实基线到本节点区间内 `templates/` 与 `.gitignore` 零改动，B2 自行数出 T-B 条目数 0）
+- verify/basic：不适用 — `step1/verify/basic.md`「结论」（**本 step 是该取值 2026-08-24 新增后的首个使用者**；三项判据一项无断言对象、两项与本段无因果关系。`core-removal` 当时同一处需控制器两次裁定，本次由条款直接给出答案。身份独立在本段不成立，如实记录）
+- impl/detail：已走完 — `step1/impl/detail.md`（T-D1–T-D6 六条全部落地；**两处偏差如实标出**——改动一个不在任务对象清单内的 Go 测试文件（六处活引用清点漏检 Go 源码所致），以及 AGENTS.md 一节取改写而非删除（R3 已授权实现期定夺并要求记录理由））
+- verify/detail：passed — `step1/verify/detail.md`「结论」（五条判据逐条断言、五条全部满足；孤儿不存在（空段，前提已写明）；越界边界成立，themico 包只改一行。**SPEC-WSCLEAN-003 的判据命令实跑报 DIFF**，本节点用三法互证（忽略行尾、去 CR 字节计数、blob 哈希）确认内容逐字未变，判为判据写法缺陷而非落地缺陷。结论不覆盖三处：三份迁移文件无判据、Go 测试越界待人工裁量、身份独立不成立）
+- 人工验收：进行中 — `step1/acceptance.md`（交付视图与阻断核查待产出，「用户原话」「结论」待所有者填入）
 - 摘要：未开始 — 无
 
 ## 当前性
