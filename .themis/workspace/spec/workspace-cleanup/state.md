@@ -4,7 +4,7 @@
 
 ## 当前节点
 
-**R2 抽象设计评审（等待所有者答复）。** step1 的 scope/specify/design 三份已产出，R2 投影已呈现，「结论」待所有者填入。**未解决反馈两条**（裁定点 A、B），Agent 不预判。
+**R3 详细方案评审（等待所有者答复）。** 六条 detail 任务与空 basic 段已产出，分类核查完成，「结论」待所有者填入。**未解决反馈一条**（`AGENTS.md:48-52` 整节做法是否可推迟到实现期）。R3 是实现授权点——批准前 impl 不得开始。
 
 **需求范围在追问中扩大**：初始为 `workspace/` 一个包（39 份），经所有者答复 4 与问 5 扩至整个 `templates/.themis/`（48 份），并由问 6 确定控制面改为 `.themis/` 直接入库。R1 一并确认扩大后的需求与 step 分解（一个大步骤）。
 
@@ -24,9 +24,9 @@
 
 - step 定界：已走完 — `step1/scope.md`（三节齐备；执行 `Intent.md` 要求的等价性核实时发现四条忽略路径只有 `.themis/spec/` 真实存在，如实标出交 R2，未擅自改做法）
 - 抽象设计：已走完 — `step1/specify.md`（五条行为条目，判据均为可执行命令加可判定语义，逐条实跑证实能判失败——见 `design.md` 命令 8）
-- R2 抽象设计评审：进行中 — `step1/design-review.md`（投影已产出，未解决反馈两条待裁定，「结论」待所有者答复）
-- 详细设计+任务：进行中 — `step1/design.md` 已产出（为 R2 投影需要 Overview 而提前，与 core-removal step1 同型）；两份任务文件未产出
-- R3 详细方案评审：未开始 — 无
+- R2 抽象设计评审：approved — `step1/design-review.md`「结论」（所有者原话两条逐字："A 接受。B 不补" / "approved"。**录入说明**：首条只裁定两个附带决策点、不含评审结论，Agent 未推断补足，就结论单独追问后取得第二条——与 core-removal 人工验收那次单字母 `a` 同型。裁定 A 接受改动非做项文件（仅限该行路径）；裁定 B 不补 SPEC-WSCLEAN-006，三份迁移文件因此无判据覆盖）
+- 详细设计+任务：已走完 — `step1/design.md` 与 `step1/task/basic.md`、`step1/task/detail.md`（三份齐备；basic 段为空并写明逐个候选的判定依据，detail 段六条任务带依赖声明）
+- R3 详细方案评审：进行中 — `step1/task/review.md`（评审范围、分类核查五条已产出；未解决反馈一条待裁定，「结论」待所有者答复）
 - impl/basic：未开始 — 无
 - verify/basic：未开始 — 无
 - impl/detail：未开始 — 无
@@ -43,4 +43,6 @@
 - `step1/scope.md`：current（三节齐备；「本 step 边界」记入本节点核实到的做法收窄——四条忽略路径只有 `.themis/spec/` 真实存在，其余四份无安装副本可转）
 - `step1/specify.md`：current（五条行为条目 + 来源覆盖两节；五条判据逐条实跑，当前值全部处于未通过侧。末段明写：若 design 决定保留 `skills/` 或顶层 md 任何一份，须新增条目并重走 R2——该条件已触发，见 `design-review.md` 裁定点 B）
 - `step1/design.md`：current（四节齐备，九条命令均当场跑出并附真实输出。**「结构决策」第 2 条与「取舍」第 2 条记录了一次自查推翻初判**：初稿判 `AGENTS.md` 可直接删，理由是"其约束已写在 rules.md §9"；命令 9 核实结果相反，`.themis/spec/` 全文不含该约束，据此改为迁入）
-- `step1/design-review.md`：current（投影与未解决反馈已产出；未解决反馈两条——裁定点 A（改动非做项文件是否接受）、裁定点 B（三份迁移文件是否补条目重走 R2）；「结论」空缺待所有者填入）
+- `step1/design-review.md`：current（R2 approved，结论小节已记所有者两条原话与录入说明；未解决反馈两条经裁定关闭后清空。裁定 B 的代价如实写入结论：三份迁移文件无判据覆盖，verify 不得判其"通过"）
+- `step1/task/basic.md`、`step1/task/detail.md`：current（`basic.md` 为空段，逐个候选列出 §4 两条判据的判定——六个候选无一同时满足，本 step 无内部结构层；`detail.md` 为 T-D1–T-D6，带依赖链与出处栏）
+- `step1/task/review.md`：current（分类核查五条已产出。**第 2 条记一处推翻**：任务作者拒绝了 `design.md` 的分类建议——该建议只考虑次序、未核对 §4 第二条判据，若照办本 step 会以不成立的 basic 段进入 R3；本节点确认推翻正确。未解决反馈一条待裁定，「结论」待所有者答复）
