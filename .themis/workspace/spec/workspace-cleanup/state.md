@@ -4,7 +4,7 @@
 
 ## 当前节点
 
-**人工验收（等待所有者答复）。** impl/basic（零调用）、verify/basic（不适用）、impl/detail、verify/detail（passed）均已走完。落地已提交 `0a552ad`。
+**无——本 spec 实例已闭合，需求达成。** step1 走完全部节点，人工验收 accepted，摘要为链尾。`Intent.md`「step 分解」只载 step1 一项，无第二个大步骤。
 
 **需求范围在追问中扩大**：初始为 `workspace/` 一个包（39 份），经所有者答复 4 与问 5 扩至整个 `templates/.themis/`（48 份），并由问 6 确定控制面改为 `.themis/` 直接入库。R1 一并确认扩大后的需求与 step 分解（一个大步骤）。
 
@@ -31,8 +31,8 @@
 - verify/basic：不适用 — `step1/verify/basic.md`「结论」（**本 step 是该取值 2026-08-24 新增后的首个使用者**；三项判据一项无断言对象、两项与本段无因果关系。`core-removal` 当时同一处需控制器两次裁定，本次由条款直接给出答案。身份独立在本段不成立，如实记录）
 - impl/detail：已走完 — `step1/impl/detail.md`（T-D1–T-D6 六条全部落地；**两处偏差如实标出**——改动一个不在任务对象清单内的 Go 测试文件（六处活引用清点漏检 Go 源码所致），以及 AGENTS.md 一节取改写而非删除（R3 已授权实现期定夺并要求记录理由））
 - verify/detail：passed — `step1/verify/detail.md`「结论」（五条判据逐条断言、五条全部满足；孤儿不存在（空段，前提已写明）；越界边界成立，themico 包只改一行。**SPEC-WSCLEAN-003 的判据命令实跑报 DIFF**，本节点用三法互证（忽略行尾、去 CR 字节计数、blob 哈希）确认内容逐字未变，判为判据写法缺陷而非落地缺陷。结论不覆盖三处：三份迁移文件无判据、Go 测试越界待人工裁量、身份独立不成立）
-- 人工验收：进行中 — `step1/acceptance.md`（交付视图与阻断核查待产出，「用户原话」「结论」待所有者填入）
-- 摘要：未开始 — 无
+- 人工验收：accepted — `step1/acceptance.md`「结论」（所有者原话两条逐字："批准" / "接受"。**录入说明**：首条未对 Go 测试越界表态，该项由单独追问取得——本 spec 第三次、本项目累计第四次同型处置。三项阻断核查均不阻断；裁定接受 Go 测试文件越界，效力仅限该处断言）
+- 摘要：已走完 — `step1/summary.md`（三节齐备，绑定 accepted 的实际交付；另列本 step 带出未关闭的三项与对控制面的一处验证价值）
 
 ## 当前性
 
@@ -46,3 +46,11 @@
 - `step1/design-review.md`：current（R2 approved，结论小节已记所有者两条原话与录入说明；未解决反馈两条经裁定关闭后清空。裁定 B 的代价如实写入结论：三份迁移文件无判据覆盖，verify 不得判其"通过"）
 - `step1/task/basic.md`、`step1/task/detail.md`：current（`basic.md` 为空段，逐个候选列出 §4 两条判据的判定——六个候选无一同时满足，本 step 无内部结构层；`detail.md` 为 T-D1–T-D6，带依赖链与出处栏）
 - `step1/task/review.md`：current（R3 approved，「结论」已记两条原话与录入说明；未解决反馈经裁定关闭后清空。分类核查五条已产出。**第 2 条记一处推翻**：任务作者拒绝了 `design.md` 的分类建议——该建议只考虑次序、未核对 §4 第二条判据，若照办本 step 会以不成立的 basic 段进入 R3；本节点确认推翻正确。未解决反馈一条待裁定，「结论」待所有者答复）
+- `step1/impl/basic.md`：current（零调用，空段形态；两条命令均本节点自行跑出）
+- `step1/verify/basic.md`：current（结论「不适用」，本 step 是该取值的首个使用者；身份独立在本段不成立，如实记录）
+- `step1/impl/detail.md`：current（六条任务全部落地；两处偏差如实标出，均经裁定放行）
+- `step1/verify/detail.md`：current（结论 `passed`，五条判据逐条断言；SPEC-WSCLEAN-003 的判据命令报 DIFF，用三法互证判为判据写法缺陷而非落地缺陷；结论明确不覆盖三处）
+- `step1/acceptance.md`：current（accepted，「用户原话」两条逐字并附录入说明；裁定接受 Go 测试越界）
+- `step1/summary.md`：current（链尾工件，绑定 accepted 所放行的交付；带出三项未关闭事项）
+
+**本 spec 全部工件均为 current，无 stale。** 验收未触发任何回退。三项带出未关闭事项（三份迁移文件无判据、身份独立不成立、活引用清点方法缺陷）不属当前性问题，逐条见 `step1/summary.md`。
