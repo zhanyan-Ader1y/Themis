@@ -41,15 +41,15 @@ step 编号规则：大步骤取整数，大步骤内的小步骤取小数。同
 | --- | --- |
 | `Intent.md` | 问题 / 期望结果 / 核心链路 / 范围与非做 / 约束 / **step 分解** / 来源引用 |
 | `QA.md` | 第 N 轮 → 问 / 答 / 来源（追加写入） |
-| `intent-review.md` | 投影 / 未解决反馈 / 结论 |
+| `intent-review.md` | 投影 / 未解决反馈 / 用户原话 / 结论 |
 | `state.md` | 当前节点 / 各闸门 / 当前性（统管全部 step：spec 级节点各一行，step 级节点按 step 分组） |
 | `scope.md` | 承担的上层分解项 / 本 step 边界 / 与其他 step 的关系 |
 | `specify.md` | 行为条目（`### SPEC-<主题>-<序号>` + 验收判据）/ 来源覆盖 |
 | `design.md` | 架构与边界 / 结构决策 / 取舍 / 事实依据 |
-| `design-review.md` | 投影 / 未解决反馈 / 结论 |
+| `design-review.md` | 投影 / 未解决反馈 / 用户原话 / 结论 |
 | `task/basic.md` | 基础任务 → `### T-B<n>` |
 | `task/detail.md` | 详细实现任务 → `### T-D<n>` |
-| `task/review.md` | 评审范围 / 分类核查 / 未解决反馈 / 结论 |
+| `task/review.md` | 评审范围 / 分类核查 / 未解决反馈 / 用户原话 / 结论 |
 | `impl/basic.md`、`impl/detail.md` | 执行身份 / 实际改动 / 与批准范围的偏差 / 命令记录 |
 | `verify/basic.md`、`verify/detail.md` | 执行身份 / 断言与实际结果 / 命令证据 / 结论 / 说明 |
 | `acceptance.md` | 交付视图 / 阻断核查 / 用户原话 / 结论 |
