@@ -53,7 +53,14 @@
 
 ## 通用限制
 
-- 不引入功能版本、版本目录、compatibility、upgrade 或 migration。
-- 不覆盖已有 `.themis`。
-- 缺失 evaluator、validator、recorder、runtime、Agent host、worktree 或 command support 时 fail closed。
-- 不得用 Prompt、README、template、policy 或 directory 的存在冒充 machine enforcement。
+> 本节原有四条写于 2026-07-31（提交 `d606967`，Plan 35 语境），至今未改。2026-08-27 逐条核实后，**三条移除、一条保留**——移除的不是"不再重要"，而是它们的约束对象已消失、或已由更近的活条款承载，留着会造成两处写同一事实的漂移。
+
+- 不引入功能版本、版本目录、compatibility、upgrade 或 migration。**（保留，但注意仓库根 `AGENTS.md` 第 69 行已有等价条款"项目中不允许添加版本概念，不允许出现版本形式的目录"——本条是跨模块约定在本目录的重复，将来若要消除重复，删本条、留 `AGENTS.md` 那条。）**
+
+**已移除的三条与理由（如实记录，不是静默删除）：**
+
+- ~~不覆盖已有 `.themis`~~——该约束针对"安装动作会覆盖目标项目已有内容"这一风险，而两层包源模型已于 2026-08-26 对 `.themis` 取消（`templates/` 下现只余 `.themico`）。**约束对象不存在了。**
+- ~~缺失 evaluator、validator、recorder、runtime、Agent host、worktree 或 command support 时 fail closed~~——这些是 Plan 35 的组件名，当前控制面零引用。**fail-closed 本身仍然成立**，但它现在由 `.themis/spec/flow.md`「通用失败去向」与 `rules.md` §10 承载，条件也不再按这些组件名表述。
+- ~~不得用 Prompt、README、template、policy 或 directory 的存在冒充 machine enforcement~~——**判断仍然成立，但已由更近、更权威的条款承载**：`.themis/spec/README.md`「当前强制水平」写明"机器强制 unavailable……任何文本不得声称闸门已由机器执行"。那是本次重构的控制面自己写的，不受 Plan 35 退役影响。**引用这条约束时应指向 `.themis/spec/README.md`，不再指向本文件。**
+
+**四处已闭合实例的工件仍指向本文件的这一条**（`authorization-traceability` 的 `Intent.md` 两处、`step1/specify.md` 两处）。**它们不改写**——那是已 accepted 的历史记录，记的是当时依据什么。读者按本节的说明换算即可。这与 `docs/plan/retired/README.md` 对旧路径引用的处置同理：改写历史记录会把证据改成结论。
