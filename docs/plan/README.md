@@ -4,7 +4,7 @@
 
 **当前主线是根目录 `.themis/spec/` 重新设计。** 已批准行为契约位于 `docs/superpowers/specs/2026-08-07-themis-spec-flow-mvp.md`,控制面在 `.themis/spec/`(`README.md`/`flow.md`/`rules.md`/`template.md` 四份文件)，**单份入库，无包源副本**——两层包源模型对 `.themis` 已于 2026-08-26 取消。控制面写作约束见 `.themis/AGENTS.md`。
 
-**编号 Plan 体系已于 2026-08-22 整体退役**,移入 [`retired/`](retired/)。退役理由、各 Plan 退役时的状态与重启条件见该目录 README。退役是停止推进,不是删除——其中的验收审计、静态核验输出与十六场景 replay 记录是历史证据,不得改写。
+**编号 Plan 体系（35/36/37/80/90）已退役并于 2026-08-27 删除。** 它们是 Plan 35 旧 core 体系的产物，实现载体（该体系的合同与模板）已先于 2026-08-22 删除，计划本身随之失去对象。内容在 git 历史中可回溯，但**不作为任何现行依据**——重启须依届时 current contracts 整体重基线并重新审批。
 
 ## 授权规则
 
@@ -20,7 +20,6 @@
 |---|---|---|
 | 落地①–④ 控制面 | 2026-08-18 | `.themis/spec/` 四份文件,按 [`2026-08-18-themis-spec-control-plane.md`](../superpowers/plans/2026-08-18-themis-spec-control-plane.md) |
 | 落地⑤ 端到端 replay | 2026-08-22,验收 accepted | [`spec-replay/drift-log.md`](spec-replay/drift-log.md)、[`spec-replay/hard-enforcement-list.md`](spec-replay/hard-enforcement-list.md);实例工件在 `.themis/workspace/spec/core-removal/`;载体产物为 `templates/.themis/core/` 删除(98 个文件) |
-
 | 控制面两处缺口修复 | 2026-08-24 | `flow.md`「impl/detail」加空段限定；`verify/basic` 新增 `不适用` 取值；另修根因——`state.md` 闸门取值此前控制面从未定义，致 replay 自建约定并重载"已证" |
 | 意图分两层 | 2026-08-24 | spec 级 `Intent.md`（新增「step 分解」）+ step 级 `scope.md`；`flow.md` 新增「step 定界」节点与失效级联的唯一例外条款 |
 | `templates/.themis/` 清空 | 2026-08-26，验收 accepted | 控制面改为 `.themis/` 单份入库，两层包源模型对 `.themis` 取消；实例工件在 `.themis/workspace/spec/workspace-cleanup/` |
@@ -49,7 +48,7 @@
 
 另需记：第 3 项四次实发均由执行体自觉按住，未产生实际越权。**但自觉不可持续，且失效后不可检出**——推断补足的授权与真授权在工件文本上无法区分。
 
-另有 [`themico-core/`](themico-core/) 保存 Themico 的实施证据与人工 replay 记录;Themico 与 Themis 松耦合,不构成 Themis 运行前提。
+Themico 的实施证据与人工 replay 记录已随其全部内容归并到 `.themico/evidence/`；Themico 与 Themis 松耦合，不构成 Themis 运行前提。
 
 ## 通用限制
 
@@ -63,4 +62,4 @@
 - ~~缺失 evaluator、validator、recorder、runtime、Agent host、worktree 或 command support 时 fail closed~~——这些是 Plan 35 的组件名，当前控制面零引用。**fail-closed 本身仍然成立**，但它现在由 `.themis/spec/flow.md`「通用失败去向」与 `rules.md` §10 承载，条件也不再按这些组件名表述。
 - ~~不得用 Prompt、README、template、policy 或 directory 的存在冒充 machine enforcement~~——**判断仍然成立，但已由更近、更权威的条款承载**：`.themis/spec/README.md`「当前强制水平」写明"机器强制 unavailable……任何文本不得声称闸门已由机器执行"。那是本次重构的控制面自己写的，不受 Plan 35 退役影响。**引用这条约束时应指向 `.themis/spec/README.md`，不再指向本文件。**
 
-**四处已闭合实例的工件仍指向本文件的这一条**（`authorization-traceability` 的 `Intent.md` 两处、`step1/specify.md` 两处）。**它们不改写**——那是已 accepted 的历史记录，记的是当时依据什么。读者按本节的说明换算即可。这与 `docs/plan/retired/README.md` 对旧路径引用的处置同理：改写历史记录会把证据改成结论。
+**四处已闭合实例的工件仍指向本文件的这一条**（`authorization-traceability` 的 `Intent.md` 两处、`step1/specify.md` 两处）。**它们不改写**——那是已 accepted 的历史记录，记的是当时依据什么。读者按本节的说明换算即可。改写历史记录会把证据改成结论。
