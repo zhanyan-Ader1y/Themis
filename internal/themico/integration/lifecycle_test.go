@@ -34,7 +34,7 @@ import (
 // internal/themico/candidate and internal/themico/governance (confirmationSchema,
 // assessmentSchema, approvalSchema) that this test package cannot import;
 // their exact values are fixed by the task brief and by
-// docs/superpowers/specs/2026-07-29-themico-design.md.
+// .themico/design/README.md.
 const (
 	typeConfirmationSchema   = "themico-type-confirmation"
 	semanticAssessmentSchema = "themico/semantic-assessment"

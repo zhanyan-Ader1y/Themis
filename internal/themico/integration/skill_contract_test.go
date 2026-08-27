@@ -21,8 +21,8 @@ import (
 
 func TestSkillTreeMatchesFirstUsableDeliveryContract(t *testing.T) {
 	repository := repositoryRoot(t)
-	skill := filepath.Join(repository, ".themis", "skills", "themico", "SKILL.md")
-	references := filepath.Join(repository, "templates", ".themico", "core", "references")
+	skill := filepath.Join(repository, ".themico", "skills", "themico", "SKILL.md")
+	references := filepath.Join(repository, ".themico", "core", "references")
 
 	if entries, err := os.ReadDir(filepath.Dir(skill)); err != nil || len(entries) != 1 {
 		t.Fatalf("skill directory must hold only SKILL.md: %v %v", entries, err)
@@ -58,7 +58,7 @@ func TestSkillTreeMatchesFirstUsableDeliveryContract(t *testing.T) {
 }
 
 func TestFactoryL3ReferencesMatchRegistryHeadings(t *testing.T) {
-	references := filepath.Join(repositoryRoot(t), "templates", ".themico", "core", "references", "types")
+	references := filepath.Join(repositoryRoot(t), ".themico", "core", "references", "types")
 	for _, factory := range model.Factories() {
 		directory := map[model.KnowledgeType]string{
 			model.TypeDesignDecision:        "design-decision",

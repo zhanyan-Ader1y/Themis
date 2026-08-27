@@ -189,4 +189,4 @@ specify 即抽象设计——同一节点的两个叫法，不存在独立于抽
 - **失效波及**：本节点是链尾。
 - **失败去向**：停在验收已证闸门。
 
-仅当验收 accepted 后 lifecycle 才可标记完成（`SPEC-SUMMARY-001`）。摘要产出中性工件；是否喂给 Themico 由可选 adapter 决定，不得成为流程运行前提（`SPEC-THEMICO-002`）。
+仅当验收 accepted 后 lifecycle 才可标记完成（`SPEC-SUMMARY-001`）。摘要产出中性工件——不含任何外部知识库的概念，不以其存在为前提。是否把它喂给某个知识库由可选 adapter 决定，该决定在本流程之外（`SPEC-THEMICO-002`）。

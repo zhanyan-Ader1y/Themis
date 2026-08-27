@@ -16,7 +16,7 @@
 
 两者不得互相写入：control-plane reference 的变化不产生 generation，store 的 commit 也不修改 `core/`。
 
-宿主发现入口不在包内——`SKILL.md` 随包放在 `.themis/skills/themico/`，安装后到目标项目的 `.claude/skills/`，因为宿主只从那里发现 Skill。它只负责转发，语义合同仍在 `core/`。
+宿主发现入口不在 `core/` 内——`SKILL.md` 放在 `.themico/skills/themico/`，安装后到目标项目的 `.claude/skills/`，因为宿主只从那里发现 Skill。它只负责转发，语义合同仍在 `core/`。
 
 ## 三方分权
 
