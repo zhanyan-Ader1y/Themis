@@ -28,6 +28,7 @@
 | 流程现在能不能走到下一步 | `.themis/spec/flow.md` |
 | 某条判据是否满足、谁有权判 | `.themis/spec/rules.md` |
 | 工件长什么样、放在哪 | `.themis/spec/template.md` |
+| 某个决策当初为什么这么定 | `docs/adr/` |
 | 当前在做什么、下一步做什么 | `docs/plan/README.md` |
 | 跨模块的仓库约定 | 仓库根 `AGENTS.md` |
 
