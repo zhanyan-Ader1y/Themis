@@ -1,0 +1,4 @@
+# 测试夹具的行尾必须逐字节固定：它们存在的意义就是让 `wc -l` 等命令得到确定的数字，
+# 若签出时被转成 CRLF，同一条断言在不同机器上会得到不同结果。
+internal/themis/testdata/** -text
+internal/themis/cli/testdata/** -text
