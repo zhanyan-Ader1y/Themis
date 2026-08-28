@@ -4,9 +4,11 @@
 
 ## 当前节点
 
-**step2 的 R1 分解项确认（等待所有者答复）。** step1 已 accepted 并出摘要；**step2 为所有者指示「一起修了」后新增**，依 `flow.md` R1 节失效级联例外，新增分解项须经 R1 评审者确认。
+**本需求已完成。** 两个 step 全部走完并经人工验收：step1 交付 `themis overlap`，step2 用它修掉报出的五处复述、并用它验证归零。
 
-**step1 未受影响**：新增 step 落在该例外内，不改变已有 step 的目标语义，故 step1 的 accepted 结论保持有效。
+**交付后仍开着的四项**见 `step2/summary.md`，其中最要紧的一项：**`overlap` 报 `0` 不等于确实无复述**——只等于"无未被四条经验规则排除的重合"，那是本工具能力的上限。
+
+**step1 与 step2 均 accepted**。新增 step2 时未触动 step1 的目标语义，其 accepted 结论全程有效，并已由 R1 第 2 轮追认。
 
 ## 各闸门
 
@@ -32,15 +34,24 @@
 - 人工验收：accepted — `step1/acceptance.md`「结论」（所有者原话"一起修了"。**该答复推翻投影推荐**（原推荐"仍不修"），裁定一并修复；**未直接就批准与否表态，本节点判定其蕴含接受并如实标明这是推断**）
 - 摘要：已走完 — `step1/summary.md`（绑定 accepted 的交付，带出未关闭的四项）
 
-### step2 — 修掉五处复述（未开始）
+### step2 — 修掉五处复述（已完成）
 
 **依赖 step1**：不先有工具，就不知道要修哪些、也无法验证修完是否干净。
 
-- R1 分解项确认：**等待所有者答复**
-- 其余各节点：未开始
+- R1 分解项确认：approved — `intent-review.md`「第 2 轮」（所有者原话"确认"；**同时追认 step1 的 accepted 结论**——此前那是本节点的推断）
+- step 定界：已走完 — `step2/scope.md`（逐处打开两端原文核对；**发现第 5 处性质不同**——不是复述而是归属未定，两侧都不是引用另一份。已标出交 R2）
+- 抽象设计：已走完 — `step2/specify.md`（五条条目，005 带 `[横切]`；落地前实跑均为待修状态）
+- R2 抽象设计评审：**授权代行（非 approved）** — `step2/design-review.md`（所有者答"按你的判断继续"，未就内容表态。**三项裁定由执行者作出**，其中裁定二自认无决定性依据）
+- 详细设计+任务：已走完 — `step2/design.md` 与两份任务文件（四条结构决策；**结构决策二明写"逐处通读靠人读"**，后被证明必要）
+- R3 详细方案评审：**授权代行（非 approved）** — `step2/task/review.md`（沿用 R2 授权）
+- impl/basic、verify/basic：不适用 — basic 段为空
+- impl/detail：已走完 — `step2/impl/detail.md`（三条任务落地；**一处偏差靠通读抓到**——第 33 行引入重复指向，判据查不出）
+- verify/detail：passed — `step2/verify/detail.md`（五条判据全满足，两环均通；**`themis overlap` 报 `0` 处**，step1 的产物验证了 step2 的完成）
+- 人工验收：accepted — `step2/acceptance.md`「结论」（所有者原话"批准"；**同时闭合 R2、R3 两处授权代行**，三项代行裁定一并追认，并划定裁定二的效力边界——不构成一般性先例）
+- 摘要：已走完 — `step2/summary.md`
 
 ## 当前性
 
 - `Intent.md`：current（「step 分解」已增列 step2 并写明新增依据；**step1 的目标语义未被触动**）
 - `QA.md`、`intent-review.md`：current
-- `step1` 全部工件：current（step1 已闭合）
+- `step1`、`step2` 全部工件：current（两个 step 均已闭合）
