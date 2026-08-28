@@ -22,7 +22,7 @@
 
 **做法**：
 
-1. 按 `Intent.md` 表逐个 `git mv`：`core-removal`→`2026-08-19-core-removal`、`workspace-cleanup`→`2026-08-26-workspace-cleanup`、`authorization-traceability`→`2026-08-26-authorization-traceability`、`claim-command-evidence`→`2026-08-27-claim-command-evidence`、`trace-number-scan`→`2026-08-27-trace-number-scan`、`question-eligibility`→`2026-08-27-question-eligibility`、`citation-overlap-check`→`2026-08-28-citation-overlap-check`、`gate-value-integrity`→`2026-08-28-gate-value-integrity`。
+1. 按 `Intent.md` 表逐个 `git mv`，八个映射为：`core-removal`、`workspace-cleanup`、`authorization-traceability`、`claim-command-evidence`、`trace-number-scan`、`question-eligibility`、`citation-overlap-check`、`gate-value-integrity`，各自加上 `Intent.md` 表所列的创建日期前缀。**此处保留改名前的原名**——写成新名会使映射变成 `X→X`。
 2. **用 `git mv` 不用删建**（`design.md` 结构决策一）——保历史。
 
 **对应 `specify.md` 条目**：判据 SPEC-SPECID-002。

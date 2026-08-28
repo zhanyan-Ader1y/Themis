@@ -34,11 +34,11 @@
 
 | 文件 | 出现的 spec-id 与次数 |
 | --- | --- |
-| `docs/superpowers/plans/2026-08-19-spec-flow-end-to-end-replay.md` | `core-removal` `41` 次 |
+| `docs/superpowers/plans/2026-08-19-spec-flow-end-to-end-replay.md` | `2026-08-19-core-removal` `41` 次 |
 | `.themis/skills/spec-review-presentation/testing-notes.md` | 三个 id 合计 `15` 次 |
 | `docs/plan/README.md` | 三个 id 合计 `5` 次 |
-| `.themis/skills/spec-review-presentation/SKILL.md` | `core-removal` `1` 次 |
-| `.claude/skills/spec-review-presentation/SKILL.md` | `core-removal` `1` 次 |
+| `.themis/skills/spec-review-presentation/SKILL.md` | `2026-08-19-core-removal` `1` 次 |
+| `.claude/skills/spec-review-presentation/SKILL.md` | `2026-08-19-core-removal` `1` 次 |
 
 **另有 `docs/plan/spec-replay/` 与 `docs/superpowers/specs/` 下若干份。**
 
@@ -46,8 +46,8 @@
 
 **这是本节点最要紧的核实。**
 
-- **`SKILL.md` 第 `53` 行**——`core-removal` 出现在**反面示例**里，原文用它演示"读者不知道这代表什么意思"。**改成带日期的新 id，示例反而更不可读**，但那不是示例要教的东西；**更要紧的是：改了它，示例讲的就不再是当初那件事。**
-- **`docs/superpowers/plans/2026-08-19-…md`**——该计划**规定**了 spec-id（原文"spec-id 固定为 `core-removal`"），是一份**历史执行记录**。**它记的是"当时规定用这个名字"这一事实**；改它等于篡改历史记录所陈述的内容。
+- **`SKILL.md` 第 `53` 行**——`2026-08-19-core-removal` 出现在**反面示例**里，原文用它演示"读者不知道这代表什么意思"。**改成带日期的新 id，示例反而更不可读**，但那不是示例要教的东西；**更要紧的是：改了它，示例讲的就不再是当初那件事。**
+- **`docs/superpowers/plans/2026-08-19-…md`**——该计划**规定**了 spec-id（原文"spec-id 固定为 `2026-08-19-core-removal`"），是一份**历史执行记录**。**它记的是"当时规定用这个名字"这一事实**；改它等于篡改历史记录所陈述的内容。
 
 **这两处落在 R1 裁定的效力边界之外**：R1 明写该裁定"不保护标识符的字面形态"，但同时写明"凡改动会使记录所陈述的事实发生变化的，仍属该原则禁止"。**这两处正是后者。**
 
@@ -55,7 +55,7 @@
 
 既有工件里有大量形如 `` `grep -c 'x' .themis/workspace/spec/<id>/...` `` 的断言。**改名后路径不存在，这些断言会从"通过"变成"执行失败"。**
 
-**本节点实测确认该风险真实**：`grep -rc 'workspace/spec/core-removal' .themis/workspace/spec/` 有命中。
+**本节点实测确认该风险真实**：`grep -rc 'workspace/spec/2026-08-19-core-removal' .themis/workspace/spec/` 有命中。
 
 **处置须在设计阶段定**：断言里的路径是否随改名更新——**它属"记录的内容"还是"标识符的字面形态"，边界不自明**。
 
@@ -72,7 +72,7 @@
 
 ## 命令证据
 
-- `docs/superpowers/plans/2026-08-19-spec-flow-end-to-end-replay.md` 中 `core-removal` 出现次数：`41`
+- `docs/superpowers/plans/2026-08-19-spec-flow-end-to-end-replay.md` 中 `2026-08-19-core-removal` 出现次数：`41`
 - `.themis/skills/spec-review-presentation/testing-notes.md` 中三个 id 合计：`15`
 - `docs/plan/README.md` 中三个 id 合计：`5`
 - 两份 `SKILL.md` 中各 `1` 次

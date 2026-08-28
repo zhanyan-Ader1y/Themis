@@ -29,7 +29,7 @@
 ## 目标文件结构
 
 ```text
-.themis/workspace/spec/core-removal/        实例面（入库，replay 证据）
+.themis/workspace/spec/2026-08-19-core-removal/        实例面（入库，replay 证据）
 ├── Intent.md            问题 / 期望结果 / 核心链路 / 范围与非做 / 约束 / 来源引用
 ├── intent-review.md     投影 / 未解决反馈 / 结论
 ├── QA.md                第 N 轮 → 问 / 答 / 来源（追加写入）
@@ -55,6 +55,8 @@ docs/plan/spec-replay/drift-log.md          漂移清单（本 replay 的真正�
 ```
 
 **spec-id 固定为 `core-removal`。**
+
+> **脉络注（`2026-08-28-spec-id-date-prefix` 加）**：该实例现名 `2026-08-19-core-removal`——spec-id 格式此后改为带创建日期前缀。**本文原文一字未改**：它记的是当时规定用哪个名字，改它会使这份历史记录所陈述的事实发生变化。全文其余 `core-removal` 同此。
 
 **被删除的载体**（在 impl 节点执行，R3 批准后）：`templates/.themis/core/`（98 个文件）。
 
@@ -110,9 +112,9 @@ docs/plan/spec-replay/drift-log.md          漂移清单（本 replay 的真正�
 ### 任务 1：Intake 与追问，产出 Intent.md 与 QA.md
 
 **文件：**
-- 新建：`.themis/workspace/spec/core-removal/Intent.md`
-- 新建：`.themis/workspace/spec/core-removal/QA.md`
-- 新建：`.themis/workspace/spec/core-removal/state.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/Intent.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/QA.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/state.md`
 - 新建：`docs/plan/spec-replay/drift-log.md`
 
 **接口：**
@@ -131,7 +133,7 @@ sed -n '/^## §1/,/^## §3/p' .themis/spec/rules.md
 - [ ] **步骤 2：建立实例目录与漂移清单骨架**
 
 ```bash
-mkdir -p .themis/workspace/spec/core-removal/step1/{task,impl,verify}
+mkdir -p .themis/workspace/spec/2026-08-19-core-removal/step1/{task,impl,verify}
 mkdir -p docs/plan/spec-replay
 ```
 
@@ -175,9 +177,9 @@ grep -n '/\.themis/core/' .gitignore
 - [ ] **步骤 6：核验结构**
 
 ```bash
-ls .themis/workspace/spec/core-removal/
-grep -c '^## ' .themis/workspace/spec/core-removal/Intent.md
-grep -c '^## ' .themis/workspace/spec/core-removal/state.md
+ls .themis/workspace/spec/2026-08-19-core-removal/
+grep -c '^## ' .themis/workspace/spec/2026-08-19-core-removal/Intent.md
+grep -c '^## ' .themis/workspace/spec/2026-08-19-core-removal/state.md
 ```
 
 预期：`Intent.md` 六个 `## ` 小节，`state.md` 三个。数量不符说明少写或自创了小节，按 `template.md` 修正。
@@ -193,7 +195,7 @@ grep -c '^## ' .themis/workspace/spec/core-removal/state.md
 - [ ] **步骤 9：提交**
 
 ```bash
-git add .themis/workspace/spec/core-removal docs/plan/spec-replay
+git add .themis/workspace/spec/2026-08-19-core-removal docs/plan/spec-replay
 git commit -m "replay: Intake 与追问节点，产出 Intent/QA/state"
 ```
 
@@ -202,8 +204,8 @@ git commit -m "replay: Intake 与追问节点，产出 Intent/QA/state"
 ### 任务 2：R1 意图评审（人类闸门）
 
 **文件：**
-- 新建：`.themis/workspace/spec/core-removal/intent-review.md`
-- 修改：`.themis/workspace/spec/core-removal/state.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/intent-review.md`
+- 修改：`.themis/workspace/spec/2026-08-19-core-removal/state.md`
 - 修改：`docs/plan/spec-replay/drift-log.md`
 
 **接口：**
@@ -251,7 +253,7 @@ R1 一条，五项齐全。特别记录：等待人类时有没有产生"先做�
 - [ ] **步骤 7：提交**
 
 ```bash
-git add .themis/workspace/spec/core-removal docs/plan/spec-replay
+git add .themis/workspace/spec/2026-08-19-core-removal docs/plan/spec-replay
 git commit -m "replay: R1 意图评审，记录所有者结论"
 ```
 
@@ -264,10 +266,10 @@ git commit -m "replay: R1 意图评审，记录所有者结论"
 > 所有者已裁定「接受」：已起草的 `design.md` 作为草稿持有，R2 批准后正式归属任务 4；**`design.md` 的一切内容修改移交任务 4**。下方步骤 3、以及步骤 4 中对 `design.md` 的核验，保留为已执行的历史记录，不再是任务 3 的要求。
 
 **文件：**
-- 新建：`.themis/workspace/spec/core-removal/step1/specify.md`
-- 新建：`.themis/workspace/spec/core-removal/step1/design.md`
-- 新建：`.themis/workspace/spec/core-removal/step1/design-review.md`
-- 修改：`.themis/workspace/spec/core-removal/state.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/specify.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/design.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/design-review.md`
+- 修改：`.themis/workspace/spec/2026-08-19-core-removal/state.md`
 - 修改：`docs/plan/spec-replay/drift-log.md`
 
 **接口：**
@@ -277,7 +279,7 @@ git commit -m "replay: R1 意图评审，记录所有者结论"
 - [ ] **步骤 1：确认前置闸门**
 
 ```bash
-grep -A 3 'R1' .themis/workspace/spec/core-removal/state.md
+grep -A 3 'R1' .themis/workspace/spec/2026-08-19-core-removal/state.md
 ```
 
 R1 必须为 approved 且未 stale。否则停止——前置闸门未满足不得开始（`flow.md` 抽象设计节点）。
@@ -319,8 +321,8 @@ R1 必须为 approved 且未 stale。否则停止——前置闸门未满足不�
 - [ ] **步骤 4：核验结构**
 
 ```bash
-grep -c '^## ' .themis/workspace/spec/core-removal/step1/design.md
-grep -c '^### SPEC-' .themis/workspace/spec/core-removal/step1/specify.md
+grep -c '^## ' .themis/workspace/spec/2026-08-19-core-removal/step1/design.md
+grep -c '^### SPEC-' .themis/workspace/spec/2026-08-19-core-removal/step1/specify.md
 ```
 
 预期：`design.md` 四个 `## ` 小节；`specify.md` 至少一条 `### SPEC-` 条目。
@@ -346,7 +348,7 @@ Overview 可以是一张 `text` 代码块的结构图，说明删除前后 `.the
 - [ ] **步骤 9：提交**
 
 ```bash
-git add .themis/workspace/spec/core-removal docs/plan/spec-replay
+git add .themis/workspace/spec/2026-08-19-core-removal docs/plan/spec-replay
 git commit -m "replay: 抽象设计与 R2 评审，记录所有者结论"
 ```
 
@@ -367,10 +369,10 @@ git commit -m "replay: 抽象设计与 R2 评审，记录所有者结论"
 > `catalog.md:33` 仍是**开放决策点**：所有者要求前述各项落地后再单独提处理方案由他审阅。本任务不得为它定做法，也不得让它消失。
 
 **文件：**
-- 新建：`.themis/workspace/spec/core-removal/step1/task/basic.md`
-- 新建：`.themis/workspace/spec/core-removal/step1/task/detail.md`
-- 新建：`.themis/workspace/spec/core-removal/step1/task/review.md`
-- 修改：`.themis/workspace/spec/core-removal/state.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/task/basic.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/task/detail.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/task/review.md`
+- 修改：`.themis/workspace/spec/2026-08-19-core-removal/state.md`
 - 修改：`docs/plan/spec-replay/drift-log.md`
 
 **接口：**
@@ -380,7 +382,7 @@ git commit -m "replay: 抽象设计与 R2 评审，记录所有者结论"
 - [ ] **步骤 1：确认前置闸门**
 
 ```bash
-grep -A 5 'R2' .themis/workspace/spec/core-removal/state.md
+grep -A 5 'R2' .themis/workspace/spec/2026-08-19-core-removal/state.md
 ```
 
 R2 必须为 approved 且未 stale。
@@ -435,7 +437,7 @@ R2 必须为 approved 且未 stale。
 - [ ] **步骤 9：提交**
 
 ```bash
-git add .themis/workspace/spec/core-removal docs/plan/spec-replay
+git add .themis/workspace/spec/2026-08-19-core-removal docs/plan/spec-replay
 git commit -m "replay: 任务分段与 R3 评审，记录所有者结论"
 ```
 
@@ -444,9 +446,9 @@ git commit -m "replay: 任务分段与 R3 评审，记录所有者结论"
 ### 任务 5：impl/basic 与 verify/basic
 
 **文件：**
-- 新建：`.themis/workspace/spec/core-removal/step1/impl/basic.md`
-- 新建：`.themis/workspace/spec/core-removal/step1/verify/basic.md`
-- 修改：`.themis/workspace/spec/core-removal/state.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/impl/basic.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/verify/basic.md`
+- 修改：`.themis/workspace/spec/2026-08-19-core-removal/state.md`
 - 修改：`docs/plan/spec-replay/drift-log.md`
 - 按 `task/basic.md` 实际改动的文件（若 basic 段非空）
 
@@ -459,7 +461,7 @@ git commit -m "replay: 任务分段与 R3 评审，记录所有者结论"
 - [ ] **步骤 1：确认 R3 闸门已证**
 
 ```bash
-grep -A 5 'R3' .themis/workspace/spec/core-removal/state.md
+grep -A 5 'R3' .themis/workspace/spec/2026-08-19-core-removal/state.md
 ```
 
 必须为 approved 且未 stale。这是删除动作的解锁条件。
@@ -491,8 +493,8 @@ grep -A 5 'R3' .themis/workspace/spec/core-removal/state.md
 - [ ] **步骤 5：核验身份独立**
 
 ```bash
-grep -A 2 '执行身份' .themis/workspace/spec/core-removal/step1/impl/basic.md
-grep -A 2 '执行身份' .themis/workspace/spec/core-removal/step1/verify/basic.md
+grep -A 2 '执行身份' .themis/workspace/spec/2026-08-19-core-removal/step1/impl/basic.md
+grep -A 2 '执行身份' .themis/workspace/spec/2026-08-19-core-removal/step1/verify/basic.md
 ```
 
 两处一比即得。相同即为漂移。
@@ -513,9 +515,9 @@ git commit -m "replay: impl/basic 与 verify/basic"
 ### 任务 6：impl/detail 与 verify/detail
 
 **文件：**
-- 新建：`.themis/workspace/spec/core-removal/step1/impl/detail.md`
-- 新建：`.themis/workspace/spec/core-removal/step1/verify/detail.md`
-- 修改：`.themis/workspace/spec/core-removal/state.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/impl/detail.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/verify/detail.md`
+- 修改：`.themis/workspace/spec/2026-08-19-core-removal/state.md`
 - 修改：`docs/plan/spec-replay/drift-log.md`
 - 删除：`templates/.themis/core/`（98 个文件）
 - 修改：六处活跃引用（清单见本计划"目标文件结构"一节的表），按 `design.md` 的结构决策处理——`templates/.themis/CLAUDE.themis.md`、`templates/.themis/README.md`、`templates/.themis/AGENTS.md`、`templates/.themis/workspace/context/catalog.md`、`templates/.themis/spec/README.md`、`.gitignore`
@@ -527,7 +529,7 @@ git commit -m "replay: impl/basic 与 verify/basic"
 - [ ] **步骤 1：确认前置闸门**
 
 ```bash
-grep -A 8 'verify/basic\|basic' .themis/workspace/spec/core-removal/state.md
+grep -A 8 'verify/basic\|basic' .themis/workspace/spec/2026-08-19-core-removal/state.md
 ```
 
 verify/basic 结论须为通过；basic 段为空时前置闸门为 R3 approved（`flow.md` impl/detail 节点）。
@@ -603,9 +605,9 @@ git commit -m "replay: impl/detail 与 verify/detail，删除 core"
 ### 任务 7：人工验收（人类闸门）与摘要
 
 **文件：**
-- 新建：`.themis/workspace/spec/core-removal/step1/acceptance.md`
-- 新建：`.themis/workspace/spec/core-removal/step1/summary.md`
-- 修改：`.themis/workspace/spec/core-removal/state.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/acceptance.md`
+- 新建：`.themis/workspace/spec/2026-08-19-core-removal/step1/summary.md`
+- 修改：`.themis/workspace/spec/2026-08-19-core-removal/state.md`
 - 修改：`docs/plan/spec-replay/drift-log.md`
 
 **接口：**
@@ -736,7 +738,7 @@ git commit -m "docs: replay 漂移清单与 hard 执行器强制清单"
 
 以下全部成立才可报告本计划完成：
 
-1. `.themis/workspace/spec/core-removal/` 下的工件齐备，目录结构与文件小节符合 `.themis/spec/template.md`，无自创文件或小节。
+1. `.themis/workspace/spec/2026-08-19-core-removal/` 下的工件齐备，目录结构与文件小节符合 `.themis/spec/template.md`，无自创文件或小节。
 2. 十三个节点各在 `state.md` 留下闸门结论，`state.md` 终态记录全部闸门。
 3. 四处人类闸门（R1/R2/R3/验收）各有项目所有者的明确答复，`intent-review.md`、`design-review.md`、`task/review.md`、`acceptance.md` 的结论小节记录了原话。
 4. `impl/basic.md` 与 `verify/basic.md`、`impl/detail.md` 与 `verify/detail.md` 的执行身份各自不同；相同则已作为漂移记录。

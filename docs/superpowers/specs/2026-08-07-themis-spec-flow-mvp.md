@@ -6,7 +6,7 @@
 >
 > **审批结论:** §3(D1–D7 易漂移点取向)、§4(五条顶层设计方案)、§2(行为契约)均按本文件所述锁定为 MVP 基线。§5 P4 的落地次序①–⑤作为基准保留。
 >
-> **落地状态:** 原"新增方案待讨论"已于 2026-08-10 结束,产出 basic/detail 落地分段设计与实施计划;该分段按 `docs/superpowers/plans/2026-08-10-spec-flow-basic-detail-split.md` 落地。§5 P4 的落地次序①–④已于 2026-08-18 落地为 `.themis/spec/` 控制面四份文件(README/flow/rules/template),实例骨架树同时退场;⑤(端到端 replay)**已于 2026-08-22 完成**:以 `core-removal` 为实例按 `flow.md` 十三个节点走完全程,人工验收 accepted;产出 `docs/plan/spec-replay/drift-log.md`(十三个节点条目、23 个漂移 facet)与 `docs/plan/spec-replay/hard-enforcement-list.md`(11 条强制项,按实发次数排序)。`core/` 已由该 replay 的 impl/detail 节点在 R3 批准后删除(98 个文件)。落地①–⑤至此全部完成。
+> **落地状态:** 原"新增方案待讨论"已于 2026-08-10 结束,产出 basic/detail 落地分段设计与实施计划;该分段按 `docs/superpowers/plans/2026-08-10-spec-flow-basic-detail-split.md` 落地。§5 P4 的落地次序①–④已于 2026-08-18 落地为 `.themis/spec/` 控制面四份文件(README/flow/rules/template),实例骨架树同时退场;⑤(端到端 replay)**已于 2026-08-22 完成**:以 `2026-08-19-core-removal` 为实例按 `flow.md` 十三个节点走完全程,人工验收 accepted;产出 `docs/plan/spec-replay/drift-log.md`(十三个节点条目、23 个漂移 facet)与 `docs/plan/spec-replay/hard-enforcement-list.md`(11 条强制项,按实发次数排序)。`core/` 已由该 replay 的 impl/detail 节点在 R3 批准后删除(98 个文件)。落地①–⑤至此全部完成。
 
 ---
 
@@ -174,7 +174,7 @@
   - 落地② 工件模板（`.themis/spec/template.md`，单文件记录实例结构，trace + EARS；`SPEC-ARTIFACT-001` 约束的是工件文件内的阐述方式，控制事实与人类语义各有落点，不要求拆成配对 record/content 物理文件）——**已落地**
   - 落地③ 语义 references + `SKILL.md`——**已落地**,形态为 `.themis/spec/rules.md` 的十个主题小节(每节固定适用节点/判据/拒绝条件/判定者)与 `.themis/skills/themis/SKILL.md`;不按节点拆成六个 operation 文件,判定规则彼此独立、天然可拆,但拆分边界应由"什么内容一起变化"决定,而这些规则尚未经真实使用,无证据支持任何边界,拆分退出条件写入 `.themis/spec/README.md`
   - 落地④ soft 执行器 + 状态文件约定——**已落地**,形态为 `.themis/spec/flow.md` 的通用状态条款与失败去向,状态文件为实例的 `state.md`;不建 `.themis/spec/enforcement/soft/` 目录,因 soft 执行器当前无独立机器实现,其"实现"就是 flow 契约本身被 Agent 遵守,单设目录会暗示存在一个并不存在的执行器组件
-  - 落地⑤ 一次真实端到端走查(replay),暴露"Agent 会在哪些闸门漂移"→ 作为未来 hard/CLI 的强制清单——**已完成**,以 `core-removal` 为实例走完十三个节点、人工验收 accepted;产物为 `docs/plan/spec-replay/drift-log.md`(23 个漂移 facet、13 处"没拦住")与 `docs/plan/spec-replay/hard-enforcement-list.md`(11 条强制项)。实例工件在 `.themis/workspace/spec/core-removal/`
+  - 落地⑤ 一次真实端到端走查(replay),暴露"Agent 会在哪些闸门漂移"→ 作为未来 hard/CLI 的强制清单——**已完成**,以 `2026-08-19-core-removal` 为实例走完十三个节点、人工验收 accepted;产物为 `docs/plan/spec-replay/drift-log.md`(23 个漂移 facet、13 处"没拦住")与 `docs/plan/spec-replay/hard-enforcement-list.md`(11 条强制项)。实例工件在 `.themis/workspace/spec/2026-08-19-core-removal/`
 
 ---
 

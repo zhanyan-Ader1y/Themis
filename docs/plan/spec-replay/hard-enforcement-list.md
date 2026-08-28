@@ -1,6 +1,6 @@
 # hard 执行器强制清单
 
-本文件是 `.themis/spec/` 控制面首次端到端 replay(spec-id:`core-removal`)的第二份产出,输入是 `drift-log.md` 十三个节点条目里累计的 23 个漂移 facet。它回答一个问题:**soft 执行器(靠 Agent 遵守 + 人类可读状态文件)下靠不住的是哪些,将来 hard 执行器该机器强制什么。**
+本文件是 `.themis/spec/` 控制面首次端到端 replay(spec-id:`2026-08-19-core-removal`)的第二份产出,输入是 `drift-log.md` 十三个节点条目里累计的 23 个漂移 facet。它回答一个问题:**soft 执行器(靠 Agent 遵守 + 人类可读状态文件)下靠不住的是哪些,将来 hard 执行器该机器强制什么。**
 
 **本文件不是规范,是 replay 的结论。** 它不定义控制面条款,也不能被当作 `.themis/spec/` 之外的第二份合同引用。每一条强制项都必须能在 `drift-log.md` 里指到真实发生过的漂移;凭空推测的不写。
 

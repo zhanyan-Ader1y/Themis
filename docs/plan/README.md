@@ -19,10 +19,10 @@
 | 活动 | 完成 | 产物 |
 |---|---|---|
 | 落地①–④ 控制面 | 2026-08-18 | `.themis/spec/` 四份文件,按 [`2026-08-18-themis-spec-control-plane.md`](../superpowers/plans/2026-08-18-themis-spec-control-plane.md) |
-| 落地⑤ 端到端 replay | 2026-08-22,验收 accepted | [`spec-replay/drift-log.md`](spec-replay/drift-log.md)、[`spec-replay/hard-enforcement-list.md`](spec-replay/hard-enforcement-list.md);实例工件在 `.themis/workspace/spec/core-removal/`;载体产物为 `templates/.themis/core/` 删除(98 个文件) |
+| 落地⑤ 端到端 replay | 2026-08-22,验收 accepted | [`spec-replay/drift-log.md`](spec-replay/drift-log.md)、[`spec-replay/hard-enforcement-list.md`](spec-replay/hard-enforcement-list.md);实例工件在 `.themis/workspace/spec/2026-08-19-core-removal/`;载体产物为 `templates/.themis/core/` 删除(98 个文件) |
 | 控制面两处缺口修复 | 2026-08-24 | `flow.md`「impl/detail」加空段限定；`verify/basic` 新增 `不适用` 取值；另修根因——`state.md` 闸门取值此前控制面从未定义，致 replay 自建约定并重载"已证" |
 | 意图分两层 | 2026-08-24 | spec 级 `Intent.md`（新增「step 分解」）+ step 级 `scope.md`；`flow.md` 新增「step 定界」节点与失效级联的唯一例外条款 |
-| `templates/.themis/` 清空 | 2026-08-26，验收 accepted | 控制面改为 `.themis/` 单份入库，两层包源模型对 `.themis` 取消；实例工件在 `.themis/workspace/spec/workspace-cleanup/` |
+| `templates/.themis/` 清空 | 2026-08-26，验收 accepted | 控制面改为 `.themis/` 单份入库，两层包源模型对 `.themis` 取消；实例工件在 `.themis/workspace/spec/2026-08-26-workspace-cleanup/` |
 
 `mvp.md` §5 P4 的落地次序①–⑤至此全部完成,其 §2 行为契约在全程一行未动。
 
@@ -32,11 +32,11 @@
 
 **唯一剩余候选：hard 执行器强制项**——[`hard-enforcement-list.md`](spec-replay/hard-enforcement-list.md) 11 条，按实发次数排序。
 
-此前并列的另两个候选**均已解决，不再是候选**：控制面两处缺口于 2026-08-24 修复（`workspace-cleanup` 实例是新增 `不适用` 取值的首个使用者，两处此前需裁定的地方均由条款直接给出答案，一次裁定未动用）；`templates/.themis/workspace/README.md:5` 的残留随该目录整体删除而消失。
+此前并列的另两个候选**均已解决，不再是候选**：控制面两处缺口于 2026-08-24 修复（`2026-08-26-workspace-cleanup` 实例是新增 `不适用` 取值的首个使用者，两处此前需裁定的地方均由条款直接给出答案，一次裁定未动用）；`templates/.themis/workspace/README.md:5` 的残留随该目录整体删除而消失。
 
 ### 2026-08-26 后新增的实发证据
 
-`workspace-cleanup` 实例走完一遍流程，三条强制项各自又实发一次，**改变了原有排序依据**：
+`2026-08-26-workspace-cleanup` 实例走完一遍流程，三条强制项各自又实发一次，**改变了原有排序依据**：
 
 | 强制项 | replay 时实发 | 本次新增 | 形态 |
 |---|---|---|---|
@@ -62,4 +62,4 @@ Themico 的实施证据与人工 replay 记录已随其全部内容归并到 `.t
 - ~~缺失 evaluator、validator、recorder、runtime、Agent host、worktree 或 command support 时 fail closed~~——这些是 Plan 35 的组件名，当前控制面零引用。**fail-closed 本身仍然成立**，但它现在由 `.themis/spec/flow.md`「通用失败去向」与 `rules.md` §10 承载，条件也不再按这些组件名表述。
 - ~~不得用 Prompt、README、template、policy 或 directory 的存在冒充 machine enforcement~~——**判断仍然成立，但已由更近、更权威的条款承载**：`.themis/spec/README.md`「当前强制水平」写明"机器强制 unavailable……任何文本不得声称闸门已由机器执行"。那是本次重构的控制面自己写的，不受 Plan 35 退役影响。**引用这条约束时应指向 `.themis/spec/README.md`，不再指向本文件。**
 
-**四处已闭合实例的工件仍指向本文件的这一条**（`authorization-traceability` 的 `Intent.md` 两处、`step1/specify.md` 两处）。**它们不改写**——那是已 accepted 的历史记录，记的是当时依据什么。读者按本节的说明换算即可。改写历史记录会把证据改成结论。
+**四处已闭合实例的工件仍指向本文件的这一条**（`2026-08-26-authorization-traceability` 的 `Intent.md` 两处、`step1/specify.md` 两处）。**它们不改写**——那是已 accepted 的历史记录，记的是当时依据什么。读者按本节的说明换算即可。改写历史记录会把证据改成结论。

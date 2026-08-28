@@ -29,11 +29,11 @@
 
 | 实例 | 已知性质 |
 | --- | --- |
-| `authorization-traceability` | **环 2 断裂**——抽象设计 5 条，任务只引 3 条 |
-| `workspace-cleanup` | 环 2 完好——抽象设计 5 条，任务 6 条全部标注出处 |
-| `core-removal` | 环 2 完好 |
+| `2026-08-26-authorization-traceability` | **环 2 断裂**——抽象设计 5 条，任务只引 3 条 |
+| `2026-08-26-workspace-cleanup` | 环 2 完好——抽象设计 5 条，任务 6 条全部标注出处 |
+| `2026-08-19-core-removal` | 环 2 完好 |
 
-**RED 判据**：扫描命令在 `authorization-traceability` 上必须报出断裂（否则命令无效）。
+**RED 判据**：扫描命令在 `2026-08-26-authorization-traceability` 上必须报出断裂（否则命令无效）。
 **GREEN 判据**：同一命令在另两个实例上必须报通过（否则命令误报）。
 
 **一条命令若在三个实例上给出相同结果，它就是恒真的，不是判据**——这是本项目已记过四次的缺陷形态（`hard-enforcement-list.md` 第 1 项）。
@@ -180,7 +180,7 @@ git commit -m "feat(spec): template 补追溯链环 1、3、4 的引用落点"
 
 ```bash
 cd /c/Coding/Themis
-for s in authorization-traceability workspace-cleanup core-removal; do
+for s in 2026-08-26-authorization-traceability 2026-08-26-workspace-cleanup 2026-08-19-core-removal; do
   d=.themis/workspace/spec/$s/step1
   a=$(grep -c '^### SPEC-' $d/specify.md)
   b=$(grep -oE 'SPEC-[A-Z]+-[0-9]+' $d/task/detail.md | sort -u | wc -l)
@@ -191,9 +191,9 @@ done
 预期输出：
 
 ```
-authorization-traceability: specify=5 task引用=3 BROKEN
-workspace-cleanup: specify=5 task引用=5 OK
-core-removal: specify=4 task引用=4 OK
+2026-08-26-authorization-traceability: specify=5 task引用=3 BROKEN
+2026-08-26-workspace-cleanup: specify=5 task引用=5 OK
+2026-08-19-core-removal: specify=4 task引用=4 OK
 ```
 
 **这一步是本任务最重要的验证**：命令必须在已知断裂的实例上报 `BROKEN`、在完好的实例上报 `OK`。**三个实例给出相同结果则命令无效**，须改命令再跑，不得继续。
@@ -239,7 +239,7 @@ awk '/^## §12/,0' .themis/spec/rules.md | grep -cE '适用节点|判据|拒绝�
 
 预期：第一条 `1`，第二条 `4`。**这是 GREEN。**
 
-**注意 `awk` 范围写法**：用 `/^## §12/,0`（取到文件末），**不要用 `/^## §12/,/^## §13|^$/`**——后者会在标题后第一个空行即终止，只取到标题行。这是本项目已实测到的缺陷（`authorization-traceability` 实例 impl/detail「偏差 1」）。
+**注意 `awk` 范围写法**：用 `/^## §12/,0`（取到文件末），**不要用 `/^## §12/,/^## §13|^$/`**——后者会在标题后第一个空行即终止，只取到标题行。这是本项目已实测到的缺陷（`2026-08-26-authorization-traceability` 实例 impl/detail「偏差 1」）。
 
 - [ ] **步骤 5：确认 §12 不含声称机器执行的措辞**
 
@@ -376,7 +376,7 @@ git commit -m "feat(spec): flow 补闸门强制通则与前置可查形态"
 
 ```bash
 cd /c/Coding/Themis
-for s in authorization-traceability workspace-cleanup core-removal; do
+for s in 2026-08-26-authorization-traceability 2026-08-26-workspace-cleanup 2026-08-19-core-removal; do
   d=.themis/workspace/spec/$s/step1
   a=$(grep -c '^### SPEC-' $d/specify.md)
   b=$(grep -oE 'SPEC-[A-Z]+-[0-9]+' $d/task/detail.md | sort -u | wc -l)
@@ -384,13 +384,13 @@ for s in authorization-traceability workspace-cleanup core-removal; do
 done
 ```
 
-预期：`authorization-traceability` 报 `BROKEN`，另两个报 `OK`。**这证明判据能真判失败，不是恒真。**
+预期：`2026-08-26-authorization-traceability` 报 `BROKEN`，另两个报 `OK`。**这证明判据能真判失败，不是恒真。**
 
 - [ ] **步骤 2：跑环 3 扫描，三实例对照**
 
 ```bash
 cd /c/Coding/Themis
-for s in authorization-traceability workspace-cleanup core-removal; do
+for s in 2026-08-26-authorization-traceability 2026-08-26-workspace-cleanup 2026-08-19-core-removal; do
   d=.themis/workspace/spec/$s/step1
   a=$(grep -c '^### T-D' $d/task/detail.md)
   b=$(grep -oE 'T-D[0-9]+' $d/verify/detail.md | sort -u | wc -l)
@@ -436,7 +436,7 @@ go test ./... 2>&1 | grep -c '^ok'
 go test ./... 2>&1 | grep -c '^FAIL'
 ```
 
-预期：`BUILD_OK`、`ok` 计数 `10`、`FAIL` 计数 `0`。本计划全改 Markdown，若影响 Go 说明有隐藏依赖——那正是要测出来的（该形态在 `workspace-cleanup` 实例真实发生过一次）。
+预期：`BUILD_OK`、`ok` 计数 `10`、`FAIL` 计数 `0`。本计划全改 Markdown，若影响 Go 说明有隐藏依赖——那正是要测出来的（该形态在 `2026-08-26-workspace-cleanup` 实例真实发生过一次）。
 
 - [ ] **步骤 7：提交核验记录**
 
@@ -451,7 +451,7 @@ go test ./... 2>&1 | grep -c '^FAIL'
 1. `template.md` 三处落点在位，四份人工闸门工件的「用户原话」小节未被破坏（任务 1 步骤 7、8）。
 2. `rules.md` §12 存在且四字段齐备，§11 未被影响，全文未超 300 行（任务 2 步骤 4、6、7）。
 3. `flow.md` 闸门强制通则在位且四部分齐备，十三个节点各自的前置闸门行仍为 13 条（任务 3 步骤 4、5）。
-4. 环 2 扫描在 `authorization-traceability` 报 `BROKEN`、另两实例报 `OK`——**判据能真判失败**（任务 4 步骤 1）。
+4. 环 2 扫描在 `2026-08-26-authorization-traceability` 报 `BROKEN`、另两实例报 `OK`——**判据能真判失败**（任务 4 步骤 1）。
 5. 改动恰三个文件，实例工件与已批准契约零改动（任务 4 步骤 3、4、5）。
 6. Go 构建与测试不劣于基线（任务 4 步骤 6）。
 

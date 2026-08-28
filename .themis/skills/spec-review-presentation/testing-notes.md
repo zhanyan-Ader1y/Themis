@@ -18,7 +18,7 @@
 
 | 症状 | rep 1 | rep 2 |
 | --- | --- | --- |
-| 裸用编号（`T-D1`–`T-D6`、`SPEC-WSCLEAN-006`、`workspace-cleanup`） | 全部未展开 | 全部未展开 |
+| 裸用编号（`T-D1`–`T-D6`、`SPEC-WSCLEAN-006`、`2026-08-26-workspace-cleanup`） | 全部未展开 | 全部未展开 |
 | 裁定点位置 | 第 4 节 | 第 3 节 |
 | 首节内容 | 「本层增量」元话语 | 「本层新增了什么」元话语 |
 | 规模数字当内容（45 份、六条、三份） | 有 | 有 |
@@ -35,7 +35,7 @@
 **两次均通过，且收敛到同一形状：**
 
 - 节序完全一致，裁定点均在第二节
-- 零编号泄漏——`T-Dx`、`SPEC-WSCLEAN-xxx`、`workspace-cleanup` 一个都没出现在成品里
+- 零编号泄漏——`T-Dx`、`SPEC-WSCLEAN-xxx`、`2026-08-26-workspace-cleanup` 一个都没出现在成品里
 - 均自发补出"判错的后果不对称"这一层（Skill 只要求写后果，未要求比较后果）
 - 末节「本次批准不覆盖」均齐备
 
@@ -78,9 +78,9 @@ rep 1 在该节把六条任务完整复述了一遍，与 §3「不重复下层�
 
 **这两行未经本文件上述的 RED-GREEN-REFACTOR 流程。** 没有跑基线、没有对照采样、没有验证加了它之后行为是否改变。它们与本文件其余部分记录的、经过验证的内容**不具有同等可靠性**。
 
-**为什么仍然写入**：它来自 `authorization-traceability` 实例的实证——该实例走查发现，此前五次"评审者只答一半"的实发中，至少三次的成因是把授权与附带裁定合并提问（`docs/plan/spec-replay/drift-log.md`「人工验收」条目）。新增内容治的是该成因。
+**为什么仍然写入**：它来自 `2026-08-26-authorization-traceability` 实例的实证——该实例走查发现，此前五次"评审者只答一半"的实发中，至少三次的成因是把授权与附带裁定合并提问（`docs/plan/spec-replay/drift-log.md`「人工验收」条目）。新增内容治的是该成因。
 
-**为什么不补测就写入**：补测需要构造"投影含并列裁定项"的场景并多次采样，成本高于本次改动本身；而该实例的 R3 评审者裁定接受"如实标注"这一处置（见 `.themis/workspace/spec/authorization-traceability/step1/task/review.md`「结论」）。
+**为什么不补测就写入**：补测需要构造"投影含并列裁定项"的场景并多次采样，成本高于本次改动本身；而该实例的 R3 评审者裁定接受"如实标注"这一处置（见 `.themis/workspace/spec/2026-08-26-authorization-traceability/step1/task/review.md`「结论」）。
 
 **因此本节存在的意义是防止误读**：读者不应因这两行与已测内容同处一份文件，就认为它们同样经过验证。**补测仍是敞开的**——若将来有含并列裁定项的实例，那正是它的天然测试场景。
 
@@ -99,17 +99,17 @@ rep 1 在该节把六条任务完整复述了一遍，与 §3「不重复下层�
 **规则 6（250 词上限）**——统计十二份投影的词数：
 
 ```
-253  workspace-cleanup/step1/design-review.md
-152  core-removal/step1/acceptance.md
-137  workspace-cleanup/intent-review.md
-134  core-removal/step1/design-review.md
- 71  workspace-cleanup/step1/task/review.md
- 65  authorization-traceability/intent-review.md
- 63  core-removal/intent-review.md
- 52  authorization-traceability/step1/design-review.md
- 49  authorization-traceability/step1/task/review.md
- 40  workspace-cleanup/step1/acceptance.md
- 21  authorization-traceability/step1/acceptance.md
+253  2026-08-26-workspace-cleanup/step1/design-review.md
+152  2026-08-19-core-removal/step1/acceptance.md
+137  2026-08-26-workspace-cleanup/intent-review.md
+134  2026-08-19-core-removal/step1/design-review.md
+ 71  2026-08-26-workspace-cleanup/step1/task/review.md
+ 65  2026-08-26-authorization-traceability/intent-review.md
+ 63  2026-08-19-core-removal/intent-review.md
+ 52  2026-08-26-authorization-traceability/step1/design-review.md
+ 49  2026-08-26-authorization-traceability/step1/task/review.md
+ 40  2026-08-26-workspace-cleanup/step1/acceptance.md
+ 21  2026-08-26-authorization-traceability/step1/acceptance.md
 ```
 
 **21–253 词，无收敛**——说明此前没有任何长度约束。逐份读后确认：最长那份把执行次序、任务清单、判据列表全复述了；最短那份信息反而最全。**长度与信息量不相关，与取舍程度相关。** 250 的阈值取自"读完仍能一屏内判定"这一目标，非精确测量所得，属工程判断。
