@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/zhanyan-Ader1y/Themis/internal/themis"
@@ -23,6 +24,7 @@ const usage = `themis —— 校验工件里的数字与存在性断言
 
 用法：
   themis verify <文件>   重跑该文件里每条断言的命令，比对其记录的值
+  themis overlap <目录>  找出目录内各 .md 之间逐字重合的片段，供人工复核
 
 断言形态见 .themis/spec/template.md「断言形态」一节。不合形态的行会被跳过。
 `
@@ -42,6 +44,12 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			return 2
 		}
 		return runVerify(args[1], stdout, stderr)
+	case "overlap":
+		if len(args) != 2 {
+			fmt.Fprint(stderr, usage)
+			return 2
+		}
+		return runOverlap(args[1], stdout, stderr)
 	case "help", "-h", "--help":
 		fmt.Fprint(stdout, usage)
 		return 0
@@ -140,4 +148,81 @@ func repositoryRoot(path string) (string, error) {
 		}
 		dir = parent
 	}
+}
+
+// runOverlap compares every ordered pair of Markdown files in dir and reports
+// stretches of text that appear verbatim in both.
+//
+// It always exits 0 when it completes. What it finds is a lead for a human,
+// not a determinate error: legitimate overlap can never be filtered to zero
+// (both files must name the same nodes), so blocking on it would make the
+// check something to route around rather than read.
+func runOverlap(dir string, stdout, stderr io.Writer) int {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		fmt.Fprintf(stderr, "读取目录失败：%v\n", err)
+		return 1
+	}
+
+	contents := map[string]string{}
+	var names []string
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		body, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			fmt.Fprintf(stderr, "读取 %s 失败：%v\n", e.Name(), err)
+			return 1
+		}
+		contents[e.Name()] = string(body)
+		names = append(names, e.Name())
+	}
+	if len(names) < 2 {
+		fmt.Fprintf(stderr, "%s 下不足两份 .md 文件，无从比对\n", dir)
+		return 1
+	}
+	sort.Strings(names)
+
+	// Report each fragment once, against the first pair that produced it: the
+	// same sentence shared by two files shows up from both directions.
+	var findings []themis.Finding
+	for _, from := range names {
+		for _, to := range names {
+			if from == to {
+				continue
+			}
+			for _, fragment := range themis.MaximalCommon(contents[from], contents[to], overlapThreshold) {
+				if alreadyFound(findings, fragment) {
+					continue
+				}
+
+				findings = append(findings, themis.Finding{
+					Fragment: fragment,
+					From:     from,
+					To:       to,
+					Filtered: themis.LegitimateRule(fragment),
+				})
+			}
+		}
+	}
+
+	fmt.Fprint(stdout, themis.Report(findings))
+	return 0
+}
+
+// overlapThreshold is the shortest run of shared runes worth reporting.
+// Below it, recurrence is ordinary rather than evidence of restatement.
+const overlapThreshold = 20
+
+// alreadyFound reports whether this overlap was already recorded, including
+// from the opposite direction where extension may have landed on slightly
+// different boundaries.
+func alreadyFound(findings []themis.Finding, fragment string) bool {
+	for _, f := range findings {
+		if themis.SameFinding(f.Fragment, fragment) {
+			return true
+		}
+	}
+	return false
 }

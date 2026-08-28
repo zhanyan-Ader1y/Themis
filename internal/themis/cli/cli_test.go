@@ -104,3 +104,47 @@ func TestRunChecksAssertionsAfterAFence(t *testing.T) {
 		t.Errorf("exit code = 0; the wrong assertion after the fence was not checked. stdout: %s", stdout.String())
 	}
 }
+
+// The overlap subcommand reports restatement between control-plane files.
+func TestOverlapCommand(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+
+	code := Run(context.Background(), []string{"overlap", "testdata/spec"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr: %s", code, stderr.String())
+	}
+	out := stdout.String()
+	// The fixture pair restates a criterion; the report must surface it.
+	if !strings.Contains(out, "只判三项") {
+		t.Errorf("report omits the restated sentence:\n%s", out)
+	}
+	// And it must name the filter rules, so a wrong exclusion stays visible.
+	if !strings.Contains(out, "经验规则") {
+		t.Errorf("report does not warn its filter rules are heuristics:\n%s", out)
+	}
+}
+
+// Finding overlaps is a lead for a human, not a determinate error: the exit
+// code stays 0 so this check can never become a hard block. That differs
+// deliberately from verify, where a mismatched number is a definite defect.
+func TestOverlapExitCode(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+
+	code := Run(context.Background(), []string{"overlap", "testdata/spec"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Errorf("exit code = %d after finding overlaps; want 0 — overlap must not block", code)
+	}
+	if stdout.Len() == 0 {
+		t.Error("no report written despite fixtures containing an overlap")
+	}
+}
+
+func TestOverlapReportsMissingDirectory(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+
+	if code := Run(context.Background(), []string{"overlap", "testdata/no-such-dir"}, &stdout, &stderr); code == 0 {
+		t.Error("exit code = 0 for a missing directory; want non-zero")
+	}
+}
