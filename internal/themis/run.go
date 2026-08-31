@@ -39,6 +39,10 @@ func VerifyLine(line, dir string) (Result, error) {
 		return Result{}, err
 	}
 
+	if err := CheckTransportable(assertion.Command); err != nil {
+		return Result{}, err
+	}
+
 	output, err := runPipeline(assertion.Command, dir)
 	if err != nil {
 		return Result{}, err
@@ -141,10 +145,17 @@ func runPipeline(command, dir string) (string, error) {
 		cmd.Stderr = &errOut
 	}
 
+	// Reap whatever started if a later stage fails to. A half-started pipeline
+	// leaves the earlier processes alive with nobody to read them: `grep -r`
+	// whose `wc -l` never launched falls back to reading stdin and waits there
+	// forever, which is how a mis-parsed table row hung the whole run.
+	started := 0
 	for _, cmd := range commands {
 		if err := cmd.Start(); err != nil {
+			killStarted(commands[:started])
 			return "", fmt.Errorf("启动 %q 失败：%w", cmd.Path, err)
 		}
+		started++
 	}
 	// Wait in order: an earlier stage must be reaped before the pipe it feeds
 	// is considered done, and a non-zero exit from a middle stage is normal
@@ -164,6 +175,21 @@ func runPipeline(command, dir string) (string, error) {
 		}
 	}
 	return out.String(), nil
+}
+
+// killStarted terminates and reaps processes that were started before an error
+// stopped the pipeline from being wired up completely. No timeout is involved:
+// a timeout cannot tell a slow command from a stuck one, and would need a
+// duration nobody can choose correctly. This is deterministic — these processes
+// have no reader and no writer, so nothing is lost by ending them.
+func killStarted(commands []*exec.Cmd) {
+	for _, cmd := range commands {
+		if cmd.Process == nil {
+			continue
+		}
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+	}
 }
 
 // splitStage separates a pipeline stage into the words that become argv,

@@ -1,0 +1,7 @@
+SPEC-ONE
+SPEC-TWO
+PATTERN
+S|P
+(SPEC)
+x?y
+S{1}PEC
