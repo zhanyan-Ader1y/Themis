@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | verify/detail 是否 passed | **不阻断** | `step1/verify/detail.md`「结论」判 `passed`，**由独立子代理给出** |
 | 五条判据是否逐条有断言 | **不阻断** | 同上，`SPEC-TPLSTRIP-001` 至 `005` 逐条列出实跑值 |
-| 孤儿阻断（§8） | **不阻断** | basic 段为空——`grep -c '^### T-B' step1/task/basic.md` → `0` |
+| 孤儿阻断（§8） | **不阻断** | basic 段为空——`grep -c '^### T-B' .themis/workspace/spec/2026-08-29-template-strip-prescriptions/step1/task/basic.md` → `0` |
 | 追溯链环 4（§12） | **不阻断** | 本文件上列各项均**引用** `verify/detail.md` 的结论，未重做判定 |
 
 四项均不阻断。
