@@ -1,6 +1,6 @@
 # Themis Spec 流程 MVP — Specify（已审批）
 
-> **状态:** **已审批** — 2026-08-08 由项目所有者(zhanyan)首次批准;2026-08-10 依 `docs/superpowers/specs/2026-08-10-spec-flow-basic-detail-split-design.md` §5 新增 SPEC-IMPL-002、SPEC-IMPL-003、SPEC-VERIFY-003、SPEC-ACCEPT-002 并增补 SPEC-INVALIDATION-001,2026-08-11 由项目所有者(zhanyan)重新批准;2026-08-12 由项目所有者(zhanyan)批准 SPEC-IMPL-002 措辞修订(分类须在 R3 之前完成,执行硬序在批准之后),AC1、AC2 未变;2026-08-18 由项目所有者(zhanyan)批准 §5 P4 落地②的路径与形态更新(改为 `.themis/spec/template.md` 单文件记录实例结构,依据 SPEC-ARTIFACT-001 约束的是工件文件内的阐述方式而非物理配对),§2 行为契约条目未变;2026-08-19 由项目所有者(zhanyan)批准 §5 P4 落地①–④的完成标记与③④的形态更新(③ 为 rules.md 十个主题小节而非六个节点 operation 文件,④ 为 flow.md 通用状态条款加实例 state.md 而非 enforcement/soft/ 目录,依据 2026-08-12 控制面设计 §7.3 的对应关系),§2 行为契约条目未变。
+> **状态:** **已审批** — 2026-08-08 由项目所有者(zhanyan)首次批准;2026-08-10 依 `docs/superpowers/specs/2026-08-10-spec-flow-basic-detail-split-design.md` §5 新增 SPEC-IMPL-002、SPEC-IMPL-003、SPEC-VERIFY-003、SPEC-ACCEPT-002 并增补 SPEC-INVALIDATION-001,2026-08-11 由项目所有者(zhanyan)重新批准;2026-08-12 由项目所有者(zhanyan)批准 SPEC-IMPL-002 措辞修订(分类须在 R3 之前完成,执行硬序在批准之后),AC1、AC2 未变;2026-08-18 由项目所有者(zhanyan)批准 §5 P4 落地②的路径与形态更新(改为 `.themis/spec/template.md` 单文件记录实例结构,依据 SPEC-ARTIFACT-001 约束的是工件文件内的阐述方式而非物理配对),§2 行为契约条目未变;2026-08-19 由项目所有者(zhanyan)批准 §5 P4 落地①–④的完成标记与③④的形态更新(③ 为 rules.md 十个主题小节而非六个节点 operation 文件,④ 为 flow.md 通用状态条款加实例 state.md 而非 enforcement/soft/ 目录,依据 2026-08-12 控制面设计 §7.3 的对应关系),§2 行为契约条目未变;2026-08-31 依所有者授权(原话「根据themis的设计意图进行修复,由你裁决」)订正 §5 P4 落地①③两处已与事实不符的落地状态陈述(节点数十三→十四、rules.md 节数十→十三),并裁决 `SPEC-ARTIFACT-001` 的 digest 处置——**该条条文一字未改**,裁决与依据见 `docs/review/2026-08-31-artifact-001-digest-ruling.md`,§2 行为契约条目未变。
 >
 > **性质:** 本文件是 **specify（规格)**,回答"系统必须表现为什么",遵循本项目对 specify 的设定:外部可观测行为、EARS（受约束验收句式)、逐条可验证、**不描述内部架构**。内部架构与落地任务在审批通过后单独产出。
 >
@@ -170,9 +170,9 @@
 - P2:§4 五条顶层设计方案作为 MVP 地基 —— **已锁定**。
 - P3:§2 行为契约条目 —— **已通过**。
 - P4:**逐步落地次序**(基准。①–④已于 2026-08-18 按 `docs/superpowers/plans/2026-08-18-themis-spec-control-plane.md` 落地为 `.themis/spec/` 控制面四份文件;⑤已于 2026-08-22 按 `docs/superpowers/plans/2026-08-19-spec-flow-end-to-end-replay.md` 完成。**①–⑤全部完成**):
-  - 落地① `.themis/spec/flow.md`(把本 specify 的行为契约转成执行器无关的流程契约)——**已落地**,十三个节点各写前置闸门/产出/失效波及/失败去向
+  - 落地① `.themis/spec/flow.md`(把本 specify 的行为契约转成执行器无关的流程契约)——**已落地**,各节点各写前置闸门/产出/失效波及/失败去向。**节点数于 2026-08-31 订正为十四个**:原写"十三个"是 2026-08-24 之前的事实,该日意图分两层时新增 `step 定界（scope.md）` 节点。**本条是落地状态的事实陈述,§2 行为契约未因此变动**
   - 落地② 工件模板（`.themis/spec/template.md`，单文件记录实例结构，trace + EARS；`SPEC-ARTIFACT-001` 约束的是工件文件内的阐述方式，控制事实与人类语义各有落点，不要求拆成配对 record/content 物理文件）——**已落地**
-  - 落地③ 语义 references + `SKILL.md`——**已落地**,形态为 `.themis/spec/rules.md` 的十个主题小节(每节固定适用节点/判据/拒绝条件/判定者)与 `.themis/skills/themis/SKILL.md`;不按节点拆成六个 operation 文件,判定规则彼此独立、天然可拆,但拆分边界应由"什么内容一起变化"决定,而这些规则尚未经真实使用,无证据支持任何边界,拆分退出条件写入 `.themis/spec/README.md`
+  - 落地③ 语义 references + `SKILL.md`——**已落地**,形态为 `.themis/spec/rules.md` 的主题小节(每节固定适用节点/判据/拒绝条件/判定者)。**节数于 2026-08-31 订正为十三个**:落地时为十个,其后 §11(人工闸门结论的来源)、§12(追溯链检出)、§13(product-judge 产出项齐备判定)三节各自走完整 spec 流程并经所有者批准而新增。**本条是落地状态的事实陈述,§2 行为契约未因此变动**与 `.themis/skills/themis/SKILL.md`;不按节点拆成六个 operation 文件,判定规则彼此独立、天然可拆,但拆分边界应由"什么内容一起变化"决定,而这些规则尚未经真实使用,无证据支持任何边界,拆分退出条件写入 `.themis/spec/README.md`
   - 落地④ soft 执行器 + 状态文件约定——**已落地**,形态为 `.themis/spec/flow.md` 的通用状态条款与失败去向,状态文件为实例的 `state.md`;不建 `.themis/spec/enforcement/soft/` 目录,因 soft 执行器当前无独立机器实现,其"实现"就是 flow 契约本身被 Agent 遵守,单设目录会暗示存在一个并不存在的执行器组件
   - 落地⑤ 一次真实端到端走查(replay),暴露"Agent 会在哪些闸门漂移"→ 作为未来 hard/CLI 的强制清单——**已完成**,以 `2026-08-19-core-removal` 为实例走完十三个节点、人工验收 accepted;产物为 `docs/plan/spec-replay/drift-log.md`(23 个漂移 facet、13 处"没拦住")与 `docs/plan/spec-replay/hard-enforcement-list.md`(11 条强制项)。实例工件在 `.themis/workspace/spec/2026-08-19-core-removal/`
 

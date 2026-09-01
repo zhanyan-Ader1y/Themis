@@ -27,7 +27,9 @@ SKILL.md
 
 ## 当前强制水平
 
-**soft 执行器**。机器强制 unavailable：validator、evaluator、recorder、digest 均未实现。闸门靠 Agent 遵守，状态记录在实例的 `state.md`。任何文本不得声称闸门已由机器执行。`themis` Go CLI 可用后按 `SPEC-ENFORCE-002` 切换为 hard 执行器，执行同一份 flow 契约，切换不改变流程语义。
+**soft 执行器**。机器强制 unavailable：validator、evaluator、recorder 均未实现。闸门靠 Agent 遵守，状态记录在实例的 `state.md`。任何文本不得声称闸门已由机器执行。`themis` Go CLI 可用后按 `SPEC-ENFORCE-002` 切换为 hard 执行器，执行同一份 flow 契约，切换不改变流程语义。
+
+**`SPEC-ARTIFACT-001` 的 digest 不在上列未实现项内，其比对对象已不存在**——`2026-08-18` 经批准的重释把配对改为工件文件内的落点，单文件下没有第二个半份可比对。该条的三层意图各有承担者：不可变与可回溯由仓库历史加追加写入条款承担；"任一半缺失即无效"由 `rules.md` §13 承担（判工件与固定小节是否齐备）；"控制事实与人类语义不得漂移"由 `themis verify` 承担（重跑断言并比对）。裁决与依据见 `docs/review/2026-08-31-artifact-001-digest-ruling.md`。
 
 ## rules.md 拆分退出条件
 
